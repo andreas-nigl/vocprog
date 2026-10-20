@@ -25,6 +25,9 @@
       --accent: #10b981;
       --accent-dark: #059669;
       --error: #ef4444;
+      --info-bg: #eff6ff;
+      --info-border: #bfdbfe;
+      --info-text: #1e40af;
     }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
@@ -48,6 +51,20 @@
     button.success:active { background: var(--accent-dark); }
     button.danger { background: var(--error); }
     
+    .status-badge {
+      background: var(--info-bg);
+      border: 1px solid var(--info-border);
+      color: var(--info-text);
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
     .file-btn-wrapper {
       position: relative;
       overflow: hidden;
@@ -102,7 +119,7 @@
     <label>Dein API Key (wird lokal gespeichert)</label>
     <input type="password" id="apiKey" placeholder="AIzaSy...">
     <label>Fremdsprache</label>
-    <select id="targetLang">
+    <select id="targetLang" onchange="onLanguageChange()">
       <option value="en-US">Englisch</option>
       <option value="fr-FR">Französisch</option>
       <option value="es-ES">Spanisch</option>
@@ -115,6 +132,10 @@
   <div class="card" id="scanCard">
     <h2>2. Buchseiten & Datenverwaltung</h2>
     
+    <div class="status-badge" id="scannedPagesBadge">
+      📖 Vorhandene Seiten: Keinen Speicherstand gefunden
+    </div>
+
     <div class="gallery" id="imageGallery"></div>
     
     <div class="btn-group" style="margin-bottom: 12px;">
@@ -147,7 +168,7 @@
     
     <hr style="border: none; border-top: 1px solid var(--border); margin: 12px 0;">
 
-    <button class="danger" style="margin-bottom: 0; font-size: 0.85rem; padding: 10px;" onclick="clearAllData()">🗑️ Speicher komplett löschen</button>
+    <button class="danger" style="margin-bottom: 0; font-size: 0.85rem; padding: 10px;" onclick="clearCurrentLangData()">🗑️ Speicher für aktuelle Sprache löschen</button>
   </div>
 
   <div class="card hidden" id="rangeCard">
@@ -216,12 +237,27 @@
     if (savedKey) {
       document.getElementById('apiKey').value = savedKey;
     }
+    const savedLang = localStorage.getItem('vocab_trainer_current_lang');
+    if (savedLang) {
+      document.getElementById('targetLang').value = savedLang;
+    }
     loadFromLocalStorage();
   };
 
   document.getElementById('apiKey').addEventListener('change', (e) => {
     localStorage.setItem('geminiApiKey', e.target.value);
   });
+
+  function onLanguageChange() {
+    const currentLang = document.getElementById('targetLang').value;
+    localStorage.setItem('vocab_trainer_current_lang', currentLang);
+    loadFromLocalStorage();
+  }
+
+  function getStorageKey() {
+    const lang = document.getElementById('targetLang').value;
+    return `vocab_trainer_data_${lang}`;
+  }
 
   function resizeImage(file, maxWidth = 1200) {
     return new Promise((resolve) => {
@@ -301,21 +337,36 @@
     status.classList.remove('error-text');
     status.innerText = "Analysiere Seiten mit der KI... Das dauert einige Sekunden.";
 
+    const targetLangSelect = document.getElementById('targetLang');
+    const targetLangName = targetLangSelect.options[targetLangSelect.selectedIndex].text;
+
     const contents = [{
       parts: [
         {
           text: `Analysiere die Vokabelseiten Zeile für Zeile (horizontal).
-          WICHTIG: Erfasse unbedingt die Seitenzahl der Buchseite (meist ganz oben oder unten am Rand).
+          WICHTIG ZUR SPRACHE:
+          Ermittle automatisch die auf den Buchseiten abgedruckte Fremdsprache (z.B. Englisch, Französisch, Spanisch, Latein).
+          
+          SEHR WICHTIG ZUM BILDMATERIAL & PLATZHALTER/TILDEN:
+          Falls in Beispielsätzen Platzhalter, Wellenlinien (~) oder Abkürzungen vorkommen (z.B. '~ sth.', 'to ~'), ERSETZE DIE WELLE BZW. DEN PLATZHALTER VOLLSTÄNDIG durch das konkrete fremdsprachige Wort bzw. die vollständige grammatikalische Form!
+          In 'sentence_foreign' darf NIEMALS eine Welle (~) stehen bleiben, sondern IMMER der grammatikalisch vollständige Satz!
+
+          Erfasse die Seitenzahl der Buchseite.
           Ordne in jeder Zeile das Fremdwort, die deutsche Übersetzung und (falls vorhanden) den Beispielsatz zu.
+          
           SEHR WICHTIG ZUR ÜBERSETZUNG: 
           Prüfe in der 3. Spalte (Beispielsätze): Steht unter dem Satz direkt eine deutsche Übersetzung? 
           -> JA: Übernimm diese exakt so aus dem Buch. 
           -> NEIN: Übersetze den Satz SELBST korrekt ins Deutsche! Nimm als Satzübersetzung NIEMALS einfach nur das einzelne deutsche Vokabel-Wort aus Spalte 2!
-          Achte darauf, dass die Spalten nicht verrutschen. 
-          Antworte AUSSCHLIESSLICH im gültigen JSON-Format als Liste:
-          [
-            { "page": "190", "foreign": "Fremdwort", "german": "deutsche Übersetzung", "sentence_foreign": "Beispielsatz", "sentence_german": "Satzübersetzung" }
-          ]`
+
+          Antworte AUSSCHLIESSLICH im gültigen JSON-Format als Objekt mit folgender Struktur:
+          {
+            "detected_language_code": "en-US", 
+            "items": [
+              { "page": "190", "foreign": "Fremdwort", "german": "deutsche Übersetzung", "sentence_foreign": "Vollständiger Beispielsatz ohne Welle", "sentence_german": "Satzübersetzung" }
+            ]
+          }
+          Mögliche Werte für 'detected_language_code': 'en-US', 'fr-FR', 'es-ES', 'la-LA', 'pt-PT', 'nl-NL'.`
         },
         ...rawImages.map(imgData => ({
           inline_data: {
@@ -327,7 +378,7 @@
     }];
 
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents })
@@ -341,36 +392,32 @@
         throw new Error("Die KI hat keine verwertbare Antwort geliefert.");
       }
       let text = data.candidates[0].content.parts[0].text;
-      const jsonMatch = text.match(/\[\s*\{[\s\S]*\}\s*\]/);
-      let newVocabs = [];
+      let parsedResponse = {};
+
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-         newVocabs = JSON.parse(jsonMatch[0]);
+         parsedResponse = JSON.parse(jsonMatch[0]);
       } else {
          let cleanText = text.replace(/```json|```/g, '').trim();
-         newVocabs = JSON.parse(cleanText);
+         parsedResponse = JSON.parse(cleanText);
       }
-      
-      let pageCounters = {};
-      vocabList.forEach(item => {
-        let p = item.page || "?";
-        if(!pageCounters[p]) pageCounters[p] = 0;
-        pageCounters[p]++;
-      });
 
-      newVocabs.forEach(item => {
-          let p = item.page || "?";
-          if(!pageCounters[p]) pageCounters[p] = 0;
-          pageCounters[p]++;
-          item.pageIndex = pageCounters[p];
-          item.refVocab = `S${p} V${item.pageIndex}`;
-          item.refSentence = `S${p} S${item.pageIndex}`;
-          vocabList.push(item);
-      });
+      let newVocabs = parsedResponse.items || parsedResponse;
+      if (!Array.isArray(newVocabs) && parsedResponse.items) newVocabs = parsedResponse.items;
+
+      if (parsedResponse.detected_language_code) {
+        document.getElementById('targetLang').value = parsedResponse.detected_language_code;
+        localStorage.setItem('vocab_trainer_current_lang', parsedResponse.detected_language_code);
+        loadFromLocalStorage(); 
+      }
+
+      let addedCount = mergeVocabularies(newVocabs);
 
       saveToLocalStorage();
+      updateScannedPagesUI();
       initPageInputAndSelectors();
       document.getElementById('rangeCard').classList.remove('hidden');
-      status.innerText = `${newVocabs.length} Vokabeln erfolgreich erkannt & gespeichert!`;
+      status.innerText = `${addedCount} neue Vokabeln erfolgreich erkannt & gespeichert!`;
       rawImages = [];
       renderGallery();
     } catch (err) {
@@ -380,41 +427,116 @@
     }
   }
 
+  function mergeVocabularies(incomingList) {
+    let addedCount = 0;
+
+    incomingList.forEach(item => {
+      const pageStr = String(item.page || "?").trim();
+      const foreignStr = String(item.foreign || "").trim();
+      const germanStr = String(item.german || "").trim();
+
+      if (!foreignStr && !germanStr) return;
+
+      const isDuplicate = vocabList.some(v => 
+        String(v.page).trim() === pageStr &&
+        String(v.foreign).trim().toLowerCase() === foreignStr.toLowerCase() &&
+        String(v.german).trim().toLowerCase() === germanStr.toLowerCase()
+      );
+
+      if (!isDuplicate) {
+        vocabList.push({
+          page: pageStr,
+          foreign: foreignStr,
+          german: germanStr,
+          sentence_foreign: item.sentence_foreign || "",
+          sentence_german: item.sentence_german || ""
+        });
+        addedCount++;
+      }
+    });
+
+    rebuildReferences();
+    return addedCount;
+  }
+
+  function rebuildReferences() {
+    vocabList.sort((a, b) => {
+      let pA = parseInt(a.page) || 0;
+      let pB = parseInt(b.page) || 0;
+      return pA - pB;
+    });
+
+    let pageCounters = {};
+    vocabList.forEach(item => {
+      let p = item.page || "?";
+      if(!pageCounters[p]) pageCounters[p] = 0;
+      pageCounters[p]++;
+      item.pageIndex = pageCounters[p];
+      item.refVocab = `S${p} V${item.pageIndex}`;
+      item.refSentence = `S${p} S${item.pageIndex}`;
+    });
+  }
+
   function saveToLocalStorage() {
-    localStorage.setItem('vocab_trainer_data', JSON.stringify(vocabList));
+    localStorage.setItem(getStorageKey(), JSON.stringify(vocabList));
   }
 
   function loadFromLocalStorage() {
-    const data = localStorage.getItem('vocab_trainer_data');
+    const key = getStorageKey();
+    const data = localStorage.getItem(key);
+    vocabList = [];
     if (data) {
       try {
         vocabList = JSON.parse(data);
-        if (vocabList.length > 0) {
-          initPageInputAndSelectors();
-          document.getElementById('rangeCard').classList.remove('hidden');
-        }
       } catch(e) { console.error(e); }
     }
+    
+    updateScannedPagesUI();
+
+    if (vocabList.length > 0) {
+      initPageInputAndSelectors();
+      document.getElementById('rangeCard').classList.remove('hidden');
+    } else {
+      document.getElementById('rangeCard').classList.add('hidden');
+    }
+  }
+
+  function updateScannedPagesUI() {
+    const badge = document.getElementById('scannedPagesBadge');
+    const targetLangSelect = document.getElementById('targetLang');
+    const langName = targetLangSelect.options[targetLangSelect.selectedIndex].text;
+
+    if (!vocabList || vocabList.length === 0) {
+      badge.innerText = `📖 Vorhandene Seiten (${langName}): Keine Daten vorhanden`;
+      return;
+    }
+
+    const pages = [...new Set(vocabList.map(v => parseInt(v.page)).filter(n => !isNaN(n)))].sort((a,b)=>a-b);
+    let rangeStr = formatPageRanges(pages);
+    badge.innerText = `📖 Vorhandene Seiten (${langName}): S. ${rangeStr} (${vocabList.length} Vokabeln)`;
+  }
+
+  function formatPageRanges(pages) {
+    if (!pages || pages.length === 0) return "-";
+    let ranges = [];
+    let start = pages[0], prev = pages[0];
+    for (let i = 1; i < pages.length; i++) {
+      if (pages[i] === prev + 1) {
+        prev = pages[i];
+      } else {
+        ranges.push(start === prev ? `${start}` : `${start}-${prev}`);
+        start = pages[i];
+        prev = pages[i];
+      }
+    }
+    ranges.push(start === prev ? `${start}` : `${start}-${prev}`);
+    return ranges.join(', ');
   }
 
   function initPageInputAndSelectors() {
     if (!vocabList.length) return;
     const pages = [...new Set(vocabList.map(v => parseInt(v.page)).filter(n => !isNaN(n)))].sort((a,b)=>a-b);
-    let ranges = [];
-    if (pages.length > 0) {
-      let start = pages[0], prev = pages[0];
-      for (let i = 1; i < pages.length; i++) {
-        if (pages[i] === prev + 1) {
-          prev = pages[i];
-        } else {
-          ranges.push(start === prev ? `${start}` : `${start}-${prev}`);
-          start = pages[i];
-          prev = pages[i];
-        }
-      }
-      ranges.push(start === prev ? `${start}` : `${start}-${prev}`);
-    }
-    document.getElementById('pageRangeInput').value = ranges.join(', ');
+    document.getElementById('pageRangeInput').value = formatPageRanges(pages);
     filterVocabByPages();
   }
 
@@ -470,13 +592,14 @@
   }
 
   function exportDataToFile() {
-    if (!vocabList.length) return alert('Keine Vokabeln zum Exportieren vorhanden.');
+    if (!vocabList.length) return alert('Keine Vokabeln für die gewählte Sprache zum Exportieren vorhanden.');
     const jsonStr = JSON.stringify(vocabList, null, 2);
     const blob = new Blob([jsonStr], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `vokabeln_backup_${new Date().toISOString().slice(0,10)}.txt`;
+    const langCode = document.getElementById('targetLang').value;
+    a.download = `vokabeln_${langCode}_backup_${new Date().toISOString().slice(0,10)}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -491,11 +614,12 @@
       try {
         const imported = JSON.parse(e.target.result);
         if (Array.isArray(imported)) {
-          vocabList = imported;
+          let added = mergeVocabularies(imported);
           saveToLocalStorage();
+          updateScannedPagesUI();
           initPageInputAndSelectors();
           document.getElementById('rangeCard').classList.remove('hidden');
-          alert(`${vocabList.length} Vokabeln erfolgreich aus Textdatei eingelesen!`);
+          alert(`${added} neue Vokabeln ohne Duplikate eingelesen!`);
         } else {
           alert('Ungültiges Dateiformat.');
         }
@@ -507,13 +631,15 @@
     reader.readAsText(file);
   }
 
-  function clearAllData() {
-    if (confirm('Möchtest du wirklich alle gespeicherten Vokabeln und den Cache komplett löschen?')) {
-      localStorage.removeItem('vocab_trainer_data');
+  function clearCurrentLangData() {
+    const langName = document.getElementById('targetLang').options[document.getElementById('targetLang').selectedIndex].text;
+    if (confirm(`Möchtest du wirklich alle gespeicherten Vokabeln für ${langName} löschen?`)) {
+      localStorage.removeItem(getStorageKey());
       vocabList = [];
       filteredVocabList = [];
+      updateScannedPagesUI();
       document.getElementById('rangeCard').classList.add('hidden');
-      alert('Speicher wurde erfolgreich geleert.');
+      alert(`Speicher für ${langName} wurde gelöscht.`);
     }
   }
 
@@ -608,7 +734,7 @@
       { "german": "Deutscher Satz", "foreign": "Fremdsprachiger Satz mit <u>unterstrichenen</u> Kernwörtern", "ref": "Mix: S190 V1, V3" }
     ]`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })

@@ -270,16 +270,37 @@
       .replace(/\b(?:AE|BE|AmE|BrE)\s*:/g,"")
       .replace(/\s+/g," ").trim();
   };
-  const originalSpeak=playAudio;
+  function speakingVariants(raw,lang){
+    const text=String(raw||"").replace(/<[^>]*>/g,"");
+    if(!/^en-/i.test(lang)||!/(?:\bAE\b|\bBE\b|\bAmE\b|\bBrE\b)/.test(text))
+      return [{text:cleanSpokenText(raw),lang}];
+    const pieces=text.split(/\s*[;,]\s*/).filter(Boolean);
+    const variants=pieces.map(piece=>{
+      const prefix=piece.match(/^\s*(AE|BE|AmE|BrE)\s*:?\s*(.+)$/i);
+      const suffix=piece.match(/^(.+?)\s*\((AE|BE|AmE|BrE)\)\s*$/i);
+      const mark=prefix?.[1]||suffix?.[2];
+      const value=prefix?.[2]||suffix?.[1];
+      if(!mark||!value)return null;
+      return {text:cleanSpokenText(value),lang:/^(AE|AmE)$/i.test(mark)?"en-US":"en-GB"};
+    });
+    if(variants.length>0&&variants.every(Boolean))return variants;
+    return [{text:cleanSpokenText(raw),lang}];
+  }
   playAudio=function(type){
-    const item=trainingItems[currentIndex];
-    if(!item)return;
+    const item=trainingItems[currentIndex];if(!item)return;
     const raw=type==="prompt"?item.prompt:item.target;
     const lang=type==="prompt"?item.pLang:item.tLang;
-    const utterance=new SpeechSynthesisUtterance(cleanSpokenText(raw));
-    utterance.lang=lang;
-    utterance.rate=lang==="de-DE"?1:0.85;
-    speechSynthesis.cancel();speechSynthesis.speak(utterance);
+    const variants=speakingVariants(raw,lang).filter(x=>x.text);
+    speechSynthesis.cancel();
+    function speakIndex(index){
+      if(index>=variants.length)return;
+      const current=variants[index],utterance=new SpeechSynthesisUtterance(current.text);
+      utterance.lang=current.lang;utterance.rate=current.lang==="de-DE"?1:0.85;
+      utterance.onend=()=>speakIndex(index+1);
+      utterance.onerror=()=>speakIndex(index+1);
+      speechSynthesis.speak(utterance);
+    }
+    speakIndex(0);
     if(type==="target"&&lastShownEvent)logEvent("spoken",item);
   };
   const originalRecognition=startSpeechRecognition;

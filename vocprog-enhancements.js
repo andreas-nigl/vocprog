@@ -518,12 +518,13 @@
     for(const x of history)items.push({record_id:"event:"+x.id,record_type:"event",payload:x,updated_at:x.at});
     return items;
   }
+  const newer=(left,right)=>Date.parse(left||0)>Date.parse(right||0);
   function mergeRemote(rows){
     const local=new Map(records().map(x=>[x.record_id,x]));
     let changed=false;
     for(const row of rows){
       const old=local.get(row.record_id);
-      if(old&&old.updated_at>=row.updated_at)continue;
+      if(old&&!newer(row.updated_at,old.updated_at))continue;
       const payload=row.payload;
       if(row.record_type==="book"){
         const i=books.findIndex(x=>x.id===payload.id);
@@ -563,7 +564,7 @@
       const server=new Map(remote.map(x=>[x.record_id,x]));
       const owner=auth.user?.id;
       if(!owner)throw Error("Benutzer-ID fehlt");
-      const outgoing=records().filter(x=>!server.has(x.record_id)||x.updated_at>server.get(x.record_id).updated_at)
+      const outgoing=records().filter(x=>!server.has(x.record_id)||newer(x.updated_at,server.get(x.record_id).updated_at))
         .map(x=>({...x,owner_id:owner}));
       for(let i=0;i<outgoing.length;i+=100){
         res=await authFetch("/rest/v1/vocprog_records?on_conflict=owner_id,record_id",{

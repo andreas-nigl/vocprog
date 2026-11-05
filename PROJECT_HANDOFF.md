@@ -1,5 +1,25 @@
 # vocprog – Entwicklungsstand 2026-11-05
 
+## Aktueller Entwicklungsstand: Staging 0.2 (2026-11-05)
+- Quelle: `develop/offline-supabase-20261105`; `main` weiterhin identisch mit Backup-Branch.
+- Realisiert im Staging-Code: Buch-Migration, Buchauswahl vor Scan, Buch-Dropdown
+  beim Lernen, Profilwahl Andreas/Niklas, Enter-Antwortkontrolle, Tracking,
+  Histogramme, vollständiger JSON-Export/Import, temporäre IndexedDB-Bilder,
+  Service Worker, Cloud-Login und Cloud-Synchronisationsgrundlage.
+- Standalone: `261105_2307_vocprog.html` (eine Datei, lokales Lernen;
+  Online-Funktionen benötigen Verbindungszugang).
+- Weder Supabase-Migrations-SQL ausgeführt noch echte Zwei-Geräte-/Browser-/
+  RLS-/Offline-Tests durchgeführt. **Kein Produktionsrelease.**
+- Offene Punkte: Auth-Testkonto in Supabase, Testrepository mit GitHub Pages,
+  echte UI-/Offline-/Sync-Tests, konkurrierende Änderungen und Lösch-Tombstones,
+  serverseitige Gemini-Proxy-Lösung vor öffentlicher kommerzieller Nutzung,
+  robustere Übersetzungsbewertung, Abgleich der AE/BE-Buchnotation.
+- Datenschutz: Auf `main` keine Änderung. Scanbilder werden nur temporär
+  in IndexedDB gespeichert, nicht an Supabase übertragen; beim Gemini-Aufruf
+  findet wie bisher eine Übertragung an Google statt.
+- Nutzerkonten: **ein** Supabase-Login mit zwei internen Lernprofilen;
+  Profiltrennung ist nicht dieselbe wie getrennte Authentifizierung.
+
 ## Versionierung
 - Unverändertes Original: Branch `backup-20261105-pre-supabase`.
 - Produktiver `main` bleibt unverändert.

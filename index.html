@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Vokabel-Scanner & Trainer · Testversion 0.2</title>
   <link rel="stylesheet" href="vocprog-enhancements.css">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
   
   <!-- PWA & iOS Meta Tags -->
   <link rel="manifest" href="manifest.json">
@@ -170,7 +171,7 @@
       </div>
     </div>
     
-    <button type="button" id="analysisOpenBtn" class="analysis-open" onclick="showLearningAnalysis()" title="Lernanalyse öffnen" aria-label="Lernanalyse öffnen"><span aria-hidden="true">▥</span></button>
+    
 
     <hr style="border: none; border-top: 1px solid var(--border); margin: 12px 0;">
 
@@ -232,6 +233,7 @@
     </div>
   </div>
 </div>
+<div class="analysis-float-zone" role="group" aria-label="Auswertung"><button type="button" id="analysisOpenBtn" class="analysis-open" onclick="showLearningAnalysis()" title="Lernanalyse öffnen" aria-label="Lernanalyse öffnen"><svg viewBox="0 0 24 24" width="23" height="23" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V11M10 20V5M16 20v-8M22 20H2"/></svg></button></div>
 
 <script>
   let rawImages = [];

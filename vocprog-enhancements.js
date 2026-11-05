@@ -314,7 +314,7 @@
   };
   function logEvent(action,item,other={}){
     const entry={id:id(),profile:currentProfile,bookId:item.bookId||chosenBook,
-      page:String(item.page||"?"),kind:item.kind||"words",
+      page:String(item.page||"?"),pages:(item.pages?.length?item.pages:[item.page||"?"]).map(String),kind:item.kind||"words",
       sourceId:item.sourceId||item.ref||"",at:new Date().toISOString(),
       action,...other};
     history.push(entry);save(STORE+"_events",history);scheduleSync();
@@ -368,7 +368,7 @@
     }
     await oldGenerate(slice,btn,label,random);
     const page=String(slice[0]?.page||"?");
-    trainingItems=trainingItems.map(x=>({...x,bookId:chosenBook,page,kind:"special",sourceId:x.ref||id()}));
+    trainingItems=trainingItems.map(x=>({...x,bookId:chosenBook,page:x.page||page,kind:"special",sourceId:x.ref||id()}));
     if(!cached) {
       cached={id:id(),bookId:chosenBook,key,page,items:trainingItems,updatedAt:new Date().toISOString()};
       specials.push(cached);
@@ -441,13 +441,13 @@
       for(const [kind,title] of [["words","Vokabeln"],["sentences","Einfache Sätze"],["special","KI-Spezialsätze"]]){
         const h=document.createElement("h4");h.textContent=title;container.append(h);
         const rows=events.filter(x=>x.bookId===b.id&&x.kind===kind);
-        const pages=[...new Set(rows.map(x=>x.page).concat(allVocab().filter(x=>x.bookId===b.id).map(x=>String(x.page))))].sort((a,z)=>Number(a)-Number(z));
+        const pages=[...new Set(rows.flatMap(x=>x.pages||[x.page]).concat(allVocab().filter(x=>x.bookId===b.id).map(x=>String(x.page))))].sort((a,z)=>Number(a)-Number(z));
         const chart=document.createElement("div");chart.className="histogram";
         if(!pages.length)chart.textContent="Noch keine Daten.";
         const max=Math.max(1,...pages.map(p=>rows.filter(e=>e.page===p).length));
         for(const p of pages){
-          const asked=rows.filter(e=>e.page===p&&e.action==="shown").length;
-          const spoken=rows.filter(e=>e.page===p&&e.action==="spoken").length;
+          const asked=rows.filter(e=>(e.pages||[e.page]).includes(p)&&e.action==="shown").length;
+          const spoken=rows.filter(e=>(e.pages||[e.page]).includes(p)&&e.action==="spoken").length;
           const pair=document.createElement("div");pair.className="histogram-pair";
           const bars=document.createElement("div");bars.className="histogram-bars";
           for(const [n,klass] of [[asked,"asked"],[spoken,"spoken"]]){

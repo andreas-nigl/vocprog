@@ -63,6 +63,27 @@ und Statistik. Kein App-Store-Projekt derzeit.
 5. Keine `service_role`, `sb_secret` oder privaten Gemini-Schlüssel ins Web.
 6. Für kommerzielle Nutzung Auth-/KI-Backend, Datenschutz und Buchrechte prüfen.
 
+## Prüfprotokoll vom 2026-11-05
+- 15 statische Prüfungen erfolgreich: Inline-/Erweiterungs-/SW-JavaScript
+  parsbar, einteilige Standalone, zentrale UI-Elemente, RLS-Schema,
+  nichtdestruktive SQL-Anweisungen, temporäre Bilder nicht Cloud-Records,
+  Enter-Bewertung, SW-Cache, Exportfelder, IPA-Filter, Artikel/Präposition,
+  AE-Label-Filter und HTML-Escaping.
+- GitHub-Verifikation: `main` und `backup-20261105-pre-supabase` besitzen
+  weiterhin denselben `index.html`-Blob-SHA
+  `299759a49a1430b9e05676f2ac9e9efccf7b9184`.
+- **Nicht durchgeführt:** echtes Browser-/Mobilgerät-Rendering, Gemini-
+  Scanregression, Offline-Neustart, Auth-RLS gegen echte Supabase-Instanz,
+  Zwei-Geräte-Sync, Last-/Konflikttests. Kein Release für Produktion.
+- Für App-Test ist eine Supabase-SQL-Migration und ein gültiges Auth-Konto
+  erforderlich. Testseiten-Repo `vocprog-test` ist bislang nicht angelegt.
+- Bekannte Einschränkungen: Cloud-Löschung bis zu Tombstone-Implementierung
+  gesperrt, Timestamp-Konfliktauflösung ist noch keine atomare serverseitige
+  Versionsprüfung, Scanbilder bleiben temporär per IndexedDB; Vokabellisten
+  werden aus Gründen der Legacy-Kompatibilität derzeit weiterhin in
+  localStorage gehalten. Verschiedene Nutzer sind serverseitig per RLS
+  isoliert; die beiden Familienprofile einer Anmeldung sind das nicht.
+
 ## Testmatrix
 - Ursprungsdaten Englisch/Französisch -> Musterbuch, umbenennen.
 - Bücher gleicher Sprache mit gleichen Seitenzahlen getrennt; Kamera/Galerie vor Scan.

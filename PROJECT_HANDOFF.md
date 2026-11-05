@@ -1,5 +1,12 @@
 # vocprog – Entwicklungsstand 2026-11-05
 
+## UI-Entscheidung – Analyse-Button (2026-11-05)
+- Rechts unten im Bereich „2. Buchseiten & Datenverwaltung“ ein einzelner
+  **quadratischer Symbolbutton** mit Analyse-/Diagramm-Piktogramm, analog
+  zur Bedienidee von MAN2REF. Kein Textbutton neben Export/Import.
+- Antippen öffnet den bestehenden Lernanalyse-Dialog. Keine Veränderung
+  an der Datensicherungsfunktion.
+
 ## Aktueller Entwicklungsstand: Staging 0.2 (2026-11-05)
 - Quelle: `develop/offline-supabase-20261105`; `main` weiterhin identisch mit Backup-Branch.
 - Realisiert im Staging-Code: Buch-Migration, Buchauswahl vor Scan, Buch-Dropdown

@@ -765,8 +765,8 @@
         ref: c.ref,
         bookId: document.getElementById('bookSelect').value,
         page: String(vocabSlice[0]?.page || "?"),
-        pages: [...new Set((String(c.ref||"").match(/S\\d+/g)||[]).map(s=>s.slice(1)))].length ?
-          [...new Set((String(c.ref||"").match(/S\\d+/g)||[]).map(s=>s.slice(1)))] :
+        pages: [...new Set((String(c.ref||"").match(/S\d+/g)||[]).map(s=>s.slice(1)))].length ?
+          [...new Set((String(c.ref||"").match(/S\d+/g)||[]).map(s=>s.slice(1)))] :
           [String(vocabSlice[0]?.page || "?")],
         sourceId: c.ref,
         kind: "special",

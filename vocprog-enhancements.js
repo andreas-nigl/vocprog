@@ -169,10 +169,6 @@
   const oldLoad=loadFromLocalStorage;
   loadFromLocalStorage=function(){
     oldLoad();
-    if(chosenBook){
-      const b=books.find(b=>b.id===chosenBook);
-      if(b&&get("targetLang").value!==b.lang){get("targetLang").value=b.lang;oldLoad();}
-    }
     refreshBookChoices();
     initPageInputAndSelectors();
   };

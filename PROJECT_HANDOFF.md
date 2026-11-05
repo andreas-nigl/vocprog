@@ -1,11 +1,15 @@
 # vocprog – Entwicklungsstand 2026-11-05
 
-## UI-Entscheidung – Analyse-Button (2026-11-05)
-- Rechts unten im Bereich „2. Buchseiten & Datenverwaltung“ ein einzelner
-  **quadratischer Symbolbutton** mit Analyse-/Diagramm-Piktogramm, analog
-  zur Bedienidee von MAN2REF. Kein Textbutton neben Export/Import.
-- Antippen öffnet den bestehenden Lernanalyse-Dialog. Keine Veränderung
-  an der Datensicherungsfunktion.
+## UI-Entscheidung – korrigiert 2026-11-06
+- Der Analysebutton befindet sich **außerhalb aller App-Bereiche 1–3** und außerhalb des Trainerfensters.
+- Desktop: quadratischer 44x44-Button mit Balkendiagramm-Symbol, fest unten rechts am Browserfenster.
+- Mobil: eigener Bereich nach dem gesamten App-Inhalt, rechtsbündig oberhalb der Statuszeile; nicht schwebend.
+- Klick: `showLearningAnalysis()`. Export/Import unverändert.
+- Neues Browser-Favicon: `favicon.svg`, Karteikasten mit VOC; im App-Inhalt nirgendwo sichtbar. Standalone hat eingebettetes Favicon.
+- Teststand nicht veröffentlicht und nicht auf realen Desktop-/Mobilgeräten bestätigt.
+- Ausführliche Einrichtung: [docs/SUPABASE_GITHUB_EINRICHTUNG.md](docs/SUPABASE_GITHUB_EINRICHTUNG.md).
+- Wiederverwendbare Migrationsvorlage: [docs/TEMPLATE_GITHUB_SUPABASE_MIGRATION.md](docs/TEMPLATE_GITHUB_SUPABASE_MIGRATION.md).
+- UI-Abnahmekriterien: [docs/VOC_UI_UEBERGABE.md](docs/VOC_UI_UEBERGABE.md).
 
 ## Aktueller Entwicklungsstand: Staging 0.2 (2026-11-05)
 - Quelle: `develop/offline-supabase-20261105`; `main` weiterhin identisch mit Backup-Branch.

@@ -763,6 +763,10 @@
         pLang: 'de-DE',
         tLang: document.getElementById('targetLang').value,
         ref: c.ref,
+        bookId: document.getElementById('bookSelect').value,
+        page: String(vocabSlice[0]?.page || "?"),
+        sourceId: c.ref,
+        kind: "special",
         isHtmlTarget: true
       };
       if (document.getElementById('direction').value === 'foreign_to_de') {
@@ -772,6 +776,7 @@
           pLang: obj.tLang,
           tLang: obj.pLang,
           ref: obj.ref,
+          bookId: obj.bookId, page: obj.page, sourceId: obj.sourceId, kind: obj.kind,
           isHtmlPrompt: true
         };
       }
@@ -804,14 +809,14 @@
     
     const promptEl = document.getElementById('promptText');
     if (current.isHtmlPrompt) {
-      promptEl.innerHTML = current.prompt;
+      promptEl.innerHTML = safeUnderline(current.prompt);
     } else {
       promptEl.innerText = current.prompt;
     }
 
     const targetEl = document.getElementById('targetText');
     if (current.isHtmlTarget) {
-      targetEl.innerHTML = current.target;
+      targetEl.innerHTML = safeUnderline(current.target);
     } else {
       targetEl.innerText = current.target;
     }

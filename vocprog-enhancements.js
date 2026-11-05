@@ -259,6 +259,10 @@
   window.addEventListener("offline",updateOnlineState);
 
   // Keep full printed spelling, but exclude metadata and phonetics from spoken text.
+  window.safeUnderline=function(value){
+    return String(value||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+      .replace(/&lt;u&gt;/gi,"<u>").replace(/&lt;\/u&gt;/gi,"</u>");
+  };
   window.cleanSpokenText=function(text){
     return String(text||"").replace(/<[^>]*>/g,"")
       .replace(/\[[^\]]*\]/g,"")

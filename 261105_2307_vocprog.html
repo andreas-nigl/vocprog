@@ -20,7 +20,9 @@
 #answerFeedback{min-height:1.2em;font-size:.8rem}
 .answer-correct{border-color:#16a34a!important;background:#dcfce7!important;color:#14532d!important}
 .answer-wrong{border-color:#dc2626!important;background:#fee2e2!important;color:#7f1d1d!important}
-.analysis-open{width:44px;height:44px;min-width:44px;margin:0 0 0 auto;padding:0;background:#475569;border-radius:8px;font-size:24px;display:flex;align-items:center;justify-content:center}
+.analysis-float-zone{position:fixed;right:20px;bottom:20px;z-index:50;display:flex;justify-content:flex-end;pointer-events:none}
+.analysis-open{width:44px;height:44px;min-width:44px;margin:0;padding:0;background:#475569;color:white;border-radius:8px;display:flex;align-items:center;justify-content:center;pointer-events:auto;box-shadow:0 3px 12px rgba(0,0,0,.18)}
+.analysis-open svg{display:block}
 .voc-dialog{border:1px solid var(--border);border-radius:12px;padding:20px;width:min(440px,92vw);
  background:var(--card);color:var(--text);max-height:85vh;overflow:auto}
 .voc-dialog::backdrop{background:rgba(0,0,0,.45)}
@@ -44,7 +46,10 @@
 button:disabled{opacity:.4;cursor:not-allowed}
 @media(max-width:460px){.dialog-buttons{flex-direction:column}.profile-row{flex-wrap:wrap}}
 
+@media(max-width:640px){.analysis-float-zone{position:static;max-width:480px;width:calc(100% - 32px);margin:10px auto 0;min-height:52px;align-items:center}.analysis-open{margin-left:auto}.voc-footer{margin-top:8px}}
+
 </style>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%23173e78%22%2F%3E%3Cpath%20d%3D%22M10%2035h44v19H10z%22%20fill%3D%22%23cf8228%22%20stroke%3D%22%23fbe0a0%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M13%2029h38l4%208H9z%22%20fill%3D%22%23efa93f%22%20stroke%3D%22%23fbd588%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M19%2020h26v12H19z%22%20fill%3D%22%23e6f2ff%22%2F%3E%3Cpath%20d%3D%22M16%2016h32v7H16z%22%20fill%3D%22%23fff%22%2F%3E%3Crect%20x%3D%226%22%20y%3D%224%22%20width%3D%2252%22%20height%3D%2219%22%20rx%3D%225%22%20fill%3D%22%23173e78%22%2F%3E%3Ctext%20x%3D%2232%22%20y%3D%2219%22%20font-family%3D%22Arial%2Csans-serif%22%20font-weight%3D%22bold%22%20font-size%3D%2219%22%20fill%3D%22white%22%20text-anchor%3D%22middle%22%3EVOC%3C%2Ftext%3E%3C%2Fsvg%3E">
   
   <!-- PWA & iOS Meta Tags -->
   
@@ -210,7 +215,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
       </div>
     </div>
     
-    <button type="button" id="analysisOpenBtn" class="analysis-open" onclick="showLearningAnalysis()" title="Lernanalyse öffnen" aria-label="Lernanalyse öffnen"><span aria-hidden="true">▥</span></button>
+    
 
     <hr style="border: none; border-top: 1px solid var(--border); margin: 12px 0;">
 
@@ -272,6 +277,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
     </div>
   </div>
 </div>
+<div class="analysis-float-zone" role="group" aria-label="Auswertung"><button type="button" id="analysisOpenBtn" class="analysis-open" onclick="showLearningAnalysis()" title="Lernanalyse öffnen" aria-label="Lernanalyse öffnen"><svg viewBox="0 0 24 24" width="23" height="23" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V11M10 20V5M16 20v-8M22 20H2"/></svg></button></div>
 
 <script>
   let rawImages = [];

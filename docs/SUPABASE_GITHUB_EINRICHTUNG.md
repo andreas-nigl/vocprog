@@ -1,0 +1,3 @@
+# Einrichtung
+
+Siehe lokale Dokumentation.

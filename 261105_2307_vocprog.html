@@ -20,7 +20,7 @@
 #answerFeedback{min-height:1.2em;font-size:.8rem}
 .answer-correct{border-color:#16a34a!important;background:#dcfce7!important;color:#14532d!important}
 .answer-wrong{border-color:#dc2626!important;background:#fee2e2!important;color:#7f1d1d!important}
-.analysis-open{width:auto;margin:0 0 0 auto;background:#475569;min-width:130px}
+.analysis-open{width:44px;height:44px;min-width:44px;margin:0 0 0 auto;padding:0;background:#475569;border-radius:8px;font-size:24px;display:flex;align-items:center;justify-content:center}
 .voc-dialog{border:1px solid var(--border);border-radius:12px;padding:20px;width:min(440px,92vw);
  background:var(--card);color:var(--text);max-height:85vh;overflow:auto}
 .voc-dialog::backdrop{background:rgba(0,0,0,.45)}
@@ -210,7 +210,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
       </div>
     </div>
     
-    <button type="button" id="analysisOpenBtn" class="analysis-open" onclick="showLearningAnalysis()">Analyse</button>
+    <button type="button" id="analysisOpenBtn" class="analysis-open" onclick="showLearningAnalysis()" title="Lernanalyse öffnen" aria-label="Lernanalyse öffnen"><span aria-hidden="true">▥</span></button>
 
     <hr style="border: none; border-top: 1px solid var(--border); margin: 12px 0;">
 

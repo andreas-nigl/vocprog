@@ -414,10 +414,8 @@
       let newVocabs = parsedResponse.items || parsedResponse;
       if (!Array.isArray(newVocabs) && parsedResponse.items) newVocabs = parsedResponse.items;
 
-      if (parsedResponse.detected_language_code) {
-        document.getElementById('targetLang').value = parsedResponse.detected_language_code;
-        localStorage.setItem('vocab_trainer_current_lang', parsedResponse.detected_language_code);
-        loadFromLocalStorage(); 
+      if (parsedResponse.detected_language_code && parsedResponse.detected_language_code !== targetLangSelect.value) {
+        throw new Error("Die erkannte Sprache stimmt nicht mit dem ausgewählten Buch überein. Bilder bleiben für eine erneute Zuordnung erhalten.");
       }
 
       let addedCount = mergeVocabularies(newVocabs);
@@ -594,7 +592,7 @@
     startSelect.innerHTML = '';
     endSelect.innerHTML = '';
     
-    const targetList = filteredVocabList.length > 0 ? filteredVocabList : vocabList;
+    const targetList = filteredVocabList;
     
     targetList.forEach((item, index) => {
       const optText = `[${item.refVocab || 'S?'}] ${item.foreign} – ${item.german}`;
@@ -665,7 +663,7 @@
     if (isNaN(start) || isNaN(end)) return alert('Bitte wähle gültige Start- und Stopp-Vokabeln aus.');
     if (start > end) return alert('Die Start-Vokabel muss vor der Stopp-Vokabel liegen.');
     
-    const activeList = filteredVocabList.length > 0 ? filteredVocabList : vocabList;
+    const activeList = filteredVocabList;
     const selectedSlice = activeList.slice(start, end + 1);
 
     if (mode === 'words') {

@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Vokabel-Scanner & Trainer</title>
+  <title>Vokabel-Scanner & Trainer · Testversion 0.2</title>
+  <link rel="stylesheet" href="vocprog-enhancements.css">
   
   <!-- PWA & iOS Meta Tags -->
   <link rel="manifest" href="manifest.json">
@@ -129,6 +130,8 @@
     </select>
   </div>
 
+  <div class="card" id="profileCard"><div class="profile-row"><span id="profileStatus">Lernprofil</span><select id="profilePicker" onchange="setLearningProfile(this.value)"><option>Andreas</option><option>Niklas</option></select></div></div>
+
   <div class="card" id="scanCard">
     <h2>2. Buchseiten & Datenverwaltung</h2>
     
@@ -136,16 +139,17 @@
       📖 Vorhandene Seiten: Keinen Speicherstand gefunden
     </div>
 
+    <hr style="border:none;border-top:1px solid var(--border);margin:12px 0;">
     <div class="gallery" id="imageGallery"></div>
     
     <div class="btn-group" style="margin-bottom: 12px;">
       <div class="file-btn-wrapper">
-        <button type="button">📸 Kamera</button>
-        <input type="file" id="cameraInput" accept="image/*" capture="environment">
+        <button type="button" id="cameraPickerBtn" onclick="openBookPicker(\'camera\')">📸 Kamera</button>
+        <input type="file" hidden id="cameraInput" accept="image/*" capture="environment">
       </div>
       <div class="file-btn-wrapper">
-        <button type="button">📂 Galerie</button>
-        <input type="file" id="galleryInput" accept="image/*" multiple>
+        <button type="button" id="galleryPickerBtn" onclick="openBookPicker(\'gallery\')">📂 Galerie</button>
+        <input type="file" hidden id="galleryInput" accept="image/*" multiple>
       </div>
     </div>
 
@@ -166,6 +170,8 @@
       </div>
     </div>
     
+    <button type="button" id="analysisOpenBtn" class="analysis-open" onclick="showLearningAnalysis()">Analyse</button>
+
     <hr style="border: none; border-top: 1px solid var(--border); margin: 12px 0;">
 
     <button class="danger" style="margin-bottom: 0; font-size: 0.85rem; padding: 10px;" onclick="clearCurrentLangData()">🗑️ Speicher für aktuelle Sprache löschen</button>
@@ -174,8 +180,9 @@
   <div class="card hidden" id="rangeCard">
     <h2>3. Lernbereich & Modus</h2>
     
-    <label>Verfügbare Seiten</label>
-    <input type="text" id="pageRangeInput" placeholder="z.B. 190-193" oninput="filterVocabByPages()">
+    <label>Verfügbare Bücher</label>
+    <select id="bookSelect" onchange="pickLearningBook()"></select>
+    <input type="hidden" id="pageRangeInput" oninput="filterVocabByPages()">
     
     <label>Erste Vokabel (Start)</label>
     <select id="startVocab"></select>
@@ -196,7 +203,7 @@
     </select>
     
     <label><input type="checkbox" id="randomize" style="width: auto; margin-right: 6px;" checked> Zufällige Reihenfolge</label>
-    <button onclick="startTraining()">▶ Abfrage starten</button>
+    <button onclick="startTraining(event)">▶ Abfrage starten</button>
   </div>
 
   <div class="trainer-card hidden" id="trainerCard">
@@ -208,12 +215,14 @@
       <div class="item-text" id="promptText">Frage...</div>
       <button class="icon-btn" title="Vorlesen" onclick="playAudio('prompt')">🔊</button>
     </div>
+    <div class="answer-entry"><input id="answerInput" autocomplete="off" placeholder="Übersetzung eingeben …" onkeydown="checkTypedAnswer(event)"><button type="button" class="icon-btn" title="Spracheingabe" onclick="startSpeechRecognition()">🎤</button></div>
+    <div id="answerFeedback" aria-live="polite"></div>
     <div class="target-box">
       <button class="icon-btn" id="toggleEyeBtn" title="Aufdecken/Verstecken" onclick="toggleMask()">👁️</button>
       <div class="item-text masked" id="targetText" style="padding: 0 10px;">Antwort...</div>
       <div style="display: flex; gap: 4px;">
         <button class="icon-btn" title="Vorlesen" onclick="playAudio('target')">🔊</button>
-        <button class="icon-btn" title="Spracheingabe" onclick="startSpeechRecognition()">🎤</button>
+
       </div>
     </div>
     <div id="refText"></div>
@@ -438,6 +447,7 @@
       if (!foreignStr && !germanStr) return;
 
       const isDuplicate = vocabList.some(v => 
+        v.bookId === item.bookId &&
         String(v.page).trim() === pageStr &&
         String(v.foreign).trim().toLowerCase() === foreignStr.toLowerCase() &&
         String(v.german).trim().toLowerCase() === germanStr.toLowerCase()
@@ -446,6 +456,9 @@
       if (!isDuplicate) {
         vocabList.push({
           page: pageStr,
+          id: item.id,
+          bookId: item.bookId,
+          updatedAt: item.updatedAt,
           foreign: foreignStr,
           german: germanStr,
           sentence_foreign: item.sentence_foreign || "",
@@ -643,7 +656,7 @@
     }
   }
 
-  async function startTraining() {
+  async function startTraining(event) {
     const start = parseInt(document.getElementById('startVocab').value);
     const end = parseInt(document.getElementById('endVocab').value);
     const mode = document.getElementById('studyMode').value;
@@ -661,7 +674,7 @@
           target: v.foreign, 
           pLang: 'de-DE', 
           tLang: document.getElementById('targetLang').value,
-          ref: v.refVocab
+          ref: v.refVocab, sourceId: v.id, bookId: v.bookId, page: v.page, kind: "words"
       }));
     } else if (mode === 'book_sentences') {
       trainingItems = selectedSlice.filter(v => v.sentence_foreign && v.sentence_foreign.length > 2).map(v => ({
@@ -669,7 +682,7 @@
         target: v.sentence_foreign,
         pLang: 'de-DE',
         tLang: document.getElementById('targetLang').value,
-        ref: v.refSentence
+        ref: v.refSentence, sourceId: v.id, bookId: v.bookId, page: v.page, kind: "sentences"
       }));
     } else if (mode === 'ai_combined') {
       const btn = event.target;
@@ -694,7 +707,7 @@
             target: item.prompt,
             pLang: item.tLang,
             tLang: item.pLang,
-            ref: item.ref
+            ref: item.ref, sourceId: item.sourceId, bookId: item.bookId, page: item.page, kind: item.kind
           }));
         }
         if (isRandom) {
@@ -842,7 +855,7 @@
     let rawText = type === 'prompt' ? item.prompt : item.target;
     let tempDiv = document.createElement('div');
     tempDiv.innerHTML = rawText;
-    let cleanText = tempDiv.textContent || tempDiv.innerText || "";
+    let cleanText = cleanSpokenText(tempDiv.textContent || tempDiv.innerText || "");
 
     let lang = type === 'prompt' ? item.pLang : item.tLang;
     window.speechSynthesis.cancel();
@@ -870,5 +883,14 @@
     };
   }
 </script>
+
+<dialog id="bookPicker" class="voc-dialog"><h3>Buch für neue Seiten auswählen</h3>
+<label>Vorhandenes Buch</label><select id="pickerBook"></select>
+<input id="pickerNewName" placeholder="Neuen Buchnamen eingeben" hidden>
+<div class="dialog-buttons"><button type="button" onclick="commitBookPicker()">Weiter</button><button type="button" onclick="document.getElementById('bookPicker').close()">Abbrechen</button></div></dialog>
+<dialog id="analysisDialog" class="voc-dialog wide"><div class="dialog-head"><h2>Lernanalyse</h2><button type="button" onclick="document.getElementById('analysisDialog').close()">Schließen</button></div><div id="analysisContent"></div></dialog>
+<dialog id="cloudAuthDialog" class="voc-dialog"><h3>Supabase-Anmeldung</h3><label>E-Mail</label><input id="authEmail" type="email" autocomplete="username"><label>Passwort</label><input id="authPassword" type="password" autocomplete="current-password"><p id="cloudAuthStatus"></p><div class="dialog-buttons"><button type="button" onclick="loginVocprog()">Anmelden</button><button type="button" onclick="document.getElementById('cloudAuthDialog').close()">Schließen</button></div></dialog>
+<div class="voc-footer"><span id="connectionStatus">Online · Sync: noch nie · nur lokal</span><div><button type="button" onclick="showCloudLogin()">Cloud-Login</button><button type="button" onclick="syncVocprog()">Sync</button><button type="button" onclick="logoutVocprog()">Logout</button></div><small>Testversion 0.2 · 05.11.2026</small></div>
+<script src="vocprog-enhancements.js"></script>
 </body>
 </html>

@@ -181,7 +181,7 @@
     const book=books.find(b=>b.id===chosenBook);
     if(!book)return;
     const target=vocabList.filter(v=>v.bookId===book.id);
-    get("pageRangeInput").value=ranges(target.map(x=>x.page)).replace("–","");
+    get("pageRangeInput").value=formatPageRanges([...new Set(target.map(x=>Number(x.page)).filter(Number.isFinite))].sort((a,b)=>a-b));
     filterVocabByPages();
     get("rangeCard").classList.toggle("hidden",target.length===0);
   };
@@ -210,7 +210,7 @@
   const oldMerge=mergeVocabularies;
   mergeVocabularies=function(incoming){
     const tagged=incoming.map(v=>({...v,bookId:v.bookId||chosenBook,id:v.id||id(),updatedAt:v.updatedAt||new Date().toISOString()}));
-    const before=new Set(vocabList.map(v=>v.id));
+    
     // Avoid mixing different books that happen to contain identical words and page numbers.
     const filtered=tagged.filter(v=>!vocabList.some(x=>x.bookId===v.bookId&&String(x.page)===String(v.page)&&
       String(x.foreign).trim().toLowerCase()===String(v.foreign).trim().toLowerCase()&&
@@ -332,8 +332,7 @@
   startTraining=async function(e){
     if(get("bookSelect")?.value)chooseBook(get("bookSelect").value);
     // Avoid original implicit window.event bug for Gemini mix button.
-    window.event=e||window.event;
-    await oldStart();
+    await oldStart(e);
   };
   const oldGenerate=generateAllCombinedSentences;
   generateAllCombinedSentences=async function(slice,btn,label,random){
@@ -465,7 +464,7 @@
       method:"POST",headers:{"apikey":PUB_KEY,"Content-Type":"application/json"},
       body:JSON.stringify({refresh_token:auth.refresh_token})});
     if(!res.ok){auth=null;localStorage.removeItem(STORE+"_auth");return false;}
-    auth=await res.json();save(STORE+"_auth",auth);return true;
+    auth=await res.json();auth.expires_at=Math.floor(Date.now()/1000)+(auth.expires_in||3600);save(STORE+"_auth",auth);return true;
   }
   async function login(email,password){
     const res=await fetch(DB_URL+"/auth/v1/token?grant_type=password",{
@@ -473,7 +472,7 @@
       body:JSON.stringify({email,password})});
     const data=await res.json();
     if(!res.ok)throw Error(data.msg||data.error_description||data.error||"Anmeldung fehlgeschlagen");
-    auth=data;save(STORE+"_auth",auth);await syncNow();
+    auth=data;auth.expires_at=Math.floor(Date.now()/1000)+(data.expires_in||3600);save(STORE+"_auth",auth);await syncNow();
   }
   window.loginVocprog=async function(){
     const label=get("cloudAuthStatus");label.textContent="Anmeldung läuft …";

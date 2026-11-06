@@ -11,6 +11,19 @@
 - Wiederverwendbare Migrationsvorlage: [docs/TEMPLATE_GITHUB_SUPABASE_MIGRATION.md](docs/TEMPLATE_GITHUB_SUPABASE_MIGRATION.md).
 - UI-Abnahmekriterien: [docs/VOC_UI_UEBERGABE.md](docs/VOC_UI_UEBERGABE.md).
 
+## Prüfprotokoll 2026-11-06 – UI-Nachbesserung
+- 22 statische Prüfungen bestanden (inklusive Syntax aller Inline-Skripte,
+  Steuerung der Kamera- und Galerie-Buchauswahl, drei Abschnittsnamen,
+  Niklas-Standard, 15-Minuten-Sync, Sessionlogin und CSS-Regeln).
+- Sechs App-Dateien in `vocprog-test/main` anhand ihrer Git-Blob-SHAs
+  mit dem Entwicklungsbranch abgeglichen: **6/6 identisch**.
+- Produktives `vocprog/main/index.html` weiterhin unverändert
+  gegenüber `backup-20261105-pre-supabase`.
+- Statische Tests sind kein Ersatz für echte Browser-/Mobil- und Supabase-
+  Anmeldungstests; diese bleiben bis zur Abnahme offen.
+- Bei Pages mit älterem Service Worker: Seite neu laden. SW-Version v3
+  nutzt Network-first für denselben Origin und Cache-Fallback für Offline.
+
 ## Änderungsblock 2026-11-06 – Test-UI (freigegeben)
 - Abschnitt 1 heißt **1. API**. Fremdsprache wird nicht mehr global angezeigt;
   sie bleibt intern je Buch erhalten und wird beim Anlegen eines neuen Buchs im Scan-Dialog gewählt.

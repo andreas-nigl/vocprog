@@ -11,6 +11,25 @@
 - Wiederverwendbare Migrationsvorlage: [docs/TEMPLATE_GITHUB_SUPABASE_MIGRATION.md](docs/TEMPLATE_GITHUB_SUPABASE_MIGRATION.md).
 - UI-Abnahmekriterien: [docs/VOC_UI_UEBERGABE.md](docs/VOC_UI_UEBERGABE.md).
 
+## Änderungsblock 2026-11-06 – Test-UI (freigegeben)
+- Abschnitt 1 heißt **1. API**. Fremdsprache wird nicht mehr global angezeigt;
+  sie bleibt intern je Buch erhalten und wird beim Anlegen eines neuen Buchs im Scan-Dialog gewählt.
+- Abschnitt 2 heißt **2. Datenverwaltung**. Die Nutzerwahl steht als vollbreites Dropdown
+  direkt über der Bücherliste (Niklas als Standard, bisher gespeicherte Nutzerwahl wird bewahrt).
+  Die Buchzeile ist weiterhin anklickbar zum Umbenennen; kein Stift/Piktogramm.
+- Abschnitt 3 heißt **3. Lernbereich**.
+- Der bisherige JavaScript-Fehler der Kamera-/Galerie-Buttons beruhte auf
+  falsch escaped Anführungszeichen in den `onclick`-Attributen. Korrigiert.
+- Während einer Abfrage erscheint die Nutzerwahl nicht, weil sie nur in Abschnitt 2 liegt.
+- Trainer: Mikrofon etwas angehoben, Feedback-Zwischenraum verkleinert,
+  Lösungsfeld bis zur rechten Button-Spalte verbreitert.
+- Cloud: Nach einmaliger Anmeldung je Gerät gespeicherte Auth-Sitzung mit Refresh
+  und Sync beim Start, nach Datenänderungen und alle 15 Minuten online.
+  Dauerhafte Sync/Login/Logout-Buttons entfallen. Solange keine Sitzung besteht,
+  zeigt die Statuszeile eine Verbindungsoption. Kein Passwort im Quelltext.
+- Noch keine verifizierten interaktiven Browser-/Mobil-/Supabase-Livetests.
+- Weiterhin nur Entwicklungsbranch + separate Testseite; Produktion `main` unverändert.
+
 ## Aktueller Entwicklungsstand: Staging 0.2 (2026-11-05)
 - Quelle: `develop/offline-supabase-20261105`; `main` weiterhin identisch mit Backup-Branch.
 - Realisiert im Staging-Code: Buch-Migration, Buchauswahl vor Scan, Buch-Dropdown

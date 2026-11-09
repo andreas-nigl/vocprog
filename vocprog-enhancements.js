@@ -449,7 +449,7 @@
   const oldExport=exportDataToFile;
   exportDataToFile=function(){
     const data={schemaVersion:2,exportedAt:new Date().toISOString(),
-      books, vocabulary:allVocab(),specialSentences:specials,practiceEvents:history};
+      books, vocabulary:allVocab(),specialSentences:specials,practiceEvents:history,deletedRecords:tombstones};
     const file=new Blob([JSON.stringify(data,null,2)],{type:"text/plain;charset=utf-8"});
     const url=URL.createObjectURL(file),a=document.createElement("a");
     const d=new Date(),pad=n=>String(n).padStart(2,"0");
@@ -481,6 +481,10 @@
       for(const x of data.specialSentences||[])if(!specialIds.has(x.id))specials.push(x);
       const eventIds=new Set(history.map(x=>x.id));
       for(const x of data.practiceEvents||[])if(!eventIds.has(x.id))history.push(x);
+      for(const t of data.deletedRecords||[]){
+        if(!t.record_id||!t.payload?.deleted)continue;
+        if(!tombstones.some(x=>x.record_id===t.record_id))tombstones.push(t);
+      }
       persistMetadata();chooseBook(chosenBook);alert("Vollständige Sicherung eingelesen.");
     }).catch(e=>alert("Import fehlgeschlagen: "+e.message)).finally(()=>{ev.target.value="";});
   };
@@ -575,6 +579,7 @@
     for(const v of allVocab())items.push({record_id:"vocab:"+v.id,record_type:"vocab",payload:v,updated_at:v.updatedAt});
     for(const x of specials)items.push({record_id:"special:"+x.id,record_type:"special",payload:x,updated_at:x.updatedAt});
     for(const x of history)items.push({record_id:"event:"+x.id,record_type:"event",payload:x,updated_at:x.at});
+    for(const t of tombstones)items.push(t);
     return items;
   }
   const newer=(left,right)=>Date.parse(left||0)>Date.parse(right||0);
@@ -585,6 +590,28 @@
       const old=local.get(row.record_id);
       if(old&&!newer(row.updated_at,old.updated_at))continue;
       const payload=row.payload;
+      if(payload?.deleted===true){
+        const oldDelete=tombstones.find(t=>t.record_id===row.record_id);
+        if(!oldDelete||newer(row.updated_at,oldDelete.updated_at)){
+          tombstones=tombstones.filter(t=>t.record_id!==row.record_id);
+          tombstones.push(row);
+        }
+        if(row.record_type==="book"){
+          books=books.filter(b=>b.id!==payload.id);
+        }else if(row.record_type==="vocab"){
+          for(const key of Object.keys(localStorage).filter(k=>k.startsWith("vocab_trainer_data_"))){
+            save(key,read(key,[]).filter(x=>x.id!==payload.id));
+          }
+        }else if(row.record_type==="special"){
+          specials=specials.filter(x=>x.id!==payload.id);
+        }else if(row.record_type==="event"){
+          history=history.filter(x=>x.id!==payload.id);
+        }
+        changed=true;
+        continue;
+      }
+      const deletedBookIds=new Set(tombstones.filter(t=>t.record_type==="book").map(t=>t.payload.id));
+      if(deletedBookIds.has(payload.bookId)||deletedBookIds.has(payload.id))continue;
       if(row.record_type==="book"){
         const i=books.findIndex(x=>x.id===payload.id);
         if(i>=0)books[i]=payload;else books.push(payload);
@@ -602,7 +629,7 @@
       }
       changed=true;
     }
-    if(changed){save(STORE+"_books",books);save(STORE+"_special",specials);save(STORE+"_events",history);loadFromLocalStorage();}
+    if(changed){save(STORE+"_books",books);save(STORE+"_special",specials);save(STORE+"_events",history);save(STORE+"_tombstones",tombstones);loadFromLocalStorage();}
   }
   async function authFetch(path,options={}){
     if(auth?.expires_at&&auth.expires_at<Math.floor(Date.now()/1000)+60)await refreshToken();

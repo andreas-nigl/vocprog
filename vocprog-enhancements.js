@@ -370,18 +370,24 @@
     input.value="";input.className="";feedback.textContent="";
     const item=trainingItems[currentIndex];
     lastShownEvent=logEvent("shown",item);
-    setTimeout(()=>input.focus(),0);
+    document.body.classList.add("voc-training-active");
+    if(window.matchMedia("(min-width: 641px) and (pointer: fine)").matches)setTimeout(()=>input.focus(),0);
   };
   function simplified(text){
     return cleanSpokenText(text).normalize("NFKC").toLocaleLowerCase()
       .replace(/[.!?,;:]/g,"").replace(/\s+/g," ").trim();
   }
   window.checkTypedAnswer=function(e){
-    if(e.key!=="Enter")return;
+    if(e.key!=="Enter"||e.isComposing)return;
     e.preventDefault();
+    if(analyzedThisCard||!get("answerInput").value.trim()){nextCard();return;}
+    window.gradeCurrentAnswer();
+  };
+  window.gradeCurrentAnswer=function(){
+    if(analyzedThisCard)return;
     const input=get("answerInput"),item=trainingItems[currentIndex];
     const given=input.value.trim();
-    if(!given||analyzedThisCard)return;
+    if(!given)return;
     const alternatives=String(item.target||"").split(/\s*(?:\/|;|\bor\b)\s*/i);
     const correct=alternatives.some(s=>simplified(s)===simplified(given));
     analyzedThisCard=true;
@@ -389,6 +395,24 @@
     get("answerFeedback").textContent=correct?"Richtig":"Nicht richtig – Lösung aufgedeckt";
     get("targetText").classList.remove("masked");
     logEvent("graded",item,{correct,answer:given});
+  };
+  window.advanceOrGrade=function(){
+    const input=get("answerInput");
+    if(!analyzedThisCard&&input.value.trim()){window.gradeCurrentAnswer();return;}
+    nextCard();
+  };
+  const originalNextCard=nextCard;
+  nextCard=function(){
+    if(!analyzedThisCard&&get("answerInput").value.trim()){
+      window.gradeCurrentAnswer();
+      return;
+    }
+    originalNextCard();
+  };
+  const originalExitTrainer=exitTrainer;
+  exitTrainer=function(){
+    originalExitTrainer();
+    document.body.classList.remove("voc-training-active");
   };
   // Original nextCard and prevCard invoke showCard, which logs every displayed question.
   const oldStart=startTraining;

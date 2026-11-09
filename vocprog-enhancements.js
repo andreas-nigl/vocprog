@@ -669,13 +669,16 @@
     clearTimeout(syncTimer);syncTimer=setTimeout(syncNow,1300);
   }
   function renderStatus(){
-    const stamp=lastSync?new Date(lastSync).toLocaleString("de-DE"):"noch nie";
+    const time=lastSync?new Date(lastSync):null;
+    const stamp=time&&!isNaN(time.getTime())?
+      new Intl.DateTimeFormat("de-DE",{day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false}).format(time):"–";
     const connected=!!auth?.access_token;
     const cloud=connected?(syncing?" · Synchronisierung läuft":" · Cloud verbunden"):" · Cloud noch nicht verbunden";
-    get("connectionStatus").textContent=(navigator.onLine?"Online":"Offline")+" · Letzte Synchronisation: "+stamp+cloud;
+    get("connectionStatus").textContent=(navigator.onLine?"Online":"Offline")+" · Sync "+stamp+cloud;
     get("connectCloudBtn").hidden=connected;
   }
   function onReady(){
+    document.body.classList.remove("voc-training-active");
     ensureMigration();
     get("profilePicker").value=currentProfile;
     if(chosenBook)chooseBook(chosenBook);else refreshBookChoices();

@@ -13,6 +13,7 @@
   let books = read(STORE+"_books",[]);
   let specials = read(STORE+"_special",[]);
   let history = read(STORE+"_events",[]);
+  let tombstones = read(STORE+"_tombstones",[]);
   let currentProfile = localStorage.getItem(STORE+"_profile") || "Niklas";
   let chosenBook = localStorage.getItem(STORE+"_book") || "";
   let chosenForScan = "";
@@ -76,7 +77,7 @@
     localStorage.setItem(STORE+"_book",chosenBook);
   }
   function persistMetadata(){
-    save(STORE+"_books",books);save(STORE+"_special",specials);save(STORE+"_events",history);
+    save(STORE+"_books",books);save(STORE+"_special",specials);save(STORE+"_events",history);save(STORE+"_tombstones",tombstones);
     localStorage.setItem(STORE+"_profile",currentProfile);
     localStorage.setItem(STORE+"_book",chosenBook);
     scheduleSync();
@@ -94,40 +95,74 @@
   }
   function renderBooks(){
     const el=get("scannedPagesBadge");if(!el)return;
-    el.innerHTML="";
-    if(!books.length){el.textContent="Vorhandene Bücher: Keine Daten vorhanden";return;}
-    books.forEach(b=>{
-      const line=document.createElement("button");
-      line.type="button";line.className="book-line";line.textContent=bookText(b);
-      line.title="Buch umbenennen";line.onclick=()=>{
-        const next=prompt("Buchname bearbeiten:",b.name);
-        if(next===null)return;
-        if(!next.trim())return alert("Ein Buchname ist erforderlich.");
-        b.name=next.trim();b.updatedAt=new Date().toISOString();persistMetadata();refreshBookChoices();
-      };
-      el.appendChild(line);
-    });
+    const selected=books.find(b=>b.id===chosenBook);
+    el.textContent=selected?bookText(selected):"Noch kein Buch vorhanden";
+    get("renameBookBtn").disabled=!selected;
+    get("deleteBookBtn").disabled=!selected;
   }
   function refreshBookChoices(){
-    renderBooks();
     const select=get("bookSelect");if(!select)return;
-    select.innerHTML="";
-    books.forEach(b=>select.add(new Option(bookText(b),b.id)));
-    if(!chosenBook||!books.some(b=>b.id===chosenBook)) chosenBook=books[0]?.id||"";
-    select.value=chosenBook;
+    select.replaceChildren();
+    for(const b of books)select.add(new Option(bookText(b),b.id));
+    if(!books.some(b=>b.id===chosenBook))chosenBook=books[0]?.id||"";
+    if(chosenBook)select.value=chosenBook;
+    renderBooks();
   }
+  window.renameSelectedBook=function(){
+    const b=books.find(x=>x.id===chosenBook);if(!b)return;
+    const name=prompt("Neuer Buchname:",b.name);
+    if(name===null)return;
+    if(!name.trim())return alert("Ein Buchname darf nicht leer sein.");
+    b.name=name.trim();b.updatedAt=new Date().toISOString();
+    persistMetadata();refreshBookChoices();
+  };
+  function markDeleted(type,entity,date){
+    const key=type+":"+entity.id;
+    const i=tombstones.findIndex(t=>t.record_id===key);
+    const obj={record_id:key,record_type:type,payload:{id:entity.id,deleted:true,updatedAt:date},updated_at:date};
+    if(i>=0)tombstones[i]=obj;else tombstones.push(obj);
+  }
+  function removeBookLocally(bookId,date){
+    const book=books.find(b=>b.id===bookId);
+    if(!book)return;
+    markDeleted("book",book,date);
+    books=books.filter(x=>x.id!==bookId);
+    for(const key of Object.keys(localStorage).filter(k=>k.startsWith("vocab_trainer_data_"))){
+      const arr=read(key,[]);
+      for(const v of arr.filter(x=>x.bookId===bookId))markDeleted("vocab",v,date);
+      save(key,arr.filter(x=>x.bookId!==bookId));
+    }
+    for(const v of specials.filter(x=>x.bookId===bookId))markDeleted("special",v,date);
+    for(const v of history.filter(x=>x.bookId===bookId))markDeleted("event",v,date);
+    specials=specials.filter(x=>x.bookId!==bookId);
+    history=history.filter(x=>x.bookId!==bookId);
+    chosenBook=books[0]?.id||"";
+    persistMetadata();
+    if(chosenBook)chooseBook(chosenBook);
+    else {vocabList=[];filteredVocabList=[];get("rangeCard").classList.add("hidden");refreshBookChoices();}
+  }
+  window.confirmSelectedBookDeletion=function(){
+    const book=books.find(b=>b.id===chosenBook);if(!book)return;
+    const count=allVocab().filter(x=>x.bookId===book.id).length;
+    const msg="Buch „"+book.name+"“ endgültig löschen?\\n\\n"+
+      count+" Vokabeln sowie alle zugehörigen Beispielsätze, KI-Sätze und Lernstatistiken "+
+      "werden lokal entfernt und bei der nächsten erfolgreichen Synchronisation auch "+
+      "auf anderen verbundenen Geräten gelöscht. Dieser Vorgang kann nur mit einer "+
+      "vorher exportierten Datensicherung rückgängig gemacht werden.";
+    if(!confirm(msg))return;
+    removeBookLocally(book.id,new Date().toISOString());
+  };
   function chooseBook(bookId, refresh=true){
     const book=books.find(b=>b.id===bookId);if(!book)return;
     chosenBook=book.id;
     localStorage.setItem(STORE+"_book",book.id);
-    get("targetLang").value=book.lang;
-    localStorage.setItem("vocab_trainer_current_lang",book.lang);
+    if(book.lang){get("targetLang").value=book.lang;localStorage.setItem("vocab_trainer_current_lang",book.lang);}
     if(refresh) loadFromLocalStorage();
     refreshBookChoices();
   }
   function addBook(lang,name){
     if(!name?.trim())return null;
-    const b={id:id(),name:name.trim(),lang:lang||get("targetLang").value,updatedAt:new Date().toISOString()};
+    const b={id:id(),name:name.trim(),lang:lang||"",updatedAt:new Date().toISOString()};
     books.push(b);persistMetadata();refreshBookChoices();return b;
   }
   window.openBookPicker=function(source){
@@ -138,10 +173,9 @@
     books.forEach(b=>dropdown.add(new Option(bookText(b),b.id)));
     dropdown.add(new Option("＋ Neues Buch anlegen","__new__"));
     dropdown.value=chosenBook||"__new__";
-    get("pickerNewName").value="";
+    get("pickerNewName").value="Muster";
     get("pickerNewFields").hidden=dropdown.value!=="__new__";
     dropdown.onchange=()=>get("pickerNewFields").hidden=dropdown.value!=="__new__";
-    get("pickerNewLanguage").value=get("targetLang").value;
     chosenForScan=source;
     modal.showModal();
   };
@@ -151,7 +185,7 @@
     if(dropdown.value==="__new__"){
       const name=get("pickerNewName").value.trim();
       if(!name)return alert("Bitte einen Buchnamen eingeben.");
-      b=addBook(get("pickerNewLanguage").value,name);
+      b=addBook("",name);
     }
     if(!b)return;
     chooseBook(b.id);

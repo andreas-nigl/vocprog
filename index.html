@@ -414,9 +414,10 @@
       let newVocabs = parsedResponse.items || parsedResponse;
       if (!Array.isArray(newVocabs) && parsedResponse.items) newVocabs = parsedResponse.items;
 
-      if (parsedResponse.detected_language_code && parsedResponse.detected_language_code !== targetLangSelect.value) {
-        throw new Error("Die erkannte Sprache stimmt nicht mit dem ausgewählten Buch überein. Bilder bleiben für eine erneute Zuordnung erhalten.");
+      if (!parsedResponse.detected_language_code) {
+        throw new Error("Die Fremdsprache konnte nicht sicher erkannt werden. Scanbilder bleiben erhalten.");
       }
+      acceptScannedLanguage(parsedResponse.detected_language_code);
 
       let addedCount = mergeVocabularies(newVocabs);
 

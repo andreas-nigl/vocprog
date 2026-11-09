@@ -107,6 +107,26 @@
   Synchronisation einschließlich Löschereignis, Offline-Neustart,
   Backup-Import. Diese Tests sind noch nicht live durchgeführt.
 
+## Build- und Prüfstand 2026-11-09
+- Testseite: https://andreas-nigl.github.io/vocprog-test/
+  (GitHub-Dateien aktualisiert; HTTP/GUI dieser Adresse nicht unabhängig verifiziert).
+- Testrepo `andreas-nigl/vocprog-test`, Branch `main`: 6/6 App-Dateien
+  byte-identisch zum Entwicklungsbranch; letzter beobachteter GitHub-Commit
+  für `index.html`: `7165a67265c14c871eb94e4175880aaeb3ad6bfd`.
+- Produktives `vocprog/main/index.html` weiterhin exakt gleicher Blob-SHA
+  wie `backup-20261105-pre-supabase`.
+- JavaScript-Syntaxprüfungen bestanden; 6/6 isolierte Logiktests für
+  Enter/Weiter bestanden, 10/10 statische neue UI-Kriterien erfüllt.
+- Keine echte browsergesteuerte E2E-Prüfung und keine RLS-/Supabase-
+  Synchronisationsprüfung mit zwei Geräten möglich; keine Nutzerabnahme.
+- GitHub↔Supabase Production Deployment weiterhin aus; keine SQL-Migration.
+- Offline-Standalone aus vorherigem Entwicklungsstand **nicht neu gebaut**;
+  der Online-Teststand ist die aktuelle Version. Standalone nur auf Wunsch.
+- Offene Punkte für Abnahme: Buchanlage `Muster` und Sprachdetektion
+  (Mehrsprachigkeit/Gemini-Fehler), Löschvermerke mit mehreren Geräten,
+  App-Neustart offline, Cache-Update, Login-Session auf zwei Geräten,
+  Import nach Löschung, Mobil-Tastaturverhalten und exakte UI-Ausgestaltung.
+
 ## Versionierung
 - Unverändertes Original: Branch `backup-20261105-pre-supabase`.
 - Produktiver `main` bleibt unverändert.

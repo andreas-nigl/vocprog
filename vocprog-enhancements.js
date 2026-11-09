@@ -192,6 +192,17 @@
     get("bookPicker").close();
     get(chosenForScan==="camera"?"cameraInput":"galleryInput").click();
   };
+  window.acceptScannedLanguage=function(language){
+    if(!Object.prototype.hasOwnProperty.call(LANGS,language))throw Error("Unbekannte oder nicht unterstützte Sprache: "+language);
+    const b=books.find(x=>x.id===chosenBook);
+    if(!b)throw Error("Vor dem Scannen bitte ein Buch auswählen.");
+    if(b.lang&&b.lang!==language)throw Error("Buch „"+b.name+"“ enthält bereits "+(LANGS[b.lang]||b.lang)+". Die neu erkannten Seiten sind "+LANGS[language]+". Bitte ein eigenes Buch anlegen.");
+    if(!b.lang){b.lang=language;b.updatedAt=new Date().toISOString();persistMetadata();}
+    get("targetLang").value=language;
+    localStorage.setItem("vocab_trainer_current_lang",language);
+    loadFromLocalStorage();
+    refreshBookChoices();
+  };
   window.pickLearningBook=function(){chooseBook(get("bookSelect").value)};
   window.setLearningProfile=function(v){
     currentProfile=v;persistMetadata();get("profilePicker").value=v;

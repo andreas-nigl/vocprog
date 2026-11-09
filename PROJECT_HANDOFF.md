@@ -63,6 +63,50 @@
 - Nutzerkonten: **ein** Supabase-Login mit zwei internen Lernprofilen;
   Profiltrennung ist nicht dieselbe wie getrennte Authentifizierung.
 
+## Architekturentscheidung 2026-11-09 – Identität und Synchronisation
+- Primärquellen: Supabase Anonymous Sign-Ins, User Sessions, RLS und
+  GitHub Contents API (öffentlich recherchiert am 09.11.2026).
+- **Anonyme Auth für Familien-Synchronisation abgelehnt:** anonyme
+  Konten verlieren nach Löschung der Browserdaten oder auf anderem Gerät
+  ohne verknüpfte Identität ihren Zugriff. Daher keine verlässliche
+  Wiederherstellung / gemeinsamer Datensatz.
+- **GitHub-JSON als laufende Datenbank abgelehnt:** Browser benötigt
+  Repository-Contents-Schreibberechtigung; ein in HTML hinterlegtes Token
+  wäre öffentlich. Ebenso entstehen Konflikte zwischen Geräten.
+- Verbleibende Architektur: GitHub Pages/PWA + lokaler Speicher +
+  Supabase-RLS über **ein gemeinsames Familienkonto**, einmaliger Login
+  je Gerät und anschließend automatische Session-Erneuerung; kein
+  fest im JS hinterlegtes Passwort. Niklas/Andreas bleiben interne
+  Lernprofile. Publizierter Supabase Publishable Key ist kein Geheimnis.
+- GitHub↔Supabase-Integrationsoption "Deploy to Production" bleibt aus.
+  Keine Datenbankmigration im Zuge dieses Codeblocks durchgeführt.
+
+## Test-UI 0.3: 2026-11-09
+- Sprache beim erfolgreichen KI-Scan automatisch erkennen und am Buch
+  speichern; bestehende Buchsprache gegen neuen Scan prüfen.
+- Neues Buch mit vorbelegtem Namen **Muster**, ohne Sprach-Dropdown.
+- Buch-Dropdown in 2. Datenverwaltung unter Nutzer; daneben Stift und rotes X,
+  Löschen mit Bestätigung und Hinweis auf Folgen.
+- Die alte sprachbasierte Löschschaltfläche ist aus dem UI entfernt.
+- Buchauswahl aus 3. Lernbereich entfernt; Übungsauswahl folgt dem
+  im Bereich 2 gewählten Buch.
+- Lösch-Tombstones in lokalem Speicher und Cloud-Records pro Buch,
+  Vokabel, Spezial-Satz und Ereignis; Synchronisationskonflikte und
+  Offline-Wiederherstellung weiterhin im Echttest prüfen.
+- Enter/Weiter: leer überspringt, erste gefüllte Eingabe prüft,
+  weitere Aktion blättert. Mobil kein Fokus beim Kartenstart,
+  nach Diktat Fokus; Desktop Autofokus.
+- Status: kompaktes "Sync DD.MM.YY HH:mm", zentriert mit Version;
+  Trainer blendet Status, Version, Login und Analyse aus.
+  Mobile Analyse unter der Versionsnummer rechts.
+- Favicon: weißer Hintergrund, royalblaue Sprechblase und VOC-Buchstaben;
+  nur im Browser-Tab, nicht als App-Inhalt.
+- Änderungen ausschließlich in Entwicklungsbranch und Testrepository;
+  **produktives `main` nicht anfassen**.
+- Abnahme ausstehend: Browser-UI, Kamera-Scan, Datenbank-RLS, Multi-Geräte-
+  Synchronisation einschließlich Löschereignis, Offline-Neustart,
+  Backup-Import. Diese Tests sind noch nicht live durchgeführt.
+
 ## Versionierung
 - Unverändertes Original: Branch `backup-20261105-pre-supabase`.
 - Produktiver `main` bleibt unverändert.

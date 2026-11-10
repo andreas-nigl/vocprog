@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+<rect width="128" height="128" rx="20" fill="#ffffff"/>
+<path d="M24 98 13 116l5-30C10 77 7 66 7 54 7 25 31 12 65 12c35 0 57 18 57 47s-26 48-61 48c-13 0-25-3-37-9Z" fill="#ffffff" stroke="#0647f4" stroke-width="8" stroke-linejoin="round"/>
+<text x="65" y="72" fill="#0647f4" font-family="Arial,Helvetica,sans-serif" font-size="39" font-weight="900" letter-spacing="-2" text-anchor="middle">VOC</text>
+</svg>

@@ -7,6 +7,7 @@
   
   <!-- PWA & iOS Meta Tags -->
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Vokabeln">
@@ -115,7 +116,7 @@
 
 <div class="container">
   <div class="card" id="configCard">
-    <h2>1. Google Gemini API & Sprache</h2>
+    <h2>1. API & Sprache</h2>
     <label>Dein API Key (wird lokal gespeichert)</label>
     <input type="password" id="apiKey" placeholder="AIzaSy...">
     <label>Fremdsprache</label>
@@ -130,7 +131,7 @@
   </div>
 
   <div class="card" id="scanCard">
-    <h2>2. Buchseiten & Datenverwaltung</h2>
+    <h2>2. Datenverwaltung</h2>
     
     <div class="status-badge" id="scannedPagesBadge">
       📖 Vorhandene Seiten: Keinen Speicherstand gefunden
@@ -172,7 +173,7 @@
   </div>
 
   <div class="card hidden" id="rangeCard">
-    <h2>3. Lernbereich & Modus</h2>
+    <h2>3. Lernbereich</h2>
     
     <label>Verfügbare Seiten</label>
     <input type="text" id="pageRangeInput" placeholder="z.B. 190-193" oninput="filterVocabByPages()">

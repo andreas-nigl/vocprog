@@ -127,6 +127,44 @@
   App-Neustart offline, Cache-Update, Login-Session auf zwei Geräten,
   Import nach Löschung, Mobil-Tastaturverhalten und exakte UI-Ausgestaltung.
 
+## Architekturwechsel 2026-11-10 – freigegeben, Testversion 0.4
+- Nutzerfreigabe: gemeinsamer **öffentlicher** Datensatz ohne Konto/Login,
+  keine Profilwahl oder gespeicherte Benutzernamen. Bücher, Vokabeln,
+  generierte KI-Sätze und gesamter Lernverlauf über alle Geräte synchron.
+- Supabase Free verursacht keine nutzungsabhängigen Rechnungen, solange
+  Organisation im Free-Tarif verbleibt. Quotenüberschreitung kann
+  Beschränkungen auslösen; nur bewusster Wechsel in Paid löst Kosten aus
+  (Supabase Billing FAQ, Stand 2026-11-10).
+- Neue eigenständige Tabelle `public.vocprog_public_records` mit
+  Lese-/Schreibrechten für DB-Rolle `anon`. SQL unter
+  `supabase/migrations/20261110_000002_vocprog_public_records.sql`.
+  **Noch nicht produktiv in Supabase ausgeführt**; die bisherige private
+  `vocprog_records` wird nicht geöffnet, verändert oder gelöscht.
+- Sicherheitseinschränkung (bewusst akzeptiert): Jeder mit dem öffentlichen
+  Projekt-Publishable-Key kann Datensätze lesen, schreiben und
+  manipulieren; kein Schutz gegen fremde Löschvermerke, Spam, Speichervoll-
+  lauf oder böswillige Zeitstempel. Kein Benutzerkonto, damit keine
+  Identitätsprüfung möglich. Keine Secrets in HTML.
+- Cloud-Sync: beim Start, nach Änderungen und alle 15 Minuten;
+  Offline-Daten werden lokal gehalten. Testbetrieb erst nach SQL.
+- Bestand: Profile aus lokalen Ereignissen vor Veröffentlichung entfernt.
+  Vorherige lokale Token-/Profil-Metadaten werden entfernt; Altbestand in
+  privater Supabase-Tabelle bleibt unverändert.
+- Neu: KI erkennt auf gescannten französischen Verbseiten zusätzlich
+  gedruckte Konjugationen, nur tatsächlich sichtbare Zeitformen.
+  Pro Ursprungsbuch ein Buch `<Name> – Konjugationen`, mit
+  Infinitiv, Tempus, Seite, Personengruppe, Französisch und Deutsch.
+  Gruppierung: je, tu, il/elle/on, nous, vous, ils/elles;
+  deutsche Übersetzung nach Bedeutung, z. B. er/sie/man.
+  Vorhandene Vokabeln bleiben im Quellbuch.
+- Abnahme: SQL manuell ausführen, erster Start auf zwei Geräten,
+  RLS öffentliche Endpunkte, Sync ohne Login, Konjugationsscan mit
+  realen Französischseiten, Dubletten, Profilbereinigung, Löschung,
+  Offline und Backup prüfen. Keine Nutzerabnahme der Version 0.4.
+- Test-URL `https://andreas-nigl.github.io/vocprog-test/`;
+  Produktivbranch `vocprog/main` bleibt unverändert. Weitere
+  GitHub-/Supabase-Integrationsmigrationen nicht automatisch deployen.
+
 ## Versionierung
 - Unverändertes Original: Branch `backup-20261105-pre-supabase`.
 - Produktiver `main` bleibt unverändert.

@@ -18,7 +18,6 @@
   let chosenBook = localStorage.getItem(STORE+"_book") || "";
   let chosenForScan = "";
   let lastSync = localStorage.getItem(STORE+"_synced") || "";
-  let auth = read(STORE+"_auth",null);
   let analysisInterrupted = false;
   let analyzedThisCard = false;
   let lastShownEvent = null;
@@ -480,8 +479,10 @@
   }
   const oldExport=exportDataToFile;
   exportDataToFile=function(){
+    const anonymousEvents=history.map(({profile,...event})=>event);
     const data={schemaVersion:2,exportedAt:new Date().toISOString(),
-      books, vocabulary:allVocab(),specialSentences:specials,practiceEvents:history,deletedRecords:tombstones};
+      books, vocabulary:allVocab(),specialSentences:specials,
+      practiceEvents:anonymousEvents,deletedRecords:tombstones};
     const file=new Blob([JSON.stringify(data,null,2)],{type:"text/plain;charset=utf-8"});
     const url=URL.createObjectURL(file),a=document.createElement("a");
     const d=new Date(),pad=n=>String(n).padStart(2,"0");
@@ -520,13 +521,8 @@
       persistMetadata();chooseBook(chosenBook);alert("Vollständige Sicherung eingelesen.");
     }).catch(e=>alert("Import fehlgeschlagen: "+e.message)).finally(()=>{ev.target.value="";});
   };
-  const oldClear=clearCurrentLangData;
   clearCurrentLangData=function(){
-    if(auth?.access_token){
-      alert("Zum Schutz der Cloud-Daten ist das Löschen bei aktivierter Synchronisation noch gesperrt. Bitte zuerst Daten exportieren.");
-      return;
-    }
-    oldClear();ensureMigration();refreshBookChoices();
+    alert("Bitte zum Löschen das rote X beim gewünschten Buch verwenden.");
   };
 
   window.showLearningAnalysis=function(){
@@ -586,7 +582,10 @@
     for(const b of books)items.push({record_id:"book:"+b.id,record_type:"book",payload:b,updated_at:b.updatedAt});
     for(const v of allVocab())items.push({record_id:"vocab:"+v.id,record_type:"vocab",payload:v,updated_at:v.updatedAt});
     for(const x of specials)items.push({record_id:"special:"+x.id,record_type:"special",payload:x,updated_at:x.updatedAt});
-    for(const x of history)items.push({record_id:"event:"+x.id,record_type:"event",payload:x,updated_at:x.at});
+    for(const x of history){
+      const {profile, ...publicEvent}=x;
+      items.push({record_id:"event:"+x.id,record_type:"event",payload:publicEvent,updated_at:x.at});
+    }
     for(const t of tombstones)items.push(t);
     return items;
   }
@@ -693,6 +692,10 @@
   }
   function onReady(){
     document.body.classList.remove("voc-training-active");
+    localStorage.removeItem(STORE+"_auth");
+    localStorage.removeItem(STORE+"_profile");
+    history=history.map(({profile,...event})=>event);
+    save(STORE+"_events",history);
     ensureMigration();
     if(chosenBook)chooseBook(chosenBook);else refreshBookChoices();
     updateOnlineState();

@@ -788,20 +788,29 @@
     showCard();
   }
 
+  function safeUnderline(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/&lt;u&gt;/gi, "<u>")
+      .replace(/&lt;\/u&gt;/gi, "</u>");
+  }
+
   function showCard() {
     if (trainingItems.length === 0) return;
     const current = trainingItems[currentIndex];
     
     const promptEl = document.getElementById('promptText');
     if (current.isHtmlPrompt) {
-      promptEl.innerHTML = current.prompt;
+      promptEl.innerHTML = safeUnderline(current.prompt);
     } else {
       promptEl.innerText = current.prompt;
     }
 
     const targetEl = document.getElementById('targetText');
     if (current.isHtmlTarget) {
-      targetEl.innerHTML = current.target;
+      targetEl.innerHTML = safeUnderline(current.target);
     } else {
       targetEl.innerText = current.target;
     }
@@ -842,7 +851,7 @@
     const item = trainingItems[currentIndex];
     let rawText = type === 'prompt' ? item.prompt : item.target;
     let tempDiv = document.createElement('div');
-    tempDiv.innerHTML = rawText;
+    tempDiv.innerHTML = safeUnderline(rawText);
     let cleanText = tempDiv.textContent || tempDiv.innerText || "";
 
     let lang = type === 'prompt' ? item.pLang : item.tLang;

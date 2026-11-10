@@ -1,3 +1,30 @@
+## Teil-Update auf produktivem main – 2026-11-11
+- Nutzerfreigabe: Neues VOC-Logo und unabhängig übertragbare
+  allgemeine UI-Verbesserungen schon in der Nicht-Testversion.
+- Produktiver Branch `main` geändert:
+  - `favicon.svg`: neues royalblaues VOC-Sprechblasenlogo auf Weiß;
+    Commit `e945da9369ddb525872df9b674d8d278f7c2f3ab`.
+  - `index.html`: Favicon-Link und Überschriften
+    **1. API & Sprache**, **2. Datenverwaltung**, **3. Lernbereich**.
+    Die Sprachauswahl bleibt in der Legacy-Produktion bewusst sichtbar,
+    da sie dort für den Scan erforderlich ist.
+    Commit `64c2867e9f46cee823a780cf5da1fafb1ff73887`.
+  - `manifest.json`: neues PWA-Icon und Kurzname VOC;
+    Commit `e36a7c2c1aa41d2da2c42faaff955d987bd7029e`.
+- Bewusst **nicht** auf `main` übernommen: Cloud-Sync, Buchverwaltung,
+  Konjugationsscanner, Lernverlauf und öffentliche Datenbankanbindung.
+  Diese erfordern einen vollständigen kompatiblen Test-Release,
+  andernfalls wäre eine produktive Sync-Zeile funktionslos.
+- Prüfumfang: Inline-JS nach Änderung syntaktisch validiert;
+  Logo/Manifest über GitHub gespeichert. Echter Browser/PWA-Installations-
+  test noch offen. Produktiv-GitHub-Pages-URL derzeit nicht unabhängig verifiziert.
+- Im Unterschied zu älteren Übergabevermerken ist `main` seit diesem
+  Teil-Update absichtlich **nicht mehr identisch** zum Sicherungsbranch.
+  Backup `backup-20261105-pre-supabase` bleibt unverändert.
+- Die Testseite `vocprog-test` und ihr bislang abgenommener Sync-Stand
+  bleiben unangetastet. Nächster großer Schritt: vollständige Testergebnisse,
+  dann separate Freigabe für die produktive Migration.
+
 ## Teilabnahme und Korrektur 2026-11-11 (VOC v0.4 Test)
 - **Nutzerseitig bestätigt:** SQL-Migration ausgeführt; Testapp meldet erfolgreichen
   `Online · Sync`-Zeitstempel; Bücher geräteübergreifend sichtbar;

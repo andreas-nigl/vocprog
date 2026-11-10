@@ -1,3 +1,35 @@
+## Teilabnahme und Korrektur 2026-11-11 (VOC v0.4 Test)
+- **Nutzerseitig bestätigt:** SQL-Migration ausgeführt; Testapp meldet erfolgreichen
+  `Online · Sync`-Zeitstempel; Bücher geräteübergreifend sichtbar;
+  Löschung funktioniert geräteübergreifend; Lernfortschritt auf beiden
+  Geräten sichtbar. Diese drei Sync-Pfade sind als **Teilabnahme**
+  dokumentiert, keine vollständige Produktivfreigabe.
+- Korrektur des Statusformats: `Sync DD.MM.YY HH:mm` **ohne Komma**
+  durch explizite `formatToParts`-Zusammensetzung.
+- Buchauswahl in Datenverwaltung und Scan-Buchdialog auf beiden Geräten
+  **deterministisch alphabetisch** sortiert (deutsche Sortierung, natürliche
+  Zahlenreihenfolge; ID als Tie-Breaker). Bestehende Bücher und deren IDs,
+  Speicherreihenfolge sowie Datenbankinhalt bleiben unverändert. Sortierung
+  kann beim Umbenennen wechseln.
+- Test-Build in `andreas-nigl/vocprog-test/main` aktualisiert;
+  letzter geprüfter JS-Commit `c78b0afde0286b9c5a41d9b773cd3d214585c254`,
+  SW `da69b8308160438a77db9d9ae8b98f52ad5f1d19`.
+  SW-Cache auf v6 aktualisiert. Test-URL:
+  https://andreas-nigl.github.io/vocprog-test/
+- Tests: JS- und SW-Syntax, 6/6 App-Dateien identisch zwischen
+  Entwicklungsbranch und Testrepository, verschiedene Eingabereihenfolgen
+  liefern identische Buchreihenfolge; Zeitformatprobe
+  `11.11.26 00:14` ohne Komma; Produktions-`main` unverändert.
+- **Noch offen für vollständige Abnahme:** KI-Gemini-Scan mit realen
+  Französischseiten inklusive Konjugationen und Gruppierung; KI-Sätze
+  geräteübergreifend; Offline-Neustart/Wiederverbindung und Upload zuvor
+  geänderter Daten; JSON-Export/Import-Roundtrip mit Konjugationen/Statistik;
+  gleichzeitig geänderte Datensätze/Konfliktsicherheit, öffentliche
+  Manipulierbarkeit und Quoten; Browser-/Mobil-Layout inklusive Diktat und
+  Kamera/Galerie; anschließende explizite Freigabe vor Produktiv-Merge.
+- Standalone-Offline-HTML für v0.4 nicht aktualisiert; Online/PWA-Code
+  aktualisiert, tatsächliche Offline-Verfügbarkeit nicht getestet.
+
 # vocprog – Entwicklungsstand 2026-11-05
 
 ## UI-Entscheidung – korrigiert 2026-11-06

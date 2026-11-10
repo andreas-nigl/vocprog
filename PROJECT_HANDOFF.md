@@ -165,6 +165,34 @@
   Produktivbranch `vocprog/main` bleibt unverändert. Weitere
   GitHub-/Supabase-Integrationsmigrationen nicht automatisch deployen.
 
+## Abschluss Entwicklungsblock 2026-11-10 – v0.4 Test, Cloud-Migration noch offen
+- **Verfügbarer Online-Testbuild:** `andreas-nigl/vocprog-test` auf `main`,
+  Quellstand `vocprog/develop/offline-supabase-20261105`.
+  Letzter geprüfter `index.html`-Commit im Testrepo:
+  `03e173e2f3d839ab56a7b631be7e08e3c19dd22c`.
+- **GitHub-Abgleich:** sechs Dateien 6/6 identisch (index.html, Erweiterungs-JS,
+  CSS, Favicon, sw.js, manifest.json). Produktiv-`vocprog/main` stimmt
+  unverändert mit dem Sicherungsbranch überein.
+- **Statische Prüfungen:** Inline-/Erweiterungs-/Service-Worker-JavaScript
+  parsbar; keine Login-/Profil-UI; 6/6 isolierte Beispiel-Konjugationen
+  erkannt, Wiederholung 0 Dubletten, eigenes Buch richtig benannt,
+  Quellbuch wieder ausgewählt. Cloud-Endpunkt `vocprog_public_records`
+  wird referenziert; frühere private Tabelle nicht mehr verwendet.
+- **WICHTIG:** Keine Live-Migration in Supabase durchgeführt,
+  `supabase/migrations/20261110_000002_vocprog_public_records.sql`
+  muss nach Nutzersichtung im SQL Editor ausgeführt werden.
+  Bis dahin zeigt der Sync einen HTTP-Fehler und verarbeitet nur lokale Daten.
+- **Offen:** echtes Scanbild/Modellantwort; Browser/Mobil-Rendering,
+  KI-Sätze und Konjugationskarten; echte Synchronisation auf zwei Geräten,
+  idempotente Löschvermerke, Datenkollision bei simultaner Änderung,
+  Ausfall/Wiederanlauf und RLS-Test in Datenbank. Keine Nutzerabnahme.
+- **Offline/Standalone:** Online-GitHub-Pages-Build übertragen; Offline-SW
+  aktualisiert und statisch geprüft, kein echter Offline-Neustart getestet.
+  Standalone-HTML nicht für diesen Änderungsblock erneuert.
+- **Nächster freigegebener Schritt:** SQL-Migration kontrolliert ausführen
+  (vom Nutzer im Dashboard), dann Live-Sync/RLS und Scanner testen,
+  danach erst Nutzerabnahme und Merge in Produktion.
+
 ## Versionierung
 - Unverändertes Original: Branch `backup-20261105-pre-supabase`.
 - Produktiver `main` bleibt unverändert.

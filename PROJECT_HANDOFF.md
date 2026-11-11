@@ -1,3 +1,177 @@
+## Verbindliche Konzeption Konjugationslernen – 2026-11-12 (noch nicht implementiert)
+
+### Status, Freigabegrenze und Quellen
+- Dieser Abschnitt dokumentiert die im Dialog am 11./12.11.2026 bestätigten
+  fachlichen Anforderungen als projektinterne Wissensbasis und nächste
+  Umsetzungsvorlage. **Kein Code/Schema der App in diesem Arbeitsschritt geändert.**
+- Maßgebliche externe Grammatikreferenzen:
+  https://www.academie-francaise.fr/questions-de-langue
+  (Accord du participe passé, einschließlich être/avoir/reflexive Verben);
+  https://www.larousse.fr/de/konjugation/franzosisch/manger/5950
+  (manger: Zeiten, nous mangeons, Imperativ, Partizip);
+  https://www.francaisavecpierre.com/present-de-lindicatif-1er-groupe/
+  (orthographische Anpassungen -ger/-cer).
+- Produktiv-`main` nicht ohne vollständige gesonderte Nutzerabnahme auf die
+  umfassende Test-Funktionsversion migrieren. Repository-Handoff fortführen.
+
+### Scannen, Bücher, Datenmodell
+- Zwei Plus-Optionen im Buchauswahldialog:
+  `+ Neues Vokabelbuch anlegen`, `+ Neues Verbenbuch anlegen`.
+- Anzeige der Buchnamen: `<Name> – Vokabeln (<Sprache>)` oder
+  `<Name> – Verben (<Sprache>)`; kein altes `Konjugationen`.
+  Sprachdetektion aus Scan nach erster analysierter Seite.
+- Pro Sprache **genau ein gemeinsames Verbenbuch**; „Neues Verbenbuch“
+  für bereits vorhandene Sprache soll dieses verwenden, nicht duplizieren.
+  Vokabelbücher dürfen dieselben Namen/inhaltsgleiche Seiten haben und
+  später manuell gemergt werden.
+- **Jedes erkannte Verb**, auch wenn nur als normale Vokabel gedruckt,
+  soll vollständig für die sprachspezifischen *Schulstoff*-Zeitformen
+  generiert werden; Verb-Grundvokabel + Übersetzung, Partizip/Imperativ
+  und finite Formen in EINEM Verbenbuch. Keine eigene zweite
+  Verbenbuch-Kopie pro fotografiertem Quellbuch.
+- Andere Wortarten bleiben ausschließlich im normalen Vokabelbuch.
+  Normale Quellbuch-Vokabeln ggf. beibehalten (dieses Verhalten vor
+  Implementierung auf unbeabsichtigte Doppelzählung prüfen).
+- Pro Sprache und Lemma ein eindeutiger Verb-Datensatz mit stabiler ID;
+  getrennte Formen pro Tempus/Modus/Person, Übersetzung, Quelle/Seite,
+  Provenienz, Validierungsstatus und Herkunft (Scan/KI/Referenz);
+  Doppeleinträge vermeiden; alte Lernstatistiken erhalten.
+
+### Französisch: relevante Schulstoff-Zeiten (ausschließlich diese)
+- Indicatif: Présent (Gegenwart), Imparfait (unvollendete Vergangenheit),
+  Passé composé (zusammengesetzte Vergangenheit), Plus-que-parfait
+  (Vorvergangenheit), Futur simple (Zukunft).
+- Conditionnel présent (würde-Form).
+- Subjonctif présent (Subjonctif Gegenwart).
+- KEINE erweiterte/literarische Zeiten wie Passé simple, Passé antérieur,
+  Futur antérieur, Conditionnel passé, Subjonctif imparfait etc.
+- **Unabhängig von Zeit-Dropdown immer zusätzlich** Infinitif présent
+  (Grundvokabel mit Übersetzung und Kennzeichnung), Participe passé
+  und Impératif présent, soweit das jeweilige Verb diese Formen
+  tatsächlich besitzt. Fehlende Imperative nicht erfinden.
+- Zeitform-Dropdown **nur bei Verbenbüchern**, exakt gleiche Gestaltung
+  wie bestehende „Abfragerichtung“ und „Lernmodus“, unmittelbar dazwischen.
+  Optionen: Originalsprachbezeichnung + deutsche Bedeutung in Klammern.
+  Es wird exakt EIN Schulzeitmodus gefiltert, nicht alles auf einmal.
+- Entsprechende **sprachspezifische Schulstoff-Kataloge** für en-US,
+  es-ES, pt-PT, nl-NL, la-LA, fr-FR hinterlegen; Fremdsprachenbez.
+  + deutsche Bedeutung; Eigenheiten anderer Sprachen beachten,
+  z. B. Latein ohne verpflichtende Personalpronomen.
+
+### Participe passé und Übereinstimmung
+- Bei nichtreflexiven être-Verben Übereinstimmung mit Subjekt in Genus
+  und Numerus; *vier* Formen möglich: allé, allée, allés, allées.
+  **Kompakte Darstellung: `allé(e)(s)`**, ein gemeinsamer Karteieintrag,
+  KEINE vier getrennten Abfragen. Basispartizip + Accord-Regel im
+  Datensatz separat speichern, Darstellung daraus generieren.
+- Das gilt nicht pauschal für jedes Partizip. Bei avoir ergibt sich die
+  Angleichung unter bestimmten Bedingungen (vorangestelltes COD);
+  bei reflexiven Verben eigene syntaktische Regeln. Für Satztrainer
+  kontextgerechte Form anwenden.
+- Im Trainer Leerzeichen um `/` bei Imperativ-/Variantenantworten
+  optional; `va / allons / allez` und `va/allons/allez` gleichwertig.
+  Auch geklammerte bzw. expandierte Accord-Varianten sinnvoll
+  normalisieren; keine eigene Abfrage pro Genus/Numerus.
+- Imperativ nur 3 französische Personengruppen (tu/nous/vous),
+  dargestellt mit *geklammerten* Pronomen vor den Formen, z. B.
+  `(tu) va / (nous) allons / (vous) allez`, auch deutsche
+  Übersetzungen im separaten Tabellenspaltenfeld.
+- Abweichende Sonderformen und vollständige Tempuskonjugation
+  müssen anhand belastbarer Grammatik/Verbkonjugationsquelle
+  validiert werden. Zweite KI-Abfrage allein ist keine unabhängige
+  Verifikation. Nicht verifizierte KI-Formen als Prüfstatus markieren.
+
+### Klassifizierung und visuelle Abweichungen
+- Infinitiv-Lernkarte: `manger [rég.]`, `aller [irrég.]`, deutsch
+  `essen` / `gehen`. Regelmäßigkeitskennzeichen **nur Infinitiv**.
+- Interne Unterscheidung:
+  1. strikte Regelmäßigkeit,
+  2. Grundmuster mit kleiner orthografischer Anpassung,
+  3. wirklich unregelmäßige Flexion.
+- 1 und 2 nach Nutzerwunsch `[rég.]` anzeigen. 2 zusätzlich
+  Positions-/Zeichen-Hervorhebung nur der abweichenden Buchstaben,
+  beispielsweise `nous mang**e**ons` und `nous commen**ç**ons`.
+  3 zeigt `[irrég.]` und erhält keine überladene
+  teilzeichenweise Hervorhebung.
+- Orthografische Ausnahme hat keinen verlässlichen allgemeinen
+  Bedeutungsumfang allein aus der Flexionsgruppe. Klassifikation
+  lexikon- bzw. mustergebunden, nicht rein am Suffix.
+- Fettschrift ist **Darstellung**, niemals Teil des Texts, des
+  Antwortvergleichs oder des gespeicherten Lemmas.
+
+### Neuer Tabellenbutton im Trainer
+- Ein kleiner, dezent umrandeter Button `Tabelle` in der oberen
+  Trainerzeile zwischen Karten-Zähler und X, nur für Verben.
+  Neutrale Gestaltung passend zu unteren Buttons, keine kräftige Farbe.
+- Klick blendet UNTER dem bisherigen Abfragebereich einen gleichartig
+  gestalteten Kasten ein/aus; kein Navigationswechsel.
+- Inhalt je aktuelles Verb: **2 Spalten** Fremdsprache und Deutsch,
+  mit Infinitiv + Kennzeichen, Participe passé (inkl. Accord),
+  Imperativ (3 Formen mit geklammerten tu/nous/vous und /),
+  dann sechs finite Personalformen ausschließlich für die gerade
+  gewählte Zeitform (bei Sprachen mit anderem Paradigma angepasst).
+  Deutsche Übersetzungen in eigener Spalte. Orthografische
+  Abweichungen per gezielter Teilzeichen-Fettschrift.
+- Die Tabelle dient zur Einsicht; Entscheidung ob Einsicht als
+  Lernerfolg/Fehler gewertet wird ist vor späterer Implementierung
+  gesondert zu testen. Fokus/Responsive Layout dürfen nicht leiden.
+
+### Beispiel für Tabellenvorschau: manger (Présent)
+| Fremdsprache | Deutsch |
+| --- | --- |
+| manger [rég.] | essen |
+| Participe passé: mangé | gegessen |
+| (tu) mange / (nous) mang**e**ons / (vous) mangez | iss / essen wir / esst bzw. essen Sie |
+| je mange | ich esse |
+| tu manges | du isst |
+| il/elle/on mange | er/sie/man isst |
+| nous mang**e**ons | wir essen |
+| vous mangez | ihr esst / Sie essen |
+| ils/elles mangent | sie essen |
+
+Präzisierung: *manger* bildet das Passé composé mit **avoir**,
+darum steht im Beispiel Participe passé nur `mangé`; die Schreibweise
+`allé(e)(s)` ist das Beispiel für *aller* mit **être**.
+Auffälligkeit `mangeons`: eingeschobenes e erhält weiches g.
+
+### Bücher zusammenführen
+- Bestätigtes dezentes, eigens entworfenes Dünnlinien-Symbol: zwei
+  Linien laufen in einen einzelnen Pfeil; zwischen Stift und rotem X.
+- Genau **zwei** Bücher, erster Buchname als Vorschlag, editierbar.
+  Buchsprache muss übereinstimmen; normales Vokabelbuch darf nur mit
+  normalem Vokabelbuch, Verbenbuch nur mit Verbenbuch.
+- Überlappende Seiten auf identischen Inhalt prüfen: doppelte Vokabeln
+  deduplizieren, abweichende Bücher nicht mergen, mit Begründung warnen.
+  Nichtüberlappende Seiten zusammenfassen.
+- Alle Referenzen inkl. Lernfortschritt/KI-Sätzen auf Zielbuch
+  umstellen; nach gesicherter erfolgreicher Übernahme alte
+  Buch-Referenzen als Tombstones synchronisieren. Vorher Backup.
+  Cloud-Konflikte, Offline-Geräte und Atomicity gesondert testen.
+
+### Abnahmeprüfungen (noch ausstehend)
+1. Gemischte Vokabelseite mit französischem Verb + Verbformen, genau
+   ein französisches Verbenbuch (Quell-Vokabelbuch nur bei expliziter
+   Wahl), jeweils korrekte Infinitiv-/Partizip-/Imperativdaten.
+2. Nur Infinitiv auf Foto löst vollständige Kernstoff-Konjugation aus.
+3. Regelmäßig/orthografisch angepasst/unregelmäßig korrekt
+   klassifiziert; hervorzuhebende Buchstaben geprüft.
+4. Aller: Accord `allé(e)(s)` und richtige zusammengesetzte Zeiten;
+   manger: `mang**e**ons`, keine unangebrachte Accord-Klammer.
+5. Temporale Auswahl, Abfrage nur ausgewählte Personalformen plus
+   Infinitiv, Participe passé und Imperativ.
+6. Tabellenbutton zeigt zwei korrekte Spalten und bleibt im
+   Trainerfenster klappbar, auch auf Smartphone.
+7. Leerzeichen um Schrägstriche in Eingaben ignorieren; sonst
+   fachlich falsche Antworten zurückweisen.
+8. Merging mit Überschneidung, unterschiedlichen Sprachen,
+   Buchtypen, Deduplizierung und gesamtem Lernverlauf; echte
+   Zwei-Geräte-Synchronisation/Offline-Konflikte.
+9. JSON-Export/Import mit neuen Datensätzen, Abwärtskompatibilität,
+   Regression bestehender Vokabeltrainer.
+10. Separater Nutzer-Abnahmetest auf der Testseite; **erst danach**
+    Übernahme der vollständig getesteten Version auf `main`.
+
+
 ## Teil-Update auf produktivem main – 2026-11-11
 - Nutzerfreigabe: Neues VOC-Logo und unabhängig übertragbare
   allgemeine UI-Verbesserungen schon in der Nicht-Testversion.

@@ -1,3 +1,121 @@
+## Entwicklungszwischenstand nach Gesamtfreigabe – 2026-11-12
+**Freigabe:** Gesamter VOC-Entwicklungsblock durch Nutzer ausdrücklich freigegeben.
+**Release:** UNVOLLSTÄNDIG; bis zur Fertigstellung/Abnahmetests KEINE
+Veröffentlichung dieses Zwischenstands auf `vocprog-test/main` oder
+`vocprog/main`. Die öffentliche Testversion bleibt weiterhin v0.4.
+
+### Gesicherter Entwicklungsstand
+- Repository `andreas-nigl/vocprog`, Branch
+  `develop/offline-supabase-20261105`.
+- Änderungen im Entwicklungsbranch (Commitreihenfolge):
+  - `aaf6dab`: HTML für Merge-Dialog, Verben-Zeitform, Trainer-Tabelle,
+    Auswahlbuch in der Lernanalyse und Überschrift `LERNANALYSE`.
+  - `ef2ca74`: Unterscheidung `vocab`/`verbs`, UI-Namensschema
+    `– Vokabeln/Verben (Sprache)`, je Sprache nach Möglichkeit
+    Wiederverwendung eines Verbenbuchs.
+  - `6fceb76`: sprachspezifische Kernzeitkataloge und
+    Verb-Lern-/Tabellenansicht; abgedruckte Konjugationen filterbar.
+  - `fafbdc5`: Lernanalyse pro Buch; Abfragen, korrekte Antworten (%),
+    Vorlesen; nach Buchtyp gruppiert; dreifaches Antippen der
+    Kategorieüberschrift erzeugt synchronisierbaren Reset-Epoch.
+  - `9c45602`: Merge von genau 2 Büchern mit Sprach-, Typ-, Seiten- und
+    Inhaltsprüfung und Backup-Download; Tombstones, Event-Übertragung.
+  - `74feabc`: CSS für dezentes Merge-Symbol, Lernanalyse/Tabellenbereich.
+  - `6512b27`: getrennte bisherige Vokabel-Bewertung erhalten,
+    zweisprachige Zeitform-Tabellenüberschriften ergänzt.
+  - `e7bd992` + `1e22c4b`: Scan erkennt Verb-Infinitive auch bei
+    einzelnen Vokabeln, legt diese einmal pro Sprache in Verbenbuch ab.
+    **Nur Buchbelege und gedruckte Konjugationen, noch keine
+    freigegebene automatische Vollkonjugation aller Schulzeitformen.**
+  - `640de49`: alte Datenimporte strikt in Vokabelbücher.
+  - `86ae2f4`: neues Verbenbuch wird erst nach tatsächlicher
+    Spracherkennung angelegt/wiederverwendet; Scan-Vormerkung
+    bleibt lokal über Neustart erhalten.
+  - `95cb9a6` + `cfe0f44`: Buch-Merge verweist bei inhaltsgleichen
+    Duplikaten auf bestehende Vokabel-IDs und berücksichtigt zuvor
+    zurückgesetzte Analysedaten.
+- **Nicht geändert:** Die produktive Anwendung `main` hat die
+  experimentellen Formulare nicht. Die öffentliche Test-App
+  `vocprog-test/main` behält unverändert ihre v0.4-Dateien.
+  Letzter geprüfter Test-JS-Blob `b9ced8b6bde895f72b245136facfbc4037c25bef`.
+- **Offline:** SW-Datei im Entwicklungsbranch noch Version v6,
+  bewusst nicht aktualisiert, weil kein freigabefähiger Build
+  veröffentlicht wurde. Standalone nicht gebaut.
+
+### Durchgeführte Prüfungen
+- HTML-Inline-JS und Erweiterungs-JS parsebar, SW-JS parsebar.
+- HTML: 14/14 neue erforderliche DOM-Elemente vorhanden.
+- CSS: 6/6 zentrale neue Selektoren vorhanden.
+- Sprachkataloge vorhanden für FR (7), EN (9), ES (8), PT (7),
+  NL (5), LA (6) Zeitform-Optionen.
+- Buchname: alte `Konjugationen`-Bezeichnung -> Anzeige als
+  `Verben`; vorhandene Vokabelnamen korrekt suffixiert,
+  keine doppelten Namenssuffixe (4 isolierte Checks).
+- Merge isoliert: unterschiedliche Sprachen und Typen gesperrt,
+  gleicher Inhalt auf gleicher Seite zulässig, widersprüchlicher
+  Inhalt auf gleicher Seite gesperrt, nichtüberlappende Seiten zulässig.
+- Statik: nach Änderung bisherige Vokabelantwortprüfung weiter
+  referenziert; Backuppfad vor Merge-Datenänderung; persistente
+  Analyse-Resets als special records vorhanden.
+- **Noch NICHT geprüft:** Browser-Rendering/Interaktion, Kamera,
+  Gemini-API, Offline-Wiederanlauf, echte Supabase-Schreiboperationen,
+  konfliktfreier Mehrgeräte-Merge, Statistik-Reset über zwei
+  Geräte, Export/Import-Roundtrip und vollständige grammatische
+  Genauigkeit. Keine Nutzerabnahme der neuen Funktionen.
+
+### Sperrende offene Implementierungs- und Sicherheitslücken
+1. Zu JEDEM erkannten Verb vollständige Schulstoff-Formen für alle
+   6 Sprachen erzeugen und **unabhängig** grammatisch validieren.
+   Aktuell nur gedruckte Verbformen und erkannte Infinitive;
+   keine generierten, unkontrollierten Formen als korrekt speichern.
+   Möglicher lokal einbindbarer Referenzmotor:
+   `https://github.com/ablaut-dev/ablaut` (MIT/Apache-2.0,
+   Rust/WASM, FR/EN/ES/PT/NL, nicht LA), zunächst Quellstand,
+   API, Qualität, Build, Lizenz und Offline-Nutzung prüfen;
+   lateinische Flexion benötigt weiteren Beleg/Ressource.
+   Fremde Online-Konjugations-APIs nur nach gesonderter Risiko-/
+   Datenschutz-/CORS-/Lizenzprüfung; keine ungeprüfte
+   Abhängigkeit einbauen.
+2. Vollständiges lernbares Datenmodell der Pflichtgrundformen:
+   für FR Infinitif/Participe passé/Impératif inklusive Accord;
+   EN/NL getrennte Dreiergruppe und Infinitiv/Partizip;
+   EN `-ing` als separate Karte; ES/PT Einzelkarten;
+   LA Vierergruppe plus Infinitiv. Tabellen müssen dies
+   vollständig in 2 Spalten mit korrekter Wortteil-Hervorhebung
+   zeigen. Die bisherige Tabelle rendert **nur vorhandene**
+   Datensätze; spezielle Basisformen werden noch nicht erzeugt.
+3. Server-Migration der alten Buchnamen/Arten noch nicht
+   ausgeführt. Im UI wird die Namenskonvention lediglich
+   abgeleitet. Vor Datenmigration Backup und echte
+   Inventur der Cloud-Datensätze erforderlich.
+4. Übernahme produktiver Browser-LocalStorage-Bücher in
+   öffentliche Supabase-Tabelle noch nicht möglich ohne
+   Live-App-Export (je Sprache EN/FR) und Vergleich
+   gegen bestehende Test-Cloud-Datensätze.
+5. Merge bisher clientseitig mit mehrere Cloud-Einzelrecords;
+   NICHT atomar, Konflikte/offline Stale-Write noch nicht
+   sicher geprüft. Vor Freigabe transaktionale oder
+   robuste Wiederanlauf-/Idempotenzstrategie und
+   reale Geräteabnahme erforderlich.
+6. Datensicherungs-/Anzeigepfade, KI-Scan,
+   Abfragebewertung und Reset vollständig im Browser prüfen.
+   Für aktuell nicht reproduzierte Szenarien nichts als
+   bestanden deklarieren.
+7. Einmaliger Reset der Lernanalyse erst unmittelbar
+   VOR produktiver Migration nach gesonderter
+   Nutzerfreigabe, nicht während der Entwicklung ausführen.
+
+### Nächste Schritte
+- Zuerst Referenzmotor für vollständige Offline-Konjugation
+  unter Berücksichtigung aller 6 Sprachen festlegen und integrieren,
+  mit Tests für `manger`, `aller`, `go/went/gone` und lateinische
+  vier Stammformen. Pro Formenart Validierung und Provenienz.
+- Danach Merge-Transaktionssicherheit und reale E2E-/Cloud-
+  Regressionen. Erst bei bestandenem Stand v0.5 auf
+  `vocprog-test/main` veröffentlichen und Nutzerabnahme einholen.
+- Produktives `main` und eine eventuelle Standalone bleiben bis
+  zur separaten Release-Freigabe unverändert.
+
 ## Lernanalyse – Änderungsanforderung zur Freigabe (2026-11-12)
 **Status: spezifiziert, Implementierung noch nicht freigegeben; keine Produktivänderung.**
 - Titel `LERNANALYSE` in Versalien, gleiche Schriftgröße. Direkt darunter

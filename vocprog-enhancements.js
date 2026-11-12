@@ -665,55 +665,99 @@
     logEvent("graded",item,{correct,answer:given,foreign:item.record?.foreign||""});
   };
 
-  window.showLearningAnalysis=function(){
-    const container=get("analysisContent");container.innerHTML="";
-    const events=history;
-    const grades=events.filter(x=>x.action==="graded");
-    const right=grades.filter(x=>x.correct).length;
-    const intro=document.createElement("p");
-    intro.textContent=events.filter(x=>x.action==="shown").length+
-      " Abfragen · "+grades.length+" bewertete Antworten · "+(grades.length?Math.round(right/grades.length*100):0)+" % richtig";
-    container.append(intro);
-    for(const b of books){
-      const heading=document.createElement("h3");heading.textContent=b.name+" ("+(LANGS[b.lang]||b.lang)+")";container.append(heading);
-      for(const [kind,title] of [["words","Vokabeln"],["sentences","Einfache Sätze"],["special","KI-Spezialsätze"]]){
-        const h=document.createElement("h4");h.textContent=title;container.append(h);
-        const rows=events.filter(x=>x.bookId===b.id&&x.kind===kind);
-        const pages=[...new Set(rows.flatMap(x=>x.pages||[x.page]).concat(allVocab().filter(x=>x.bookId===b.id).map(x=>String(x.page))))].sort((a,z)=>Number(a)-Number(z));
-        const chart=document.createElement("div");chart.className="histogram";
-        if(!pages.length)chart.textContent="Noch keine Daten.";
-        const max=Math.max(1,...pages.map(p=>rows.filter(e=>e.page===p).length));
-        for(const p of pages){
-          const asked=rows.filter(e=>(e.pages||[e.page]).includes(p)&&e.action==="shown").length;
-          const spoken=rows.filter(e=>(e.pages||[e.page]).includes(p)&&e.action==="spoken").length;
-          const pair=document.createElement("div");pair.className="histogram-pair";
-          const bars=document.createElement("div");bars.className="histogram-bars";
-          for(const [n,klass] of [[asked,"asked"],[spoken,"spoken"]]){
-            const bar=document.createElement("div");bar.className=klass;
-            bar.style.height=(Math.max(2,n/max*100))+"%";bar.title=n+" "+klass;
-            bars.append(bar);
-          }
-          const label=document.createElement("small");label.textContent=p;
-          pair.append(bars,label);chart.append(pair);
-        }
-        container.append(chart);
+
+  function resetRecord(bookId,kind){
+    return specials.find(x=>x.kind==="analysis-reset"&&x.bookId===bookId&&x.category===kind);
+  }
+  function freshEvents(bookId,kind){
+    const since=Date.parse(resetRecord(bookId,kind)?.resetAt||0);
+    return history.filter(x=>x.bookId===bookId&&x.kind===kind&&Date.parse(x.at||0)>since);
+  }
+  let analysisBookId="";
+  const tripleClicks=new Map();
+  function analysisSection(container,book,kind,label,byPage){
+    const wrap=document.createElement("section");wrap.className="voc-analysis-section";
+    const h=document.createElement("h3");h.textContent=label;h.tabIndex=0;
+    h.title="Dreimal antippen, um nur diese Auswertung zurückzusetzen";
+    const reset=()=>{
+      const key=book.id+":"+kind,now=Date.now(),old=tripleClicks.get(key)||{n:0,t:0};
+      const next={n:now-old.t<1000?old.n+1:1,t:now};tripleClicks.set(key,next);
+      if(next.n<3)return;
+      tripleClicks.delete(key);
+      if(!confirm("Die Lernanalyse „"+label+"“ dieses Buchs geräteübergreifend zurücksetzen? Lerninhalte bleiben erhalten."))return;
+      const when=new Date().toISOString(),existing=resetRecord(book.id,kind);
+      if(existing){existing.resetAt=when;existing.updatedAt=when;}
+      else specials.push({id:"analysis-reset-"+book.id+"-"+kind,bookId:book.id,kind:"analysis-reset",category:kind,resetAt:when,updatedAt:when});
+      persistMetadata();renderSelectedBookAnalysis();
+    };
+    h.addEventListener("click",reset);
+    h.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();reset();}});
+    wrap.append(h);
+    const events=freshEvents(book.id,kind);
+    const pages=byPage?[...new Set([
+      ...allVocab().filter(x=>x.bookId===book.id).map(x=>String(x.page||"?")),
+      ...events.flatMap(x=>x.pages||[x.page||"?"]).map(String)
+    ])].sort((a,b)=>Number(a)-Number(b)):["Gesamt"];
+    const chart=document.createElement("div");chart.className="voc-analysis-chart";
+    const combinedMax=Math.max(1,...pages.map(page=>events.filter(x=>!byPage||(x.pages||[x.page]).map(String).includes(page)).length));
+    const legend=document.createElement("p");legend.className="voc-analysis-legend";
+    legend.textContent="Abgefragt · Richtig (%) · Vorlesen";wrap.append(legend);
+    for(const page of pages){
+      const subset=events.filter(x=>!byPage||(x.pages||[x.page]).map(String).includes(page));
+      const asked=subset.filter(x=>x.action==="shown").length;
+      const judged=subset.filter(x=>x.action==="graded");
+      const spoken=subset.filter(x=>x.action==="spoken").length;
+      const percent=judged.length?Math.round(judged.filter(x=>x.correct).length/judged.length*100):null;
+      const group=document.createElement("div");group.className="voc-analysis-group";
+      const bars=document.createElement("div");bars.className="voc-analysis-bars";
+      const values=[[asked,"asked",Math.max(2,asked/combinedMax*100),asked],
+        [percent,"correct",percent===null?2:Math.max(2,percent),percent===null?"–":percent+" %"],
+        [spoken,"spoken",Math.max(2,spoken/combinedMax*100),spoken]];
+      for(const [,klass,height,labelValue] of values){
+        const bar=document.createElement("div");bar.className="voc-analysis-bar "+klass;
+        bar.style.height=height+"%";bar.title=label+" · "+page+" · "+labelValue;
+        const value=document.createElement("span");value.textContent=String(labelValue);bar.append(value);bars.append(bar);
       }
+      const caption=document.createElement("small");caption.textContent=page;
+      group.append(bars,caption);chart.append(group);
     }
+    wrap.append(chart);container.append(wrap);
+  }
+  window.renderSelectedBookAnalysis=function(){
+    const book=books.find(x=>x.id===get("analysisBookSelect").value);
+    if(!book)return;
+    analysisBookId=book.id;
+    const container=get("analysisContent");container.replaceChildren();
+    const verb=bookKind(book)==="verbs";
+    const categories=verb?[["verbs","Verben"]]:
+      [["words","Vokabeln"],["sentences","Einfache Sätze"],["special","KI-Spezialsätze"]];
+    for(const [kind,label] of categories)analysisSection(container,book,kind,label,!verb);
     const errors=new Map();
-    for(const x of grades.filter(x=>!x.correct)){
-      const k=x.bookId+"|"+x.sourceId,prev=errors.get(k)||{item:x,count:0};
-      prev.count++;errors.set(k,prev);
+    for(const [kind] of categories)for(const event of freshEvents(book.id,kind)){
+      if(event.action!=="graded"||event.correct)continue;
+      const key=kind+":"+(event.sourceId||event.foreign);
+      const old=errors.get(key)||{name:"",count:0};
+      const vocab=allVocab().find(v=>v.id===event.sourceId);
+      old.name=vocab?.foreign||event.foreign||event.sourceId||"Unbekannter Eintrag";
+      old.count++;errors.set(key,old);
     }
-    const h=document.createElement("h3");h.textContent="Mindestens einmal falsch beantwortet";container.append(h);
-    const list=document.createElement("ul");
-    [...errors.values()].sort((a,b)=>b.count-a.count).forEach(x=>{
-      const li=document.createElement("li");
-      const vocabulary=allVocab().find(v=>v.id===x.item.sourceId);
-      li.textContent=(vocabulary?.foreign||x.item.sourceId)+" – "+x.count+" Fehler";
-      list.append(li);
-    });
-    if(!errors.size)list.textContent="Noch keine falsch bewerteten Antworten.";
-    container.append(list);
+    const title=document.createElement("h3");title.textContent="Nicht richtig beantwortet";
+    container.append(title);
+    if(!errors.size){const empty=document.createElement("p");empty.textContent="Keine falsch beantworteten Einträge.";container.append(empty);}
+    for(const error of [...errors.values()].sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name,"de"))){
+      const line=document.createElement("div");line.className="voc-analysis-error";
+      const word=document.createElement("span");word.textContent=error.name;
+      const count=document.createElement("strong");count.textContent=String(error.count);
+      line.append(word,count);container.append(line);
+    }
+  };
+  window.showLearningAnalysis=function(){
+    const select=get("analysisBookSelect");select.replaceChildren();
+    for(const b of sortedBooks())select.add(new Option(bookTitle(b),b.id));
+    if(!books.length){get("analysisContent").textContent="Noch keine Bücher.";get("analysisDialog").showModal();return;}
+    select.value=books.some(b=>b.id===analysisBookId)?analysisBookId:chosenBook;
+    if(!select.value)select.selectedIndex=0;
+    renderSelectedBookAnalysis();
     get("analysisDialog").showModal();
   };
 

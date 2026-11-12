@@ -390,6 +390,7 @@
       payload.push({bookId:verbBook.id,lang:language,kind:"verb-infinitive",
         foreign:infinitive,german:String(entry.german).trim(),page:String(entry.page||"?"),
         infinitive,verbId:wordKey,verification:"printed-lemma",
+        regularity:window.VOCFrenchReference?.conjugate(infinitive)?.regularity||"",
         sentence_foreign:"",sentence_german:""});
     }
     const count=payload.length?mergeVocabularies(payload):0;
@@ -501,12 +502,9 @@
   mergeVocabularies=function(incoming){
     const tagged=incoming.map(v=>({...v,bookId:v.bookId||chosenBook,id:v.id||id(),updatedAt:v.updatedAt||new Date().toISOString()}));
     
-    // Avoid mixing different books that happen to contain identical words and page numbers.
-    const filtered=tagged.filter(v=>!vocabList.some(x=>x.bookId===v.bookId&&String(x.page)===String(v.page)&&
-      String(x.foreign).trim().toLowerCase()===String(v.foreign).trim().toLowerCase()&&
-      String(x.german).trim().toLowerCase()===String(v.german).trim().toLowerCase()&&
-      (v.kind!=="conjugation"||String(x.tense||"")===String(v.tense||""))));
-    const count=oldMerge(filtered);
+    // The original merger now deduplicates by semantic verb identity
+    // (lemma, kind, tense, person), retaining distinct tense cards.
+    const count=oldMerge(tagged);
     vocabList.forEach(v=>{if(!v.id)v.id=id();if(!v.bookId)v.bookId=chosenBook;});
     return count;
   };

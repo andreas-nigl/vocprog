@@ -452,14 +452,14 @@
       if (!parsedResponse.detected_language_code) {
         throw new Error("Die Fremdsprache konnte nicht sicher erkannt werden. Scanbilder bleiben erhalten.");
       }
+      if(parsedResponse.detected_language_code==="la-LA"){
+        throw new Error("Latein ist aus VOC entfernt. Es wurden keine lateinischen Daten übernommen.");
+      }
       acceptScannedLanguage(parsedResponse.detected_language_code);
 
       const verbBookSelected=isSelectedVerbBook();
       let addedCount=verbBookSelected?0:mergeVocabularies(newVocabs);
       saveToLocalStorage();
-      if(parsedResponse.detected_language_code==="la-LA"){
-        throw new Error("Latein ist aus VOC entfernt. Es wurden keine lateinischen Daten übernommen.");
-      }
       const baseVerbs=await ingestVerbInfinitives(parsedResponse.verbs||[],parsedResponse.detected_language_code);
       const countConjugations=ingestConjugations(parsedResponse.conjugations||[], parsedResponse.detected_language_code);
       updateScannedPagesUI();

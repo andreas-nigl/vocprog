@@ -1,3 +1,35 @@
+## Nachtrag zur VOC-0.5-Korrektur: Vokabelbuch-Nummerierung (2026-11-12)
+
+- Nutzerwunsch präzisiert: In **normalen Vokabelbüchern** müssen
+  die nach Verbextraktion verbleibenden Einträge auf jeder
+  Seite bei `V1` beginnen und lückenlos weiterlaufen;
+  zusätzlich bleibt die bereits korrigierte nummerierte
+  Anzeige in Verbenbüchern erhalten.
+- `vocprog-enhancements.js` im Entwicklungsbranch,
+  Commit `a081c7e72c119882dd2cd3028ef2d99709337b2e`:
+  `filterVocabByPages` erzeugt reine Displaykopien
+  mit neuen, pro Seite lückenlos aufgebauten
+  `refVocab`-Nummern. Persistierte Originalreferenzen,
+  Vokabel-IDs, Lernhistorien bleiben unverändert.
+- Verbindliche Regression in
+  `tests/verb-ui.test.js`, Commits `dfda05c`,
+  `5a23fdb`: aus `S156 V62`, `S156 V64`,
+  `S157 V8` werden angezeigt
+  `S156 V1`, `S156 V2`, `S157 V1`,
+  ohne gespeicherte Referenzen zu überschreiben.
+- Nach Ergänzung: **40/40 isolierte JavaScript-
+  Unit-/Regressionstests bestanden**. Dies ist
+  kein echter Node-CI-, Browser- oder
+  Supabase-Mehrgeräte-E2E-Nachweis.
+- Öffentliche Testversion `vocprog-test/main`
+  erneut aktualisiert: JS-Commit `37097bd`,
+  Offline-Cache `vocprog-staging-20261112-v10`
+  (SW-Commit `e7a4fdc`), Quellen im
+  Entwicklungsbranch: SW `eee1cf0`.
+- Bestehende Live-Version und Supabase-Rechte
+  unverändert. Noch kein erfolgreich verifizierter
+  ablaut-WASM-Build oder WASM-Artefakt.
+
 ## VOC 0.5 – Korrekturen nach Nutzerabnahme der Testvorschau, 2026-11-12
 
 **Auftrag / Nutzerabnahme:** Nutzer bestätigte Vorschau grundsätzlich, meldete

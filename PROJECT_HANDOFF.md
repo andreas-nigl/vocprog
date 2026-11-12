@@ -1,3 +1,120 @@
+## Beschlossene Verfeinerungen 2026-11-12 – getrennte Stammform-Abfragen, Accord und Datenübernahme
+
+### Tabelle/Trainer je Sprache (bindende neue Regeln, noch nicht implementiert)
+- In französischer Tabelle Bezeichner genau `Infinitif :`,
+  `Participe passé :` und `Impératif :` vor der jeweiligen französischen
+  Grundform/-gruppe; deutsche Spalte enthält nur die Übersetzung.
+  Ein einziges `[rég.]`/`[irrég.]` neben dem Tabellen-Lemma oben, nicht
+  in der Infinitivzeile wiederholen.
+- Tabellen-Zeitüberschrift spaltenweise: z. B. `Présent` über Französisch
+  und `Gegenwart` über Deutsch. Als Kleine-Abweichung nur die tatsächlich
+  geänderten Buchstaben fett markieren: `nous mang**e**ons`, nicht
+  die gesamte Verbform. Das gilt auch in der Imperativzeile.
+- Englisch: **Infinitiv einzeln** (`to go`) und **Dreiergruppe als eine
+  zusätzliche separate Lernkarte** (`go / went / gone`); daneben
+  **Past participle allein** (`gone`) und **-ing-Form allein**
+  (`going`). Nie `go / went / gone / going` als eine Karte.
+  Vollständige Tabellenstruktur: individuelle Infinitivzeile,
+  `Principal parts : go / went / gone`, `Past participle : gone`,
+  `-ing form : going`, ggf. Imperativ und darunter gewählte Zeitform.
+  Dopplung von Formen ist hier bewusst gewollt; beim Training
+  unterschiedliche Karten-IDs / `kind`-Kennung erhalten.
+  Korrektur: `do / did / done`, nicht `do / did / did`.
+- Niederländisch: Infinitiv einzeln (`lopen`), *zusätzlich* eine
+  Dreiergruppen-Lernkarte `lopen / liep / gelopen`, und voltooid
+  deelwoord `gelopen` als separate Karte. Weitere Basisformen je
+  Sprachkatalog, gewöhnlicher Imperativ nach Sprachgebrauch.
+- Latein: Infinitiv allein (`amāre`) sowie **separate**
+  Vier-Stammformen-Lernkarte `amō / amāre / amāvī / amātum`;
+  Partizip nur dann zusätzlich, wenn grammatisch korrekt ableitbar
+  und gesondert sinnvoll; keine pauschale Gleichsetzung von
+  vierter Stammform und Partizip. Unregelmäßige/deponente Verben
+  anhand Referenz nachprüfen.
+- Spanisch und Portugiesisch: je eine separate Karte für
+  Infinitiv, Gerundio/Gerúndio, Participio/Particípio, Imperativo
+  (soweit vorhanden); KEINE gruppierte Dreier-/Vierer-Lernkarte.
+- In allen Verbenbüchern: Dropdown „Zeitform“ exakt mit bisheriger
+  Select-Gestaltung zwischen „Abfragerichtung“ und „Lernmodus“.
+  Die ausgewählte Zeitfilterkarte PLUS die jeweiligen
+  sprachspezifischen Pflichtgrundkarten abfragen.
+- Bei gruppierten Karten Leerzeichen vor/nach Slash ignorieren,
+  Reihenfolge grammatisch unterschiedlicher Stammformen bleibt
+  relevant. Kein identischer Eintrag doppelt unter derselben
+  Kartenfunktion; bewusst unterschiedliche Kartenrollen dürfen
+  dieselbe Wortform enthalten.
+
+### Partizipangleichung nach Sprache (Grammatik-Datenvertrag)
+- Französisch: `être` mit Subjektaccord, z. B. `allé(e)(s)`;
+  `avoir` bei vorangestelltem direkten Objekt ggf. Accord;
+  reflexive Verben mit Sonderbedingungen. Basisform und
+  Übereinstimmungsregel separat speichern.
+- Spanisch: mit `haber` ist das part. perfecto unveränderlich
+  (`he hablado`), als Adjektiv oder mit `ser/estar` dagegen
+  Genus-/Numerusangleichung (`puertas abiertas`).
+- Portugiesisch: mit `ter` in zusammengesetzten Zeiten i. d. R.
+  unveränderlich (`tem escrito`); passivisch mit `ser` oder
+  adjektivisch mit `estar` anpassungsfähig
+  (`cartas escritas`); einige Verben haben *zwei verschiedene*
+  Partizipstämme, z. B. `aceitado/aceite` (Varietät beachten).
+- Englisch: Past participle selbst kein männlich/weiblich/plural-
+  Accord (`has gone/have gone`); Hilfsverb ggf. angepasst.
+- Niederländisch: im Verbalkomplex das Voltooid deelwoord normalerweise
+  unverändert (`heeft gewerkt`); adjektivisch können
+  Adjektivendungen vorkommen (`de geplande reis`).
+- Latein: Partizipien werden wie Adjektive nach Kasus, Numerus,
+  Genus flektiert (`amātus/amāta/amātum` etc.) und können
+  schulrelevant sein; nicht als französisches `(e)(s)` darstellen.
+- Quellen: spanische Partizipangleichung (Universitätstext)
+  https://human.libretexts.org/Bookshelves/Languages/Spanish/Spanish_Grammar_and_Linguistics_Bookshelf/Spanish_Grammar_Manual_%28Yepes%29/16/62_Tiempos_compuestos;
+  portugiesisch https://ciberduvidas.iscte-iul.pt/consultorio/perguntas/ser-e-estar--participio-passado/2584;
+  niederländisch https://inburgeringsexamen.nl/en/grammar/participles-as-adjectives;
+  lateinisch https://www.nationalarchives.gov.uk/latin/stage-2-latin/lessons/lesson-19-participles-present-past-and-future/.
+- Für die Basis-Lernkarte die sprachtypische meist unmarkierte Form
+  verwenden; grammatisch bedingte Varianten als Regel speichern
+  und in Kontext-Sätzen korrekt einsetzen. Keine getrennten
+  Genus-/Numerus-Abfragen, außer sprachspezifischer Lernstoff
+  verlangt es ausdrücklich.
+
+### Bestandsmigration – ausdrücklicher Nutzerwunsch, bisher blockiert
+- Vorhandene Cloud-Bücher mit altem Namenssuffix `Konjugationen`
+  in `– Verben (<Sprache>)` überführen, Vokabelbücher in
+  `– Vokabeln (<Sprache>)`, unter Erhalt von Buch-UUIDs,
+  sämtlichen Vokabel-IDs, Trainingsevents, KI-Sätzen und Tombstones.
+  Auf nicht doppelte Suffixe und Mehrdeutigkeiten prüfen.
+- Aus der **produktiven älteren Standalone/GitHub-Pages-App**
+  (Repo `vocprog/main`) existierende EN/FR-Vokabeln mit Seiten
+  ins neue gemeinsame Public-Supabase-Vokabellernsystem migrieren,
+  ohne bestehende Test-Cloud-Daten zu überschreiben, fehlende
+  Sprachbestände aber nicht erfinden. Import-Dedupe per
+  normalisierter Sprache/Seite/Vokabel/Übersetzung und Buchquelle.
+- **Architekturprüfung durchgeführt:** alter produktiver Stand
+  speichert Vokabellisten pro Sprache im Browser-LocalStorage
+  `vocab_trainer_data_<lang>` und besitzt keine Supabase-
+  Schnittstelle. Cloud-Public-Tabelle verwendet `book:<id>`,
+  `vocab:<id>`, `event:<id>`, `special:<id>` mit timestamp.
+  GitHub-Repository enthält KEINE Nutzerdaten. Deshalb kann der
+  tatsächliche Live-Datenbestand nicht allein aus GitHub gelesen
+  werden und ist derzeit nicht unabhängig verifiziert.
+- **Kein Supabase-Schreibconnector verfügbar**; daher NOCH KEINE
+  öffentliche Datenbankmigration/Umbenennung durchgeführt und
+  keine Migration als erfolgreich behauptet. Notwendig:
+  Backup/Export der Live-App aus den betreffenden Browsern
+  (Französisch und Englisch getrennt) sowie unabhängiger Snapshot
+  der öffentlichen Cloud-Tabelle. Danach ein validierter
+  importer/migrationslauf mit Vorschau, Sicherung und Rollback;
+  nicht blind Remote-Records manipulieren.
+- Alle Datenübernahmen in separater Testversion und nur
+  nach nachvollziehbarem Vergleich; produktive App erst
+  nach Geräteabnahme und expliziter Freigabe aktualisieren.
+- Festgelegte Restabnahmen: französisches `manger` inkl.
+  `nous mang**e**ons` und 2-spaltigem Präsens; Englisch
+  getrennt `to go`, `go/went/gone`, `gone`, `going`;
+  Niederländisch getrennt `lopen` und `lopen/liep/gelopen`;
+  span./port. Einzelkarten, lateinische Stammformen;
+  idempotente Server-Migration und geräteübergreifender
+  Daten-/Lernverlauf ohne verlorene Quelle oder Duplikate.
+
+
 ## Ergänzung 2026-11-12 – Imperativ-Beschriftung
 - In der französischen Verbtabelle lautet die Zeile in der Fremdsprachenspalte ausdrücklich **`Impératif : (tu) mange / (nous) mangeons / (vous) mangez`**. Das französische Label `Impératif :` steht einmal vor den drei Formen. Die Deutschspalte zeigt nur die Übersetzungen, ohne wiederholten Bezeichner. Vorhandene Hervorhebung von Schreibabweichungen bleibt erhalten, z. B. `mang**e**ons`.
 - Gleiches Schema bei allen französischen Verben mit Imperativ; bei Verben ohne gebräuchlichen Imperativ die Zeile weglassen. Diese Korrektur betrifft das Konzept, noch nicht implementierten App-Code.

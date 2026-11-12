@@ -778,23 +778,39 @@
     const key="vocab_trainer_data_"+source.lang,all=read(key,[]);
     const destinationVocab=all.filter(v=>v.bookId===target.id);
     const identity=v=>[String(v.page||"?"),v.kind||"words",v.foreign||"",v.german||"",v.tense||"",v.infinitive||"",v.person||""].join("\u0001").toLocaleLowerCase();
-    const known=new Set(destinationVocab.map(identity));
+    const known=new Map(destinationVocab.map(v=>[identity(v),v.id]));
+    const remappedIds=new Map();
     const next=[];
     for(const v of all){
       if(v.bookId!==source.id){next.push(v);continue;}
       const code=identity(v);
-      if(known.has(code)){markDeleted("vocab",v,now);continue;}
-      known.add(code);next.push({...v,bookId:target.id,updatedAt:now});
+      if(known.has(code)){
+        remappedIds.set(v.id,known.get(code));
+        markDeleted("vocab",v,now);continue;
+      }
+      known.set(code,v.id);next.push({...v,bookId:target.id,updatedAt:now});
     }
     // Historical event IDs are immutable cloud rows, so clone with a new ID and tombstone the old.
     for(const event of history.filter(x=>x.bookId===source.id)){
       markDeleted("event",event,now);
-      history.push({...event,id:id(),bookId:target.id});
+      history.push({...event,id:id(),bookId:target.id,sourceId:remappedIds.get(event.sourceId)||event.sourceId});
     }
     history=history.filter(x=>x.bookId!==source.id);
     for(const record of specials.filter(x=>x.bookId===source.id)){
       markDeleted("special",record,now);
-      specials.push({...record,id:id(),bookId:target.id,updatedAt:now});
+      const items=(record.items||[]).map(item=>({
+        ...item,
+        sourceId:remappedIds.get(item.sourceId)||item.sourceId,
+        vocabId:remappedIds.get(item.vocabId)||item.vocabId
+      }));
+      let key=record.key;
+      try{
+        const ids=JSON.parse(key);
+        if(Array.isArray(ids))key=JSON.stringify(ids.map(x=>remappedIds.get(x)||x));
+      }catch{/* keep legacy key */}
+      specials.push({...record,id:id(),bookId:target.id,items,key,
+        sourceRefs:Array.isArray(record.sourceRefs)?record.sourceRefs.map(x=>remappedIds.get(x)||x):record.sourceRefs,
+        updatedAt:now});
     }
     specials=specials.filter(x=>x.bookId!==source.id);
     save(key,next);

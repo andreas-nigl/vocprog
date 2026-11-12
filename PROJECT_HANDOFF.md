@@ -1,3 +1,99 @@
+## Entwicklungsblock 2026-11-12 – Niederländische Schulzeiten / Latein-Ressourcenprüfung
+
+**Stand:** Weiterarbeit auf expliziter früherer Gesamtfreigabe. Noch KEIN
+für den Nutzer freigegebener VOC-0.5-Testbuild; nur Entwicklung auf
+`develop/offline-supabase-20261105`. Keine Cloud-Datenbank
+zurückgesetzt, keine produktive App geändert und
+`vocprog-test/main` nicht überschrieben.
+
+### Abgleich beim Wiedereinstieg
+- `PROJECT_HANDOFF.md` `984727ca8a5597e5f47ed73fa472b8f78d393710`,
+  `vocprog-wasm-adapter.js` `c809c95c43e4f1777d83728f8cb085c9ce874774`,
+  WASM-Build-Workflow `e142593f86ddd5669f5652054051ecd540f1c71c`,
+  Adaptertests `e207dd6c91672452d62c6dc8d862de4a5826cb72`.
+- GitHub-Connector zeigt für den Baucommit `02fc5ce`
+  weder bestätigte passende Workflow-Runs noch Status-Checks.
+  Im Container `node` vorhanden, aber kein `cargo`,
+  `rustup`, `wasm-pack`; DNS zu `github.com` nicht
+  erreichbar. Kein WASM-Build oder Artifact bestätigt.
+
+### Implementiert
+- `vocprog-wasm-adapter.js`, Commit `11e9840`:
+  NL Zukunft `onvoltooid toekomende tijd` mit
+  `zal/zult/zal/zullen/zullen/zullen + infinitief`.
+  Damit ohne Kontextnachweis 3/5 Zeitformen sicher
+  modellierbar (Präsens, Vergangenheit, Zukunft).
+- NL `voltooid tegenwoordige tijd` und
+  `voltooid verleden tijd` können nur erzeugt werden, wenn
+  der Aufrufer mit `dutchAuxiliaryEvidence` ausdrücklich
+  `auxiliary` (`hebben` oder `zijn`), nichtleere
+  `source` und `context` sowie `reviewed:true` übergibt.
+  Ohne dieses durch einen überprüften Wörterbuch-/Kontextschritt
+  zu beschaffende Evidenzobjekt gelten die beiden Zeiten
+  als **missing**. Solche Flags sind ein Datenvertrag,
+  **keine automatische unabhängige externe Validierung**.
+  Bei `werken` ergeben sich z. B. `heb gewerkt`/
+  `hadden gewerkt`; bei `lopen` je nach Kontext
+  `heb gelopen` oder `ben gelopen`.
+- `tests/wasm-adapter.test.js`, Commit `98e95ce`:
+  NL Zukunkt, fehlende Hilfsverbevidenz, `hebben`,
+  `zijn`, Manipulations-/Ungültigkeitsfälle.
+- Französische Subjonctif-Oberflächenformen
+  korrigiert (`a2554f2`): `que j'aille`,
+  `qu'il/elle/on aille`, `j'allais`.
+  Regression in `tests/vocab-schema.test.js`
+  (`49111f2`).
+
+### Prüfergebnisse und Risiken
+- 12/12 separat ausgeführte JS-Prüfungen bestanden
+  (NL `hebben`/`zijn`, Future, Ablehnung fehlender
+  Verifikation und Latein-Lookup, französische
+  Kontraktionen); JavaScript-Syntax parsebar.
+- Diese Prüfungen sind isolierte Modul-/Mock-Fälle;
+  Browser-, Gemini-, echter WASM-, Supabase-,
+  Offline- und Zwei-Geräte-Test **nicht** nachgewiesen.
+- Keine automatisch aus Hilfsverbregeln oder Simple-Tense-
+  Endungen abgeleitete Gewissheit für alle NL-Verben.
+  Kontextuell wechselnde Verben brauchen Lexikoneinträge
+  mit Bedeutung/Konstruktion.
+
+### Lateinquellen – evaluierte Kandidaten, noch nicht integriert
+- `kigawas/whitakers-words`, Version `0.1.3` im
+  gelesenen `package.json`, Lizenz MIT
+  (`LICENSE` über GitHub-Connector gelesen):
+  TypeScript-Portierung von William Whitakers
+  `WORDS` mit umfangreichem Latin-Lexikon,
+  Wortformanalyse, Konjugations- und Flexionstags,
+  Browser-Demo. Muss geprüft werden, ob eine API
+  die **vier Stammformen** pro Lemma sowie vollständige
+  Schulkonjugationen und Deponentien eindeutig ableitet.
+  Keine unbelegte Behauptung, dass ein Analysator
+  automatisch ein vollständiger Paradigm-Generator sei.
+  <https://github.com/kigawas/whitakers-words>
+- `CIRCSE/collatinus`: nach Projektbeschreibung
+  explizite Konjugationstabellen und ~11.000 Lemmata,
+  allerdings GPL-3.0; C++/Qt plus zusätzliche
+  Browser-Portierungs- und Lizenzabwägung.
+  <https://github.com/CIRCSE/collatinus>
+- `CIRCSE/LEMLAT3` aufgrund CC BY-NC-SA 4.0
+  lizenzrechtlich eingeschränkt; nicht integriert.
+- Latein nur bei separat fachlich überprüften
+  Vier-Stammformen-Lernkarten für VOC, niemals allein
+  aus Infinitiv scheinbar vollständig erfinden.
+
+### Nächste bereits freigegebene Schritte
+1. GitHub Actions WASM-Build-Ergebnis/Artefakt prüfen, sobald
+   tatsächlicher Workflow-Zugriff oder benutzbares Artefakt
+   vorhanden; Download, SHA256, Node- und Browser-Fixtures.
+2. Latein-TypeScript-Paketquellen bis zur konkreten
+   Lexikon-/Flexions-API verfolgen, daraus einen
+   konservativen Principal-Parts-Datenvertrag
+   und Testfälle ableiten.
+3. Erst nach bestandener E2E-Prüfung den vollständigen
+   neuen Build auf `vocprog-test/main` veröffentlichen.
+   Produktivübernahme braucht gesonderte Nutzerabnahme;
+   Analyse-Reset erst vor dieser Übernahme.
+
 ## Nächster freigegebener Schritt – WASM-Buildvorbereitung und Sprachadapter (2026-11-12)
 
 **Ziel / Status:** Reproduzierbare Integration der etablierten

@@ -59,7 +59,7 @@
     for(const lang of Object.keys(LANGS)) {
       const k="vocab_trainer_data_"+lang, data=read(k,[]);
       if (!Array.isArray(data)||!data.length) continue;
-      let book=books.find(b=>b.lang===lang);
+      let book=books.find(b=>b.lang===lang&&bookKind(b)==="vocab");
       if(!book) {
         book={id:id(),name:"Muster",lang,updatedAt:new Date().toISOString()};
         books.push(book); didChange=true;
@@ -326,7 +326,7 @@
   const oldOnLang=onLanguageChange;
   onLanguageChange=function(){
     oldOnLang();
-    const b=books.find(x=>x.lang===get("targetLang").value);
+    const b=books.find(x=>x.lang===get("targetLang").value&&bookKind(x)==="vocab");
     if(b)chooseBook(b.id);
   };
   const oldMerge=mergeVocabularies;
@@ -549,8 +549,8 @@
       const data=JSON.parse(text);
       if(Array.isArray(data)){
         const lang=get("targetLang").value;
-        let book=books.find(b=>b.lang===lang);
-        if(!book)book=addBook(lang,"Muster");
+        let book=books.find(b=>b.lang===lang&&bookKind(b)==="vocab");
+        if(!book)book=addBook(lang,"Muster","vocab");
         chooseBook(book.id);
         const n=mergeVocabularies(data);saveToLocalStorage();refreshBookChoices();
         alert(n+" Vokabeln aus älterem Backup importiert.");return;

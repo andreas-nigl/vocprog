@@ -1,3 +1,91 @@
+## Entwicklungsfortsetzung – Latein-Datenintegrität und lokaler Lexikoneingang (2026-11-12)
+
+**Freigabe und Deployment:** Fortsetzung unter der bestehenden ausdrücklichen
+Gesamtfreigabe, **kein neuer User-Release**. Die bisherige öffentliche
+Testversion und `vocprog/main` sind nicht geändert worden.
+`vocprog-wasm-adapter.js` bleibt vorläufig nicht aktiv im HTML.
+
+### Verifizierter Ausgangszustand
+- Repo `andreas-nigl/vocprog`, Branch
+  `develop/offline-supabase-20261105` mit Handoff-Blob
+  `3a95d63e3f142fd73405da2cdda80bed19bbd5d6`.
+  Tatsächlich war bereits ein dokumentierter NL-/Latein-Block
+  vorhanden; dieser wurde fortgesetzt statt überschrieben.
+- GitHub-Connector meldete für den ursprünglichen WASM-Baucommit
+  `02fc5ce` keine bestätigten Actions-Läufe oder Statuschecks;
+  dieses API listet eingeschränkt Workflow-Runs (PR-Filter).
+  Ein erfolgreicher Build darf daraus nicht abgeleitet werden.
+- Kein lokales `cargo`, `rustup` oder `wasm-pack`,
+  `raw.githubusercontent.com` wegen fehlendem DNS nicht
+  erreichbar. Browser- und Node-WASM-Artefakt weiterhin nicht
+  vorhanden bzw. nicht verifiziert.
+
+### Latein-Referenz und Codeänderungen
+- Relevante Quelle `kigawas/whitakers-words`, Version
+  `0.1.3` laut gelesenem `package.json`, MIT-Lizenz
+  laut `LICENSE`. Der dokumentierte öffentliche Browserpfad
+  ist `WordsEngine.create(...)`, dann `parseWord(word)`;
+  `dictionaryForm(de)` ist separat aus der Formatter-API
+  exportiert. Datenquellen: `DICTLINE.GEN`,
+  `DICTLINE.SUP`, `INFLECTS.LAT`, `ADDONS.LAT`,
+  `UNIQUES.LAT`. Diese Dateien wurden **nicht**
+  kopiert, mitgeliefert oder extern gehostet.
+- Vorhandenes `vocprog-latin-principal.js` bereits mit
+  konservativen Stammformenprüfungen vorgefunden;
+  minimal weiterentwickelt, **nicht ersetzt**.
+- Commit `4cb125f`: in `principalPartsFromAnalysis`
+  werden Wörterbuch-Kandidaten bei vorhandenem
+  `analysis.word` nur dann berücksichtigt, wenn
+  die 2. zitierte Stammform (Infinitiv) diakritikbereinigt
+  übereinstimmt. Fehlt die `V`-Wortartkennung in der
+  Zitationszeile, wird die Zeile übersprungen.
+  `makeFourPartReview` lehnt unvollständige Vierergruppen
+  und abweichende erste drei Quellstammformen ab. Die
+  vierte Stammform kann mit unterschiedlicher
+  Wörterbuch-Konvention (z. B. `amātus` vs.
+  `amātum`) nach unabhängiger Prüfung angegeben werden.
+  Deponentien bleiben ausgeschlossen und brauchen eigene
+  Paradigmen. Kein im Code vorgegebenes
+  `reviewed:true` gilt als unabhängiger Beweis.
+- Commit `40882f1`: Neuer begrenzter lokaler
+  `lookupInfinitive(infinitive, engine, dictionaryForm)`
+  verwendet `engine.parseWord`, prüft Zeichenlänge
+  (max. 80), Unicode-Buchstaben, Resultatstruktur und
+  Übereinstimmung des analysierten Wortes. Nur nach
+  explizit unabhängig geprüftem Viererbeleg entstehen
+  trainierbare Infinitiv- und Stammgruppenkarten; weiterhin
+  **keine** allgemeine lateinische Tempuskonjugation.
+- Tests in `tests/latin-principal.test.js` erweitert:
+  Commits `bd08cbd` und `53a7091`.
+  Neu isoliert durch Modell-Testcode ausgeführt:
+  5/5 für Lexikonzuordnung, diakritische Übereinstimmung,
+  Stamm-Konflikt und Deponentium; 3/3 weitere für
+  lokale API-Eingabe, ungültige Zeichen und Antwortmismatch.
+  Nach Aktualisierung JS-Syntax kompiliert.
+  **Kein echter Node-`--test`-Prozess, keine
+  Browser- und Wörterbuch-Laufzeitprüfung nachgewiesen.**
+
+### Unveränderte Sperren / Nächster freigegebener Schritt
+1. GitHub-Actions-WASM-Job oder reproduzierbares
+   extern gebautes Artefakt inklusive SHA256 erhalten,
+   damit die fünf Sprachadapter mit echten Daten getestet
+   werden können. Keine unbelegte Erfolgsbehauptung.
+2. Latein-Bibliothek mit lokalem Datenpaket und
+   geklärter Datenlizenz, Provenienz und Größe aufbauen;
+   Quellenkonvention zu vierter Form, deponentischen
+   und fehlenden Stammformen unabhängig validieren.
+3. Alle übrigen Entwicklungsauflagen aus dem Handoff:
+   echte App-Browser-, Scan-, Supabase-, Offline- und
+   Zwei-Geräte-Regressionen, Transaktionssicherheit
+   beim Buch-Merge, kontrollierte Migration der Live-Bücher,
+   fachlich geprüfte Übersetzungen und vollständige
+   Verbkataloge für alle Sprachen.
+4. Erst nach diesen Prüfungen `vocprog-test/main`
+   veröffentlichen und Nutzerabnahme einholen;
+   produktives `main` und finale Analyse-Resets
+   weiterhin nicht anfassen.
+
+
 ## Fortsetzung 2026-11-12 – bestätigte niederländische Perfektbildung und lateinische Viererformen
 
 **Freigabe/Branch:** Bereits freigegebene VOC-0.5-Entwicklung auf

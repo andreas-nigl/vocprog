@@ -622,6 +622,10 @@
     localStorage.setItem(STORE+"_tense_"+lang,select.value);
   }
   window.refreshVerbSelection=function(){
+    if(isVerbBook()){
+      const current=get("tenseSelect")?.value,lang=activeBook()?.lang;
+      if(current&&lang)localStorage.setItem(STORE+"_tense_"+lang,current);
+    }
     refreshVerbSelection();
     if(isVerbBook())filterVocabByPages();
   };

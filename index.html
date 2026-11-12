@@ -384,12 +384,20 @@
           Schreibe erkannte Konjugationen ausschließlich in "conjugations", nie doppelt
           in "items", falls die Form sonst separat als Vokabel erscheinen würde.
 
+          Prüfe AUCH bei einzelnen Vokabeln, ob sie Verben im Infinitiv sind.
+          Liste jedes auf der Seite wirklich erkennbare Verb in "verbs" mit Infinitiv,
+          deutscher Grundbedeutung und Seitenzahl auf, selbst wenn keine Konjugation
+          abgedruckt ist. Andere Wortarten niemals in "verbs" aufnehmen.
+          Keine Infinitive erfinden, die aus dem Bild nicht ableitbar sind.
+          Erkenne und trenne Vokabelwörter von Verbformen. Die Buchart (Vokabeln
+          oder Verben) wird vom Benutzer ausgewählt, nicht von der KI.
           Antworte AUSSCHLIESSLICH im gültigen JSON-Format als Objekt mit folgender Struktur:
           {
             "detected_language_code": "en-US", 
             "items": [
               { "page": "190", "foreign": "Fremdwort", "german": "deutsche Übersetzung", "sentence_foreign": "Vollständiger Beispielsatz ohne Welle", "sentence_german": "Satzübersetzung" }
             ],
+            "verbs": [{ "page": "190", "infinitive": "aller", "german": "gehen" }],
             "conjugations": [
               { "page": "190", "infinitive": "aller", "tense": "présent",
                 "forms": [
@@ -447,14 +455,15 @@
       }
       acceptScannedLanguage(parsedResponse.detected_language_code);
 
-      let addedCount = mergeVocabularies(newVocabs);
-
+      const verbBookSelected=isSelectedVerbBook();
+      let addedCount=verbBookSelected?0:mergeVocabularies(newVocabs);
       saveToLocalStorage();
+      const baseVerbs=ingestVerbInfinitives(parsedResponse.verbs||[],parsedResponse.detected_language_code);
       const countConjugations=ingestConjugations(parsedResponse.conjugations||[], parsedResponse.detected_language_code);
       updateScannedPagesUI();
       initPageInputAndSelectors();
       document.getElementById('rangeCard').classList.remove('hidden');
-      status.innerText = `${addedCount} neue Vokabeln und ${countConjugations} Konjugationsformen erfolgreich gespeichert.`;
+      status.innerText = `${addedCount} neue Vokabeln, ${baseVerbs} erkannte Infinitive und ${countConjugations} abgedruckte Konjugationsformen gespeichert. Weitere Zeitformen benötigen noch die unabhängige Verifikation.`;
       rawImages = [];
       renderGallery();
     } catch (err) {

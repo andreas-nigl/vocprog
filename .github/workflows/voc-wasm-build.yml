@@ -1,0 +1,80 @@
+name: VOC conjugation WASM build (development)
+on:
+  push:
+    branches:
+      - develop/offline-supabase-20261105
+    paths:
+      - ".github/workflows/voc-wasm-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout VOC development sources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Verify Rust toolchain
+        run: |
+          rustc --version
+          cargo --version
+          rustup target add wasm32-unknown-unknown
+      - name: Install pinned wasm-pack version
+        run: cargo install wasm-pack --version 0.14.0 --locked
+      - name: Fetch immutable ablaut 0.11.0 source
+        run: |
+          git clone --filter=blob:none https://github.com/ablaut-dev/ablaut.git ablaut-source
+          cd ablaut-source
+          git checkout --detach ca8d2212c20d7e5ae83771dc3fe37023fda9c7cc
+          test "$(git rev-parse HEAD)" = "ca8d2212c20d7e5ae83771dc3fe37023fda9c7cc"
+          grep -q '^version = "0.11.0"$' Cargo.toml
+      - name: Produce browser WASM package
+        run: |
+          mkdir -p wasm-output
+          wasm-pack build ./ablaut-source --target web --out-dir ../wasm-output -- --features wasm
+          test -s wasm-output/ablaut_bg.wasm
+          test -s wasm-output/ablaut.js
+      - name: Produce Node WASM package
+        run: |
+          mkdir -p wasm-node-output
+          wasm-pack build ./ablaut-source --target nodejs --out-dir ../wasm-node-output -- --features wasm
+          test -s wasm-node-output/ablaut_bg.wasm
+          test -s wasm-node-output/ablaut.js
+      - name: Verify exported conjugation API with fixture verbs
+        run: |
+          node - <<'NODE'
+          const assert=require('node:assert/strict');
+          const wasm=require('./wasm-node-output/ablaut.js');
+          const cases=[
+            {word:'manger',lang:'fra',expected:'mangeons'},
+            {word:'aller',lang:'fra',expected:'allons'},
+            {word:'go',lang:'eng',expected:'went'},
+            {word:'lopen',lang:'nld',expected:'liep'}
+          ];
+          for(const {word,lang,expected} of cases){
+            const result=wasm.conjugate(word,lang);
+            assert(result&&typeof result==='object');
+            assert(JSON.stringify(result).includes(expected),
+              word+' ('+lang+') missing '+expected);
+          }
+          for(const lang of ['spa','por']){
+            const word=lang==='spa'?'hablar':'falar';
+            const result=wasm.conjugate(word,lang);
+            assert(result&&typeof result==='object');
+          }
+          process.stdout.write('Six language fixtures OK\\n');
+          NODE
+      - name: Calculate artifact checksums
+        run: |
+          (cd wasm-output && sha256sum ablaut.js ablaut_bg.wasm > SHA256SUMS)
+      - name: Upload compiled library (not deployed)
+        uses: actions/upload-artifact@v4
+        with:
+          name: voc-ablaut-0110-browser-and-node
+          path: |
+            wasm-output/
+            wasm-node-output/
+          retention-days: 14

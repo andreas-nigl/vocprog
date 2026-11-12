@@ -73,7 +73,7 @@
       if(didChange) save(k,data);
     }
     if(didChange) save(STORE+"_books",books);
-    if(!chosenBook||!books.some(b=>b.id===chosenBook)) chosenBook=books[0]?.id||"";
+    if(!chosenBook||!books.some(b=>b.id===chosenBook&&b.lang!=="la-LA")) chosenBook=books.find(b=>b.lang!=="la-LA")?.id||"";
     localStorage.setItem(STORE+"_book",chosenBook);
   }
   function persistMetadata(){
@@ -1233,7 +1233,7 @@
     history=history.map(({profile,...event})=>event);
     save(STORE+"_events",history);
     ensureMigration();
-    if(chosenBook)chooseBook(chosenBook);else refreshBookChoices();
+    if(chosenBook&&books.some(b=>b.id===chosenBook&&b.lang!=="la-LA"))chooseBook(chosenBook);else refreshBookChoices();
     updateOnlineState();
     tempImages().then(images=>{
       if(Array.isArray(images)&&images.length&&!rawImages.length){

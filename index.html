@@ -483,13 +483,23 @@
 
       if (!foreignStr && !germanStr) return;
 
-      const isDuplicate = vocabList.some(v => 
-        v.bookId === item.bookId &&
-        String(v.page).trim() === pageStr &&
-        String(v.foreign).trim().toLowerCase() === foreignStr.toLowerCase() &&
-        String(v.german).trim().toLowerCase() === germanStr.toLowerCase() &&
-        ((item.kind !== "conjugation") || String(v.tense||"") === String(item.tense||""))
-      );
+      const normalized = value => String(value || "").trim().normalize("NFKC").toLocaleLowerCase();
+      const kind = item.kind || "words";
+      const verbKinds = new Set(["verb-infinitive", "verb-participle",
+        "verb-imperative", "verb-form", "verb-principal", "verb-ing",
+        "verb-gerund", "conjugation"]);
+      const isDuplicate = vocabList.some(v => {
+        if (v.bookId !== item.bookId || (v.kind || "words") !== kind) return false;
+        if (verbKinds.has(kind)) {
+          if (normalized(v.infinitive || v.lemma) !== normalized(item.infinitive || item.lemma))
+            return false;
+          return normalized(v.tense) === normalized(item.tense) &&
+            normalized(v.person) === normalized(item.person);
+        }
+        return String(v.page).trim() === pageStr &&
+          normalized(v.foreign) === normalized(foreignStr) &&
+          normalized(v.german) === normalized(germanStr);
+      });
 
       if (!isDuplicate) {
         vocabList.push({
@@ -501,6 +511,11 @@
           tense: item.tense || "",
           infinitive: item.infinitive || "",
           person: item.person || "",
+          verbId: String(item.verbId || ""),
+          lemma: String(item.lemma || ""),
+          regularity: String(item.regularity || ""),
+          verification: String(item.verification || ""),
+          translationVerification: String(item.translationVerification || ""),
           lang: item.lang || document.getElementById("targetLang").value,
           foreign: foreignStr,
           german: germanStr,

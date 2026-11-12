@@ -1,0 +1,21 @@
+name: VOC unit tests
+on:
+  push:
+    branches:
+      - develop/offline-supabase-20261105
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  french-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout pinned
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Run dependency-free JavaScript tests
+        run: |
+          node --version
+          node --test tests/*.test.js

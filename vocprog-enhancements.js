@@ -84,7 +84,7 @@
         .sort((a,b)=>String(a.id).localeCompare(String(b.id)));
       if(group.length<2)continue;
       const primary=group[0],duplicateIds=new Set(group.slice(1).map(b=>b.id));
-      const backupKey=STORE+"_verbbook_backup_"+lang;
+      const backupKey=STORE+"_verbbook_backup_"+lang+"_"+[...duplicateIds].sort().join("_");
       if(!localStorage.getItem(backupKey)){
         try{
           localStorage.setItem(backupKey,JSON.stringify({

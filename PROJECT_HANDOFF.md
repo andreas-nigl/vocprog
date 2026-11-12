@@ -1,3 +1,141 @@
+## Entwicklungsfortsetzung 2026-11-12 – lokaler FR-Referenzmotor und sichere Kartenpersistenz
+**Status:** durch vorausgehende Gesamtfreigabe gedeckte Teilimplementierung,
+keine neue Nutzerabnahme; **nicht deployen** bis vollständige Daten- und
+Funktionsregressionen, `vocprog-test/main` weiter v0.4.
+
+### Tatsächlich implementiert und gesichert
+- GitHub Repo `andreas-nigl/vocprog`, Entwicklung
+  `develop/offline-supabase-20261105` (früherer Handoff-Stand
+  `1fb281f` überprüft).
+- **Lokaler, dependency-freier französischer Referenzbaustein:**
+  `vocprog-fr-reference.js`, Commit `a40e8f5`.
+  Strikt freigegebener Umfang: **vier Pilotverben**
+  `aller`, `parler`, `manger`, `commencer`.
+  Pro Verb sieben Schulzeitformen mit je sechs Personalformen,
+  Infinitiv, Participe passé, Impératif, Regularität, Auxiliar-
+  und Accord-Metadaten. Unbekannte Verben/Tempora → `null`
+  bzw. `not-verified`, **niemals geraten**. Beispiel:
+  `manger` mit `nous mangeons`, `nous mangions`,
+  `commencer` mit `nous commençons`,
+  `aller` mit `allé(e)(s)`.
+- Offizielle Grammatikreferenzen für die Stichprobe:
+  - <https://www.dictionnaire-academie.fr/conjuguer/A9M0490>
+  - <https://www.dictionnaire-academie.fr/conjuguer/A9C3106>
+  - <https://www.larousse.fr/de/konjugation/franzosisch/manger/5950>
+  - <https://www.larousse.fr/fr/conjugaison/francais/parler/11043>
+- HTML lädt `vocprog-fr-reference.js` vor
+  `vocprog-enhancements.js` (Commit `e4735b7`);
+  SW-Cache-Manifest auf `vocprog-staging-20261112-v7`
+  und Offline-Asset erweitert (`206fbe8`).
+  **SW nicht real auf Mobilgerät verifiziert.**
+- Entwicklungs-Scan verwendet lokalen FR-Referenzabgleich gegen
+  tatsächlich vom Scanmodell ausgelesene Personalformen;
+  Widersprüche werden verworfen und als Zähler angezeigt
+  (`978e708`, `69b4658`). Für nicht unterstützte
+  Verben bleibt ein explizites `scan-unverified`, das
+  nicht stillschweigend für den Trainer freigegeben wird.
+- Für eines der vier Pilotverben wird nach erkannter
+  Grundvokabel optional eine zusätzliche Gemini-Anfrage nur
+  zur **deutschen Übersetzung** ausgelöst. Die fremdsprachigen
+  Formen kommen AUSSCHLIESSLICH aus dem lokalen Referenzmotor;
+  die Antwort wird strukturell auf alle 7×6 Formen plus
+  Imperativ und Partizip geprüft. Erfolgsfall: 42 Zeitform-
+  karten + 2 Grundformkarten + gesonderter Infinitiv
+  im vorhandenen sprachspezifischen Verbenbuch
+  (`5291766`, `5d73552`).
+  Fehlender API-Key, Offline, API-Fehler oder unvollständiges
+  Modell-JSON führen zu KEINER spekulativen Ersatzkonjugation;
+  der Infinitiv und der Referenzdatensatz bleiben erhalten.
+  Jede KI-Übersetzung trägt `translationVerification:
+  ai-generated-unverified`: strukturell geprüft heißt
+  **nicht fachlich unabhängig verifiziert**.
+- Überschneidungen mit vom Foto gelesenen gültigen
+  Personalformen werden vermieden (`c125a7a`).
+- **Kritischen Datenverlustfehler behoben:** Legacy-Merge
+  verwirft nicht länger `verbId`, `lemma`,
+  `verification`, `translationVerification` und
+  `regularity`. Deduplizierung nach Verb-ID/Art/
+  Zeitform/Person statt allein nach identischer Schreibweise,
+  sodass z. B. `je mange` in Présent und Subjonctif
+  getrennte Karten bleiben (`c43e3d6`, `4016ff1`).
+- Verbtabelle zeigt Regularität nur oben im Titel;
+  kompakte Imperativantworten mit und ohne Pronomenzusatz
+  sowie mit/ohne Leerzeichen um Slash akzeptieren
+  (`df4f4fb`).
+- Lernanalyse zählt nun Vorleseklicks auf Frage UND
+  Antwort (`958fe84`).
+
+### Prüfergebnisse und Testartefakte
+- 15/15 isolierte FR-Referenzprüfungen bestanden.
+  Includes `manger`/ `aller`/ `commencer`,
+  alle sieben Zeitformen, Accord, vorgegebenen Fehler
+  `nous mangons` verworfen, unbekanntes Verb/Tempus
+  ausdrücklich nicht verifiziert.
+- Vier Verben × (42 Zeitformkarten + 2 Grundformkarten):
+  isolierte Kartenstruktur und Einzigartigkeit erfolgreich.
+- 7/7 isolierte Übersetzungsadapter-Prüfungen bestanden,
+  inklusive Ablehnung fehlender Werte/HTML in
+  KI-generierten deutschen Texten.
+- 3/3 isolierte Legacy-Merge-Prüfungen bestanden:
+  Zeitkarten getrennt, Doppeleintrag unterdrückt,
+  Verifikationsmetadaten erhalten.
+- HTML Inline-JS, Erweiterungs-JS und SW parsebar.
+- Neue Testdateien:
+  `tests/fr-reference.test.js` (`f4d58b8`);
+  `tests/vocab-schema.test.js` (`02c85fe`).
+- GitHub Actions Workflow
+  `.github/workflows/voc-unit-tests.yml`
+  (`a4ed5d0`), Node-Testlauf nur auf
+  `develop/offline-supabase-20261105`,
+  GitHub `actions/checkout` durch unveränderliche SHA
+  gepinnt, `contents: read` und 5-Minuten-Limit.
+  **Workflow-Erfolg nicht bestätigt**, kombinierte Commit-
+  Status-API meldete keine Statusobjekte. Keine
+  Behauptung eines erfolgreichen GitHub-CI-Laufs.
+- Öffentliches `vocprog-test/main/index.html` zuletzt
+  Blob `710a8317d3177864e6d5dcbe8ba08c717271977f`,
+  produktives `vocprog/main/index.html`
+  Blob `4ddacd1f1c84ae4dc7a8b60128657545c212b681`.
+  Keine Veröffentlichungsänderung in diesem Block.
+
+### Sperrende Restpunkte für den vollständigen VOC-0.5-Testbuild
+1. Für **alle französischen Verben** und die weiteren fünf
+   vorhandenen Sprachen eine vollständig geprüfte Flexions-
+   Engine / Ressourcen integrieren. Der eingeschränkte
+   Pilotmotor (4 Verben) ist KEIN Ersatz für ablaut-WASM
+   und noch keine allgemeine Verbkonjugation.
+2. Deutscher Übersetzungsinhalt der vollständigen Formen
+   durch echte Scan-/KI-Fälle und fachliche Probe überprüfen;
+   derzeit nur JSON-Strukturtests, keinerlei Live-Gemini-
+   Prüfung. KI-Sprachübersetzung ist keine unabhängige
+   lexikalische Verifikation.
+3. Umfassende Browsertests (Kamera, Scan, Training, Tabelle,
+   Nutzerinteraktion, Offline-Neustart, Sync) und Abnahmetests
+   auf mindestens zwei Geräten.
+4. Merge-Transaktion bzw. idempotente Servermigration
+   gegenüber gleichzeitigen/stale Clients absichern.
+   Öffentliche Cloud bleibt nach Nutzerentscheidung
+   grundsätzlich manipulierbar; kein Authentifizierungs-
+   oder Row-Level-Eigentümerschutz.
+5. Vorhandene Cloudbücher gemäß Nomenklatur umstellen
+   und Vokabeln der alten Live-App erst nach echten
+   FR-/EN-Exporten und Bestandsvergleich importieren.
+   **Keine Datenbankmigration ausgeführt.**
+6. Einmaliger Lernanalyse-Reset erst unmittelbar vor
+   freigegebener Produktivübernahme, nicht während
+   aktueller Entwicklung.
+7. Offline-Standalone nicht neu gebaut; PWA-Testbuild
+   v0.5 noch nicht auf öffentliche Testseite übertragen.
+
+### Nächster freigegebener Schritt
+- Reproduzierbaren, lokalen WASM-Konjugationsmotor mit
+  abgedeckten Schulzeitformen für FR/EN/ES/PT/NL
+  integrieren; für Latein separate zuverlässige Quelle.
+- Sprachform-Ausgabe + deutsche Referenzübersetzungen
+  für die Kernfälle gegen offizielle Konjugationstabellen
+  und echte Scanbilder prüfen. Vor Deployment
+  Konflikt-/Migrationssicherheit abschließen.
+
 ## Referenzmotor-Prüfung – 2026-11-12 (Fortsetzung, noch kein Build)
 - Auf Grundlage des bestehenden freigegebenen Entwicklungsschritts nach
   v0.5-Implementierungszwischenstand geprüft: `ablaut-dev/ablaut`

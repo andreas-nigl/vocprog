@@ -17,6 +17,7 @@
 
   let chosenBook = localStorage.getItem(STORE+"_book") || "";
   let chosenForScan = "";
+  let pendingScanBook = read(STORE+"_pendingScanBook",null);
   let lastSync = localStorage.getItem(STORE+"_synced") || "";
   let analysisInterrupted = false;
   let analyzedThisCard = false;
@@ -178,6 +179,7 @@
   }
   window.openBookPicker=function(source){
     if(!navigator.onLine){get("scanStatus").textContent="Kamera und Galerie sind für neue Scans nur online verfügbar.";return;}
+    pendingScanBook=null;localStorage.removeItem(STORE+"_pendingScanBook");
     const modal=get("bookPicker");
     const dropdown=get("pickerBook");
     dropdown.innerHTML="";
@@ -191,23 +193,38 @@
     chosenForScan=source;
     modal.showModal();
   };
+
   window.commitBookPicker=function(){
-    const dropdown=get("pickerBook");
-    let b=books.find(b=>b.id===dropdown.value);
-    if(dropdown.value==="__new_vocab__"||dropdown.value==="__new_verbs__"){
-      const kind=dropdown.value==="__new_verbs__"?"verbs":"vocab";
+    const dropdown=get("pickerBook"),choice=dropdown.value;
+    let book=books.find(b=>b.id===choice);
+    if(choice==="__new_vocab__"){
       const name=get("pickerNewName").value.trim();
       if(!name)return alert("Bitte einen Buchnamen eingeben.");
-      // Language is only reliable after the scan; create a provisional book.
-      if(!b)b=addBook("",name,kind);
+      book=addBook("",name,"vocab");
     }
-    if(!b)return;
-    chooseBook(b.id);
+    if(choice==="__new_verbs__"){
+      const name=get("pickerNewName").value.trim();
+      if(!name)return alert("Bitte einen Buchnamen eingeben.");
+      pendingScanBook={kind:"verbs",name};
+      save(STORE+"_pendingScanBook",pendingScanBook);
+      get("scanStatus").textContent="Verbenbuch wird nach der Spracherkennung zugeordnet.";
+    }else{
+      pendingScanBook=null;
+      localStorage.removeItem(STORE+"_pendingScanBook");
+      if(!book)return;
+      chooseBook(book.id);
+    }
     get("bookPicker").close();
     get(chosenForScan==="camera"?"cameraInput":"galleryInput").click();
   };
   window.acceptScannedLanguage=function(language){
     if(!Object.prototype.hasOwnProperty.call(LANGS,language))throw Error("Unbekannte oder nicht unterstützte Sprache: "+language);
+    if(pendingScanBook?.kind==="verbs"){
+      let book=books.find(x=>x.lang===language&&bookKind(x)==="verbs");
+      if(!book)book=addBook(language,pendingScanBook.name,"verbs");
+      pendingScanBook=null;localStorage.removeItem(STORE+"_pendingScanBook");
+      chooseBook(book.id);
+    }
     const b=books.find(x=>x.id===chosenBook);
     if(!b)throw Error("Vor dem Scannen bitte ein Buch auswählen.");
     if(b.lang&&b.lang!==language)throw Error("Buch „"+b.name+"“ enthält bereits "+(LANGS[b.lang]||b.lang)+". Die neu erkannten Seiten sind "+LANGS[language]+". Bitte ein eigenes Buch anlegen.");

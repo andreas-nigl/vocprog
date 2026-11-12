@@ -551,6 +551,120 @@
     alert("Bitte zum Löschen das rote X beim gewünschten Buch verwenden.");
   };
 
+
+  // Only printed / individually validated forms are trainable. Do not invent inflections.
+  const TENSES={
+    "fr-FR":[["présent","Présent (Gegenwart)"],["imparfait","Imparfait (unvollendete Vergangenheit)"],["passé composé","Passé composé (zusammengesetzte Vergangenheit)"],["plus-que-parfait","Plus-que-parfait (Vorvergangenheit)"],["futur simple","Futur simple (Zukunft)"],["conditionnel présent","Conditionnel présent (würde-Form)"],["subjonctif présent","Subjonctif présent (Subjonctif Gegenwart)"]],
+    "en-US":[["simple present","Simple Present (Gegenwart)"],["present progressive","Present Progressive (Verlaufsform Gegenwart)"],["simple past","Simple Past (Vergangenheit)"],["past progressive","Past Progressive (Verlaufsform Vergangenheit)"],["present perfect","Present Perfect (vollendete Gegenwart)"],["past perfect","Past Perfect (Vorvergangenheit)"],["will future","Will-Future (Zukunft)"],["going to future","Going-to-Future (geplante Zukunft)"],["conditional","Conditional (würde-Form)"]],
+    "es-ES":[["presente","Presente (Gegenwart)"],["pretérito perfecto compuesto","Pretérito perfecto compuesto (zusammengesetzte Vergangenheit)"],["pretérito indefinido","Pretérito indefinido (abgeschlossene Vergangenheit)"],["pretérito imperfecto","Pretérito imperfecto (unvollendete Vergangenheit)"],["pluscuamperfecto","Pluscuamperfecto (Vorvergangenheit)"],["futuro simple","Futuro simple (Zukunft)"],["condicional simple","Condicional simple (würde-Form)"],["presente de subjuntivo","Presente de subjuntivo (Subjunktiv Gegenwart)"]],
+    "pt-PT":[["presente","Presente (Gegenwart)"],["pretérito perfeito","Pretérito perfeito (abgeschlossene Vergangenheit)"],["pretérito imperfeito","Pretérito imperfeito (unvollendete Vergangenheit)"],["mais-que-perfeito composto","Mais-que-perfeito composto (Vorvergangenheit)"],["futuro do presente","Futuro do presente (Zukunft)"],["condicional","Condicional (würde-Form)"],["presente do conjuntivo","Presente do conjuntivo (Konjunktiv Gegenwart)"]],
+    "nl-NL":[["onvoltooid tegenwoordige tijd","Onvoltooid tegenwoordige tijd (Gegenwart)"],["onvoltooid verleden tijd","Onvoltooid verleden tijd (Vergangenheit)"],["voltooid tegenwoordige tijd","Voltooid tegenwoordige tijd (Perfekt)"],["voltooid verleden tijd","Voltooid verleden tijd (Plusquamperfekt)"],["onvoltooid toekomende tijd","Onvoltooid toekomende tijd (Zukunft)"]],
+    "la-LA":[["praesens","Praesens (Gegenwart)"],["imperfectum","Imperfectum (Imperfekt)"],["perfectum","Perfectum (Perfekt)"],["plusquamperfectum","Plusquamperfectum (Vorvergangenheit)"],["futurum i","Futurum I (Zukunft)"],["futurum ii","Futurum II (vollendete Zukunft)"]]
+  };
+  const baseVerbKinds=new Set(["verb-infinitive","verb-participle","verb-imperative","verb-principal","verb-ing","verb-gerund"]);
+  function activeBook(){return books.find(b=>b.id===chosenBook);}
+  function isVerbBook(){return bookKind(activeBook()||{})==="verbs";}
+  function normalizeTense(value){return String(value||"").trim().toLocaleLowerCase().normalize("NFKC");}
+  function refreshVerbSelection(){
+    const verb=isVerbBook(),tenseWrap=get("tenseModeWrap"),modeWrap=get("studyModeWrap");
+    if(tenseWrap)tenseWrap.hidden=!verb;
+    if(modeWrap)modeWrap.hidden=verb;
+    const select=get("tenseSelect");if(!select||!verb)return;
+    const lang=activeBook().lang,catalog=TENSES[lang]||[];
+    const old=select.value||localStorage.getItem(STORE+"_tense_"+lang)||"";
+    select.replaceChildren(...catalog.map(([value,label])=>new Option(label,value)));
+    select.value=catalog.some(([value])=>value===old)?old:(catalog[0]?.[0]||"");
+    localStorage.setItem(STORE+"_tense_"+lang,select.value);
+  }
+  window.refreshVerbSelection=function(){
+    refreshVerbSelection();
+    if(isVerbBook())filterVocabByPages();
+  };
+  function selectedVerbEntries(){
+    const book=activeBook(),tense=normalizeTense(get("tenseSelect")?.value);
+    if(!book||bookKind(book)!=="verbs")return [];
+    const all=allVocab().filter(v=>v.bookId===book.id);
+    return all.filter(v=>baseVerbKinds.has(v.kind)||
+      ((v.kind==="conjugation"||v.kind==="verb-form")&&normalizeTense(v.tense)===tense));
+  }
+  const oldStartTraining=startTraining;
+  startTraining=async function(event){
+    if(!isVerbBook())return oldStartTraining(event);
+    const all=selectedVerbEntries();
+    const start=Number(get("startVocab").value),end=Number(get("endVocab").value);
+    const slice=all.slice(Math.max(0,start),end+1);
+    if(!slice.length)return alert("Für diese Zeitform liegen noch keine verifizierten Konjugationen vor.");
+    const reverse=get("direction").value==="foreign_to_de";
+    trainingItems=slice.map(v=>{
+      const foreign=String(v.foreign||""),german=String(v.german||"");
+      return {prompt:reverse?foreign:german,target:reverse?german:foreign,
+        pLang:reverse?activeBook().lang:"de-DE",tLang:reverse?"de-DE":activeBook().lang,
+        ref:v.refVocab||"",sourceId:v.id,bookId:v.bookId,page:v.page,
+        kind:"verbs",verbLemma:v.infinitive||v.lemma||foreign,verbId:v.verbId||v.infinitive||v.lemma||foreign,
+        verbTense:get("tenseSelect").value,record:v};
+    });
+    if(get("randomize").checked)trainingItems.sort(()=>Math.random()-0.5);
+    enterTraining();
+  };
+  const oldFilterVocab=filterVocabByPages;
+  filterVocabByPages=function(){
+    if(!isVerbBook())return oldFilterVocab();
+    filteredVocabList=selectedVerbEntries();
+    populateSelectors();
+  };
+  function escapeText(value){return String(value||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+  const oldCard=showCard;
+  showCard=function(){
+    oldCard();
+    const item=trainingItems[currentIndex],isVerb=item?.kind==="verbs";
+    get("verbTableToggle").hidden=!isVerb;
+    const panel=get("verbTablePanel");panel.hidden=true;
+    get("verbTableToggle").setAttribute("aria-expanded","false");
+    panel.replaceChildren();
+  };
+  window.toggleVerbTable=function(){
+    const item=trainingItems[currentIndex],panel=get("verbTablePanel"),btn=get("verbTableToggle");
+    if(!item||item.kind!=="verbs")return;
+    if(!panel.hidden){panel.hidden=true;btn.setAttribute("aria-expanded","false");return;}
+    const entries=allVocab().filter(v=>v.bookId===item.bookId&&
+      (v.verbId||v.infinitive||v.lemma||v.foreign)===item.verbId);
+    const fragment=document.createDocumentFragment(),title=document.createElement("h4");
+    title.textContent=item.verbLemma;fragment.append(title);
+    const table=document.createElement("table"),thead=document.createElement("thead"),heading=document.createElement("tr");
+    for(const label of [LANGS[activeBook()?.lang]||"Fremdsprache","Deutsch"]){
+      const cell=document.createElement("th");cell.textContent=label;heading.append(cell);
+    }
+    thead.append(heading);table.append(thead);
+    const tbody=document.createElement("tbody");
+    for(const e of entries.filter(v=>baseVerbKinds.has(v.kind)||normalizeTense(v.tense)===normalizeTense(item.verbTense))){
+      const tr=document.createElement("tr");
+      const first=document.createElement("td"),second=document.createElement("td");
+      const labels={"verb-infinitive":"Infinitif : ","verb-participle":"Participe passé : ","verb-imperative":"Impératif : ","verb-principal":"Principal parts : ","verb-ing":"-ing form : ","verb-gerund":"Gerundio : "};
+      first.textContent=(labels[e.kind]||"")+e.foreign;
+      second.textContent=e.german;
+      tr.append(first,second);tbody.append(tr);
+    }
+    table.append(tbody);fragment.append(table);
+    panel.replaceChildren(fragment);panel.hidden=false;btn.setAttribute("aria-expanded","true");
+  };
+  const oldSimplify=simplified;
+  // Slash-separated principal parts form one ordered answer, not alternatives.
+  window.gradeCurrentAnswer=function(){
+    if(analyzedThisCard)return;
+    const input=get("answerInput"),item=trainingItems[currentIndex],given=input.value.trim();
+    if(!given)return;
+    const normalized=value=>simplified(value).replace(/\s*\/\s*/g,"/").replace(/\s*\(\s*/g,"(").replace(/\s*\)\s*/g,")");
+    const expected=String(item.target||"");
+    const grouped=item.record?.kind==="verb-principal"||item.record?.kind==="verb-imperative";
+    const correct=grouped?normalized(given)===normalized(expected):
+      expected.split(/\s*(?:;|\bor\b)\s*/i).some(candidate=>normalized(given)===normalized(candidate));
+    analyzedThisCard=true;
+    input.className=correct?"answer-correct":"answer-wrong";
+    get("answerFeedback").textContent=correct?"Richtig":"Nicht richtig – Lösung aufgedeckt";
+    get("targetText").classList.remove("masked");
+    logEvent("graded",item,{correct,answer:given,foreign:item.record?.foreign||""});
+  };
+
   window.showLearningAnalysis=function(){
     const container=get("analysisContent");container.innerHTML="";
     const events=history;

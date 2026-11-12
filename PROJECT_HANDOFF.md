@@ -1,3 +1,113 @@
+## VOC-0.5-Testvorschau / AGENTS.md / Latein entfernt — 2026-11-12
+
+### Explizite aktuelle Nutzerentscheidung
+- **Latein komplett weglassen.** Unterstützte Sprachenauswahl: Englisch,
+  Französisch, Spanisch, Portugiesisch und Niederländisch. Latein nicht
+  in Scan-Prompt, Sprachauswahl, Verbenbuchliste oder Zeitform-Katalog.
+  Keine lateinischen Formen erzeugen. Historische lokale/cloud-
+  Datensätze **nicht löschen**, sondern in der Oberfläche verbergen;
+  späterer Datenlösch-/Migrationsauftrag wäre separat.
+- **Neue öffentliche Testversion angefordert**. Produktivversion
+  bleibt bis separater Abnahme unverändert.
+- AGENTS.md projektbezogen und ausdrücklich aufgeteilt in
+  allgemeine VOC-Regeln sowie nur für Entwicklungs-/Test-
+  umgebung geltende Vorgaben.
+
+### AGENTS.md: tatsächlich erstellt und gepusht
+- `andreas-nigl/vocprog`, Branch
+  `develop/offline-supabase-20261105`, Root `AGENTS.md`:
+  Commit `71842b1`.
+- `andreas-nigl/vocprog`, Branch `main`, Root
+  `AGENTS.md`: Commit `f5b026e`, **nur Dokumentation**,
+  produktiver Anwendungscode unverändert.
+- `andreas-nigl/vocprog-test`, Branch `main`, Root
+  `AGENTS.md`: Commit `9085e10`.
+- In allen dreien klare Trennung zwischen allgemeingültigen
+  VOC-Regeln und ausschließlich testbezogenen Vorgaben;
+  keine früheren `AGENTS.md` überschrieben.
+
+### Tatsächliche Implementierung / Deployment
+- Entwicklungsbranch: `index.html` (`cd40328`,
+  `c290859`, `2b7e8e0`): Latein aus Sprache und
+  KI-Spracherkennung entfernt; harter OCR-Guard **vor**
+  Buchzuordnung und Datenspeicherung; Titel und Fuß
+  als `Testvorschau 0.5`.
+- `vocprog-enhancements.js` (`924c24f`, `89df5d7`):
+  nur fünf unterstützte Sprachen, keine LAT-Zeitform;
+  alte LAT-Bücher nicht gelöscht, aber aus Auswahl
+  herausgefiltert; alte Auswahl beim Start korrigiert.
+- Experimentelle, noch nicht integrierte Latein-Dateien
+  `vocprog-latin-principal.js` und
+  `tests/latin-principal.test.js` aus Entwicklungsbranch
+  entfernt (`24e9092`, `bae9e62`).
+- `sw.js`: Cache `vocprog-staging-20261112-v8`,
+  Commit `e95f014`.
+- WASM-Buildworkflow zum erneuten Ausführen im
+  Entwicklungsbranch geändert (`f71068a`);
+  Quelle weiterhin gepinnt auf `ablaut` 0.11.0
+  Commit `ca8d2212c20d7e5ae83771dc3fe37023fda9c7cc`.
+  **Keine bestätigte erfolgreiche GitHub-Action oder
+  heruntergeladene WASM-Datei** verfügbar. Der
+  `vocprog-wasm-adapter.js` bleibt absichtlich
+  **nicht** als aktive Browser-Komponente eingebunden.
+- **Testdeployment durchgeführt**:
+  `andreas-nigl/vocprog-test`, `main`:
+  `vocprog-fr-reference.js` `b8fce46`,
+  `vocprog-enhancements.css` `1517c3e`,
+  `vocprog-enhancements.js` `573fa05`,
+  `index.html` `26ded1f`, `sw.js`
+  `44dc3b2` (letzter Staging-Commit).
+  URL: <https://andreas-nigl.github.io/vocprog-test/>.
+  Neue Testdateien auf GitHub mit dem Entwicklungsbranch
+  Blob-für-Blob abgeglichen: **5/5 identisch**.
+  Tatsächliche GitHub-Pages-HTTP-Auslieferung konnte
+  in der Arbeitsumgebung wegen fehlendem externen
+  Zugriff **nicht** überprüft werden.
+- Produktionscode `vocprog/main/index.html` blieb
+  bei Blob `4ddacd1f1c84ae4dc7a8b60128657545c212b681`.
+  Keine Supabase-Migration, RLS-/Auth-Änderung,
+  Buchumbenennung oder Analyse-Rücksetzung ausgeführt.
+
+### Tests und eingeschränkte Abnahme
+- Der vorangegangene isolierte Stand zeigte 42/42
+  Mock-Modultests **mit** Latein. Nach Entfernen der
+  Lateinkomponente bleiben 32/32 reine Modultests.
+- Neuer `tests/no-latin.test.js` (`b14a3fd`):
+  LAT-Sprachoption fehlt, LAT-Scan vor Speicherung
+  gesperrt, historische Daten nur verborgen.
+  Aktuell **35/35 isolierte JS-Modultests** erfolgreich.
+- Staging nach Übertragung: JavaScript-Syntax in
+  HTML/Erweiterungs-JS/FR-Referenz/SW parsebar,
+  benötigte UI-IDs und CSS-Selektoren vorhanden,
+  Script- und SW-Dateipfade konsistent,
+  LAT nicht sichtbar.
+- **Nicht als getestet behaupten:** echter
+  `node --test`-CI-Lauf des neuen Commitstands,
+  erfolgreicher WASM-Build/SHA-256-Prüfung,
+  Browser-/Mobil-Kamera, reale Gemini-Abfragen,
+  echtes Supabase-Merge/Mehrgeräte-Sync,
+  Offline-Cache-Neustart und GitHub-Pages-
+  HTTP-Erreichbarkeit. Die 0.5-Veröffentlichung ist
+  bewusst eine **Testvorschau, keine Nutzerabnahme**
+  und keine als vollständig bezeichnete
+  Konjugationsfunktion.
+
+### Noch offen und nächste bereits freigegebene Schritte
+1. Tatsächliches GitHub-Actions-WASM-Artefakt
+   samt Buildlogs/SHA-256 verifizieren,
+   fünfsprachige Sprachformen prüfen, danach
+   Motor in VOC 0.5 integrieren.
+2. Browser- und Supabase-E2E-Abnahme des neuen
+   Teststands, vor allem alte Daten, Buch-Merge,
+   Reset-Epoch, Scan und Offline-SW.
+3. Unabhängige Übersetzungsqualität und nur
+   nachgewiesene Verbformen; derzeit FR-Pilot nur
+   für vier Verben unabhängig grammatisch geprüft.
+4. Nutzerabnahme der Testversion und erst
+   danach gesonderte produktive Freigabe.
+   Analyse-Gesamtreset ausschließlich unmittelbar
+   vor freigegebener Live-Übernahme.
+
 ## Fortsetzung 2026-11-12 – vollständige Modultests und CI-Status
 
 **Auftrag:** „weiter“ nach Gmail/Supabase- und CI-Diagnose. **Keine Änderung an

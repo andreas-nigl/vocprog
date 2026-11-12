@@ -85,7 +85,32 @@
     return map;
   }
 
-  function dutchTenses(table) {
+  const DUTCH_AUXILIARIES = Object.freeze({
+    hebben: Object.freeze({
+      present: ["heb", "hebt", "heeft", "hebben", "hebben", "hebben"],
+      past: ["had", "had", "had", "hadden", "hadden", "hadden"]
+    }),
+    zijn: Object.freeze({
+      present: ["ben", "bent", "is", "zijn", "zijn", "zijn"],
+      past: ["was", "was", "was", "waren", "waren", "waren"]
+    })
+  });
+  const DUTCH_FUTURE = ["zal", "zult", "zal", "zullen", "zullen", "zullen"];
+
+  // An auxiliary is NOT inferable from the ablaut table alone.
+  // The caller must provide independently reviewed auxiliary evidence,
+  // including the sense/context when either auxiliary can apply.
+  function reviewedDutchAuxiliary(options) {
+    const evidence = options?.dutchAuxiliaryEvidence;
+    if (!evidence || evidence.reviewed !== true ||
+        typeof evidence.source !== "string" || !evidence.source.trim() ||
+        typeof evidence.context !== "string" || !evidence.context.trim() ||
+        !Object.prototype.hasOwnProperty.call(DUTCH_AUXILIARIES,evidence.auxiliary))
+      return null;
+    return evidence;
+  }
+
+  function dutchTenses(table,options) {
     const result = {};
     if (hasSix(table.present)) result["onvoltooid tegenwoordige tijd"] = [...table.present];
     if (Array.isArray(table.past) && table.past.length === 2 &&
@@ -95,12 +120,22 @@
         singular, singular, singular, plural, plural, plural
       ];
     }
-    // Auxiliary selection (hebben / zijn) and future expression need
-    // a separate, independently checked rule engine; do NOT guess.
+    const participle=norm(table.past_participle);
+    const reviewed=reviewedDutchAuxiliary(options);
+    if(reviewed&&participle) {
+      const auxiliary=DUTCH_AUXILIARIES[reviewed.auxiliary];
+      result["voltooid tegenwoordige tijd"]=
+        auxiliary.present.map(form=>form+" "+participle);
+      result["voltooid verleden tijd"]=
+        auxiliary.past.map(form=>form+" "+participle);
+    }
+    const infinitive=norm(table.infinitive);
+    if(infinitive)result["onvoltooid toekomende tijd"]=
+      DUTCH_FUTURE.map(form=>form+" "+infinitive);
     return result;
   }
 
-  function adapt(table, language) {
+  function adapt(table, language, options = {}) {
     if (!CODE[language]) throw Error("Unsupported conjugation language: " + language);
     if (!table || typeof table !== "object" || Array.isArray(table))
       throw Error("Missing conjugation table");
@@ -112,7 +147,7 @@
         if (hasSix(table[key])) forms[name] = table[key].map(norm);
       }
     } else if (language === "en-US") forms = englishTenses(table);
-    else if (language === "nl-NL") forms = dutchTenses(table);
+    else if (language === "nl-NL") forms = dutchTenses(table,options);
     const required = language === "nl-NL" ? [
       "onvoltooid tegenwoordige tijd", "onvoltooid verleden tijd",
       "voltooid tegenwoordige tijd", "voltooid verleden tijd",
@@ -136,7 +171,11 @@
         language === "nl-NL" ?
           [infinitive, Array.isArray(table.past) ? norm(table.past[0]) : "",
             norm(table.past_participle)] : null,
-      auxiliary: typeof table.auxiliary === "string" ? table.auxiliary : null,
+      auxiliary: language === "nl-NL"
+        ? reviewedDutchAuxiliary(options)?.auxiliary||null
+        : typeof table.auxiliary === "string" ? table.auxiliary : null,
+      auxiliaryEvidence: language === "nl-NL"
+        ? reviewedDutchAuxiliary(options)||null : null,
       verification: "morphology-wasm-adapted-not-language-reviewed",
       translationsVerified: false
     };
@@ -145,10 +184,10 @@
   function create(conjugateFunction) {
     if (typeof conjugateFunction !== "function") throw Error("WASM conjugator required");
     return Object.freeze({
-      conjugate(infinitive, language) {
+      conjugate(infinitive, language, options = {}) {
         const code = CODE[language];
         if (!code) throw Error("Unsupported language: " + language);
-        return adapt(conjugateFunction(norm(infinitive), code), language);
+        return adapt(conjugateFunction(norm(infinitive), code), language, options);
       }
     });
   }

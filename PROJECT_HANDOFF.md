@@ -1,3 +1,7 @@
+## Ergänzung 2026-11-12 – Imperativ-Beschriftung
+- In der französischen Verbtabelle lautet die Zeile in der Fremdsprachenspalte ausdrücklich **`Impératif : (tu) mange / (nous) mangeons / (vous) mangez`**. Das französische Label `Impératif :` steht einmal vor den drei Formen. Die Deutschspalte zeigt nur die Übersetzungen, ohne wiederholten Bezeichner. Vorhandene Hervorhebung von Schreibabweichungen bleibt erhalten, z. B. `mang**e**ons`.
+- Gleiches Schema bei allen französischen Verben mit Imperativ; bei Verben ohne gebräuchlichen Imperativ die Zeile weglassen. Diese Korrektur betrifft das Konzept, noch nicht implementierten App-Code.
+
 ## Verbindliche Präzisierung 2026-11-12 – sprachspezifische Stammformen und Tabellenüberschriften
 - Dieser Abschnitt ergänzt die oben dokumentierten Konjugationsanforderungen;
   **keine Implementierung / kein produktiver Release in diesem Schritt**.

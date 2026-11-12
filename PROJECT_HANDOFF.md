@@ -1,3 +1,113 @@
+## Fortsetzung 2026-11-12 – bestätigte niederländische Perfektbildung und lateinische Viererformen
+
+**Freigabe/Branch:** Bereits freigegebene VOC-0.5-Entwicklung auf
+`develop/offline-supabase-20261105`. **Kein öffentlicher
+Testbuild veröffentlicht und keine produktive Datei geändert.**
+`vocprog-test/main` bleibt v0.4, `vocprog/main`
+bleibt separat. Kein Analysedaten-Reset.
+
+### Prüfung des vorherigen Stands
+- Ausgangs-Handoff `984727ca8a5597e5f47ed73fa472b8f78d393710`,
+  WASM-Adapter `c809c95c43e4f1777d83728f8cb085c9ce874774`.
+- GitHub-Workflow des WASM-Builds weiterhin nicht
+  als erfolgreich bestätigt: zu Commit `02fc5ce`
+  weder Run noch Commit-Status gemeldet. Im verfügbaren
+  Container Node.js 22 installiert, `cargo`/
+  `rustup`/`wasm-pack` fehlen, direkter GitHub-
+  Download via DNS nicht erreichbar.
+  **Kein kompiliertes WASM-Asset vorhanden, kein
+  Browsertest des ablaut-Pakets durchgeführt.**
+- Upstream ablaut 0.11.0 `src/nld.rs` und
+  `data/nld/verbs.tsv` auf GitHub-Quellcommit
+  `ca8d2212c20d7e5ae83771dc3fe37023fda9c7cc`
+  geprüft: Flexionsdaten für NL vorhanden, aber
+  keine umfassende lexikalische Auxiliarentscheidung.
+
+### Neue Arbeit
+- `vocprog-wasm-adapter.js`, Commit `11e9840`:
+  Niederländisch jetzt drei direkt erzeugbare Schulzeiten
+  einschließlich `zal/zult + Infinitiv`.
+  Perfekt/Plusquamperfekt zusätzlich **nur mit
+  eingegebener, überprüfter Hilfsverb-Evidenz pro
+  Bedeutung und Verwendung**, `hebben`/`zijn`.
+  Datenvertrag:
+  `dutchAuxiliaryEvidence = {auxiliary, context,
+  source, reviewed:true}`. Fehlt ein Feld, bleiben
+  die beiden Zeiten als `missing` markiert.
+  Hinweis: Das Flag allein garantiert keine
+  externe Validierung; die Zuweisung wird
+  später an ein echtes überprüftes Lexikon gebunden.
+- `tests/wasm-adapter.test.js` `98e95ce`:
+  Zukünftige Formen, standardmäßige Sperre bei
+  fehlendem Auxiliar, erfolgreiches `hebben`/
+  `zijn`, Ablehnung ungültiger Angaben.
+- Französische Kontraktionen präzisiert:
+  `que j'aille`, `qu'il/elle/on aille`,
+  `j'allais`, commits `683ae7c`/
+  `a2554f2`, Regression in
+  `tests/vocab-schema.test.js` `49111f2`.
+- **12/12 isolierte** JS-Checks zu diesen Punkten
+  bestanden, Syntaxprüfung ohne Befund. Weder
+  echter Browser-/Cloud- noch WASM-Lauf.
+- Latein: GitHub `kigawas/whitakers-words`
+  (Version `0.1.3`, MIT) Quellcode geprüft:
+  `WordsEngine.parseWord()` liefert
+  `WordAnalysis.results[*].de` mit
+  Wörterbuch-`DictionaryEntry` und
+  `dictionaryForm(de)` erzeugt citation forms.
+  Im README etwa `amo, amare, amavi, amatus`.
+  **Wichtig:** Die vierte Wörterbuch-Form
+  `amatus` ist nicht automatisch die vom Nutzer
+  gewünschte Supinform `amatum`. Bei Deponentien
+  sind Stammformen anders. Deshalb keine
+  einfache ungeprüfte `-us`→`-um`-Regel.
+- `vocprog-latin-principal.js` Commit `7686f5d`:
+  konservativer, lokaler Principal-Parts-Adapter
+  zur quellgebundenen Extraktion, ohne Remote-
+  Aufrufe; akzeptiert nur eindeutig bestimmten
+  Verb-Lexikoneintrag. Bis unabhängig geprüfte
+  vier Stammformen vorliegen `trainable:false`.
+  Danach nur zwei **getrennte Lernkarten**:
+  Infinitiv und Vierergruppe. Deponentien,
+  Perfektdefektiva und Mehrdeutigkeiten werden
+  getrennt blockiert; komplette lateinische
+  Schulzeitformen sind **noch nicht erzeugt**.
+  Adapter noch nicht in `index.html` eingebunden.
+- `tests/latin-principal.test.js`,
+  Commit `0df63df`: Regressionen für eindeutige/
+  mehrdeutige Einträge, unabhängige Viererform-
+  Prüfung, getrennte Lernkarten und Deponentien.
+- **8/8 isolierte** lateinische Adapterprüfungen
+  bestanden; echte Whitaker-Laufzeit und
+  importierte Lexikondaten noch nicht getestet.
+- Quellen direkt: <https://github.com/kigawas/whitakers-words>
+  (README, `package.json`, `LICENSE`,
+  `src/lib/index.ts`, `src/lib/engine/engine.ts`,
+  `src/lib/formatter/dictionary-form.ts`),
+  daneben <https://github.com/CIRCSE/collatinus>
+  als alternativer, GPL-3.0-lizenzierter
+  Konjugationstabellen-Generator.
+
+### Verbleibende Sperren
+1. `ablaut` WebAssembly-Workflow tatsächlich
+   erfolgreich ausführen, Bundle verifizieren und
+   lokale E2E-/Browser-Tests durchführen.
+2. NL Hilfsverb-Informationen lexikalisch
+   fundiert hinterlegen und kontextuell sauber
+   unterscheiden. Bis dahin bleiben Perfektformen
+   ohne Reviewed-Evidence gesperrt.
+3. Lateinische Viererstammformen aus tatsächlichem
+   Wörterbuchlauf / verlässlicher Quelle validieren;
+   anschließend vollständige Konjugationen
+   inkl. Deponentien und fehlenden Formen.
+4. Deutsche KI-Übersetzungen fachlich prüfen,
+   Buchmerge und Cloudanalyse mit realen Daten/
+   Offlinegeräten testen; produktive Buchmigration
+   erst nach Backup und Live-Exportdateien.
+5. Das bestehende öffentliche Testprogramm und
+   das produktive Programm bleiben unberührt,
+   bis die vollständige Testversion abgenommen ist.
+
 ## Entwicklungsblock 2026-11-12 – Niederländische Schulzeiten / Latein-Ressourcenprüfung
 
 **Stand:** Weiterarbeit auf expliziter früherer Gesamtfreigabe. Noch KEIN

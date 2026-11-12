@@ -1,3 +1,46 @@
+## Lernanalyse – Änderungsanforderung zur Freigabe (2026-11-12)
+**Status: spezifiziert, Implementierung noch nicht freigegeben; keine Produktivänderung.**
+- Titel `LERNANALYSE` in Versalien, gleiche Schriftgröße. Direkt darunter
+  ein Buch-Dropdown, exakt ein Buch je Ansicht. Nur Statistiken dieses Buchs anzeigen.
+- Vokabelbücher: Kategorien `Vokabeln`, `Einfache Sätze`,
+  `KI-Spezialsätze`; unverändert seitenbasiert, aber je Kategorie
+  und Seite drei Kennzahlen: (1) Anzahl abgefragter Karten,
+  (2) Anteil korrekter unter **bewerteten** Antworten in Prozent,
+  (3) Anzahl der Vorleseklicks. Getippt und Sprache-zu-Text gleich gewertet.
+  Bei 0 bewerteten Antworten `–` (nicht 0 %).
+- Verbenbücher: nur `Verben`, KEINE normalen Beispielsätze oder
+  KI-Spezialsätze erstellen, trainieren oder auswerten. Kennzahlen
+  aggregiert über gesamtes Buch, NICHT je Seite/Verb: Anzahl
+  Abfragen, Trefferquote bewerteter Antworten, Vorleseklicks.
+- Pro ausgewähltem Buch darunter `Nicht richtig beantwortet`:
+  fremdsprachiger Eintrag und Anzahl falscher Bewertungen, absteigend
+  nach Häufigkeit, keine Tabelle und keine buchübergreifende Liste.
+  Bei identischen Oberflächenformen eindeutige Kartenidentität beachten.
+- **Triple-Tap/-Click** (dreimal aufeinanderfolgend) auf jeweilige
+  Kategorieüberschrift setzt ausschließlich die zugehörige
+  Lernanalyse zurück; Vokabelkategorien getrennt, Verben als
+  gesamter Bereich. Kein Löschen von Büchern, Vokabeln,
+  Verbformen oder KI-generierten Lerninhalten. Bedienung inkl.
+  Bestätigungs-/Rückmeldungsmechanismus und Ereignisabgrenzung
+  vor Implementation testen.
+- Zurücksetzen synchron und dauerhaft auf allen Geräten:
+  bisherige `history`-Events dürfen bei Merge nicht zurückkehren
+  und keine alten Zähler reaktivieren. Geeignete Lösung:
+  versionierter, zentral synchronisierter Analysestand/Epoch
+  pro Buch+Kategorie, mit explizitem Stichtag oder stabilem
+  Reset-Ereignis (Kollisions-/Offline-Fälle testen), statt lokaler
+  Zählerlöschung.
+- **Einmaliger Reset aller Analysen vor finalem Produktiv-Merge**
+  nach Nutzerabnahme und zusätzlich bestätigter Deployment-Freigabe,
+  Lerninhalte bleiben bestehen. Zeitpunkt und Migration/Backup
+  ausdrücklich dokumentieren; nicht jetzt ausführen.
+- Abnahmetests: Buchwahl, Seitenstatistik und Gesamt-Verbenstatistik,
+  3 Balken in korrekter Reihenfolge, Prozentsatz bei
+  nur gewerteten Antworten, Vorlese-Ereignisse, Fehlerliste,
+  scoped Triple-Tap-Reset, Cross-Device- und Offline-Sync,
+  keine Wiederherstellung alter Lernereignisse, keine verlorenen
+  Vokabeldaten, Nullstand vor Live-Übernahme.
+
 ## Beschlossene Verfeinerungen 2026-11-12 – getrennte Stammform-Abfragen, Accord und Datenübernahme
 
 ### Tabelle/Trainer je Sprache (bindende neue Regeln, noch nicht implementiert)

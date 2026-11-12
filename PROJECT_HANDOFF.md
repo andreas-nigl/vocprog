@@ -1,3 +1,66 @@
+## Verbindliche Präzisierung 2026-11-12 – sprachspezifische Stammformen und Tabellenüberschriften
+- Dieser Abschnitt ergänzt die oben dokumentierten Konjugationsanforderungen;
+  **keine Implementierung / kein produktiver Release in diesem Schritt**.
+- Tabellenkopf zeigt das Lemma samt einmaligem Regelmäßigkeitsstatus,
+  z. B. `manger [rég.]` oder `go [irrég.]`. In der Infinitivzeile
+  KEIN wiederholtes `[rég.]`/`[irrég.]`.
+- Zeile Französisch: **`Infinitif : manger`** (Französischspalte)
+  und `essen` (Deutschspalte); nächste Zeile
+  **`Participe passé : mangé`** und `gegessen`.
+  Deutsche Spalte nur Übersetzung, nicht nochmal das Formenlabel.
+- Für jede ausgewählte Zeit `Présent`, `Imparfait` usw. steht der
+  französische Titel **über der Fremdsprachenspalte** und die deutsche
+  Zeitbezeichnung, z. B. **`Gegenwart`**, über der Deutschspalte.
+  Finite Einträge darunter ohne vorgesetztes Label.
+- Imperativ: vorhandene Personformen mit geklammerten Pronomen,
+  in 2 Spalten mit deutscher Bedeutung, andernfalls weglassen.
+- Alle Sprachdaten haben einen *konfigurierten Satz von Basisformen*
+  unabhängig vom Tempus-Dropdown, statt eines universell angenommenen
+  „Infinitiv + Participe passé + Imperativ“. Jedes Verb enthält weiterhin
+  die vollständigen freigegebenen Schulstoff-Zeitformen.
+- Französisch: Infinitif présent, Participe passé, Impératif présent
+  (sofern vorhanden), zusätzlich die ausgewählte finite Zeitform.
+- **Englisch:** Separater Pflichteintrag „Principal parts / Stammformen“
+  **base form / past simple / past participle**, z. B.
+  `go / went / gone`, `do / did / done` (NICHT `do / did / did`);
+  regelmäßig z. B. `work / worked / worked`.
+  `to go` kann in der Infinitivzeile angezeigt werden, erste
+  Stammform bleibt technisch `go`. Schulrelevante Form `-ing`
+  (present participle/gerund) `going` zusätzlich als Basisform,
+  da für Continuous/Progressive nötig. Englischer Imperativ nach
+  Wunsch nur als Form `go!` (keine französische Dreierlogik).
+  Speichern als unabhängige Formen, Zusammenfassung per Schrägstrich
+  ist Anzeige/Lernkarte, nicht einziges freies Textfeld.
+- **Niederländisch:** Analog drei Stammformen Infinitief /
+  Onvoltooid verleden tijd (Singular als Lernform, ggf. Plural) /
+  Voltooid deelwoord, z. B. `lopen / liep / gelopen`; Imperatief
+  sprachtypisch.
+- **Spanisch und Portugiesisch:** Infinitivo, Gerundio (`-ando`,
+  `-iendo` / `-endo`), Participio und gängige Imperativo-
+  Personenformen; Finite Schulzeiten über Zeitfilter. Sie benötigen
+  NICHT die englischen 3 *principal parts* als Grundschema.
+- **Latein:** Vier *Stammformen* (principal parts), z. B.
+  `amō / amāre / amāvī / amātum`; letzte Stammform ist nicht
+  bei allen Verben mechanisch als direktes Participium perfectum
+  zu verstehen. Für intransitive bzw. deponente Verben
+  lexikonspezifische Abweichungen respektieren. Nicht das
+  französische Standard-Dreierschema übertragen.
+- Beim Antwortvergleich für erlaubte zusammengesetzte Stammformlisten
+  Leerzeichen um `/` ignorieren; Reihenfolge der grammatisch
+  verschiedenen Formen (base/past/participle) bleibt signifikant.
+- Quellenvermerk: British Council irregular verbs
+  https://learnenglish.britishcouncil.org/free-resources/grammar/english-grammar-reference/irregular-verbs;
+  Cambridge https://dictionary.cambridge.org/grammar/british-grammar/irregular-verbs;
+  Onze Taal https://onzetaal.nl/taalloket/sterk-zwak-onregelmatig-werkwoord;
+  UCM https://www.ucm.es/plataformaele/formas-no-personales;
+  Dickinson Latin grammar https://dcc.dickinson.edu/grammar/latin/four-conjugations.
+- Abnahme: Sprachwechsel passt Basiskarten und Zeitformliste an;
+  Englisch `go/went/gone` und `do/did/done`; NL `lopen/liep/gelopen`;
+  Latein `amō/amāre/amāvī/amātum`; Französisch `Infinitif`/
+  `Participe passé` und zweisprachig ausgerichtete Zeitüberschrift.
+  Falsche Klassifikation / verlorene Wortformen nicht akzeptieren.
+
+
 ## Verbindliche Konzeption Konjugationslernen – 2026-11-12 (noch nicht implementiert)
 
 ### Status, Freigabegrenze und Quellen

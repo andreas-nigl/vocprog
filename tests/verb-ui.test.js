@@ -100,13 +100,14 @@ test("Ordinary vocabulary books renumber remaining entries per page without alte
     {id:"w3",bookId:"book",page:"157",refVocab:"S157 V8",foreign:"salut"}
   ];
   const fields={pageRangeInput:{value:"156-157"}};
-  let filteredVocabList=[],populated=false;
+  let populated=false;
   const parsePageRanges=()=>[156,157];
   const get=id=>fields[id];
   const run=new Function("vocabList","chosenBook","parsePageRanges","get",
-    "populateSelectors","result",source+
+    "populateSelectors",
+    "let filteredVocabList=[],filterVocabByPages;"+source+
     "return {run:filterVocabByPages,getList:()=>filteredVocabList};")(
-    originals,"book",parsePageRanges,get,()=>{populated=true;},null
+    originals,"book",parsePageRanges,get,()=>{populated=true;}
   );
   run.run();
   assert.equal(populated,true);

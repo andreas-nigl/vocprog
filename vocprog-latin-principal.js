@@ -85,7 +85,23 @@
     });
   }
 
+  function lookupInfinitive(infinitive,engine,dictionaryForm){
+    if(typeof infinitive!=="string"||infinitive.length>80||
+       !/^[\p{L}\p{M} -]+$/u.test(infinitive.trim()))
+      throw Error("Invalid Latin infinitive");
+    if(!engine||typeof engine.parseWord!=="function")
+      throw Error("WordsEngine.parseWord required");
+    if(typeof dictionaryForm!=="function")
+      throw Error("dictionaryForm callback required");
+    const word=infinitive.trim();
+    const analysis=engine.parseWord(word);
+    if(!analysis||withoutMacrons(analysis.word)!==withoutMacrons(word)||
+       !Array.isArray(analysis.results))
+      throw Error("Invalid or mismatched Latin analysis");
+    return principalPartsFromAnalysis(analysis,dictionaryForm);
+  }
+
   root.VOCLatinPrincipalParts=Object.freeze({
-    principalPartsFromAnalysis,makeFourPartReview
+    principalPartsFromAnalysis,makeFourPartReview,lookupInfinitive
   });
 })(typeof window==="undefined"?globalThis:window);

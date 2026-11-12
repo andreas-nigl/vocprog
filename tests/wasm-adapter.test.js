@@ -1,0 +1,85 @@
+"use strict";
+const assert=require("node:assert/strict");
+const test=require("node:test");
+require("../vocprog-wasm-adapter.js");
+const adapter=globalThis.VOCWasmAdapter;
+const six=["a","b","c","d","e","f"];
+
+test("French maps the full seven school tenses",()=>{
+  const table={infinitive:"aller",past_participle:"allé",auxiliary:"être",
+    present:six,imperfect:six,passe_compose:six,plus_que_parfait:six,
+    future:six,conditional:six,subjunctive_present:six};
+  const result=adapter.adapt(table,"fr-FR");
+  assert.equal(result.available.length,7);
+  assert.deepEqual(result.missing,[]);
+  assert.equal(result.auxiliary,"être");
+});
+
+test("English adds four analytical school constructions without Gemini",()=>{
+  const table={infinitive:"go",past:"went",past_participle:"gone",
+    present_participle:"going",present_row:six,past_row:six,
+    present_perfect_row:six,past_perfect_row:six,future_row:six};
+  const result=adapter.adapt(table,"en-US");
+  assert.equal(result.available.length,9);
+  assert.deepEqual(result.principalParts,["go","went","gone"]);
+  assert.deepEqual(result.missing,[]);
+  assert.equal(result.forms["present progressive"][0],"am going");
+  assert.equal(result.forms["past progressive"][1],"were going");
+  assert.equal(result.forms["going to future"][2],"is going to go");
+  assert.equal(result.forms["conditional"][4],"would go");
+  assert.equal(result.translationsVerified,false);
+});
+
+test("Spanish maps eight school tenses",()=>{
+  const table={infinitive:"hablar",past_participle:"hablado",gerund:"hablando",
+    present:six,imperfect:six,preterite:six,perfecto_compuesto:six,
+    pluscuamperfecto:six,future:six,conditional:six,
+    subjunctive_present:six};
+  const result=adapter.adapt(table,"es-ES");
+  assert.equal(result.available.length,8);
+  assert.deepEqual(result.missing,[]);
+  assert.equal(result.presentParticiple,"hablando");
+});
+
+test("Portuguese maps seven school tenses",()=>{
+  const table={infinitive:"falar",past_participle:"falado",gerund:"falando",
+    present:six,imperfect:six,preterite:six,
+    mais_que_perfeito_composto:six,future:six,conditional:six,
+    subjunctive_present:six};
+  const result=adapter.adapt(table,"pt-PT");
+  assert.equal(result.available.length,7);
+  assert.deepEqual(result.missing,[]);
+});
+
+test("Dutch keeps past singular/plural and reports all missing tenses",()=>{
+  const table={infinitive:"lopen",past:["liep","liepen"],
+    past_participle:"gelopen",present:six,imperative:"loop"};
+  const result=adapter.adapt(table,"nl-NL");
+  assert.equal(result.available.length,2);
+  assert.equal(result.missing.length,3);
+  assert.deepEqual(result.forms["onvoltooid verleden tijd"],
+    ["liep","liep","liep","liepen","liepen","liepen"]);
+  assert.deepEqual(result.principalParts,["lopen","liep","gelopen"]);
+});
+
+test("Unsupported Latin cannot be mistaken for a supported language",()=>{
+  assert.throws(()=>adapter.adapt({infinitive:"amare"},"la-LA"),
+    /Unsupported conjugation language/);
+});
+
+test("Missing or incomplete 6-slot forms remain explicitly unavailable",()=>{
+  const result=adapter.adapt({infinitive:"manger",present:["mange"]},"fr-FR");
+  assert.deepEqual(result.available,[]);
+  assert.equal(result.missing.length,7);
+});
+
+test("The wrapper passes immutable locale codes to the WASM boundary",()=>{
+  let args=null;
+  const wrapper=adapter.create((lemma,lang)=>{
+    args=[lemma,lang];
+    return {infinitive:lemma,present:six};
+  });
+  const result=wrapper.conjugate(" manger ","fr-FR");
+  assert.deepEqual(args,["manger","fra"]);
+  assert.equal(result.infinitive,"manger");
+});

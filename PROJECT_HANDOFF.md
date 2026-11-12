@@ -1,3 +1,61 @@
+## Gmail- und CI-Diagnose bei Wiedereinstieg – 2026-11-12
+
+**Status:** Diagnose und Handoff, **keine** Cloud-Datenbank-
+oder Produktivänderung, **kein** Release. Nutzer beauftragte
+ausdrücklich Prüfung der Supabase-Mails in Gmail und Fortsetzung.
+
+### Gmail-Befund
+- Gmail-Masterkonto und die zwei verfügbaren Archivkonten nach
+  Supabase-Nachrichten durchsucht.
+- Supabase selbst: `Welcome to Supabase` vom **2026-11-05**,
+  keine Warnung über Datenbank-Ausfall, Sicherheitsvorfall,
+  Sperrung oder Gebühren. GitHub-OAuth-Autorisierung für
+  Supabase am selben Tag per GitHub-Nachricht belegt.
+- Relevant für VOC ist stattdessen eine GitHub-Action-Mail
+  vom **2026-11-12, 14:17 MEZ**:
+  `Run failed: VOC unit tests -
+  develop/offline-supabase-20261105 (11e9840)`.
+  <https://github.com/andreas-nigl/vocprog/actions/runs/43225749898>
+- Aus GitHub über Job-ID `131208340381` vollständig
+  ausgelesene Runnerlogs: Checkout erfolgreich,
+  Node `v24.22.2`, **27 Tests: 26 pass / 1 fail**,
+  kein Infrastruktur- oder Checkout-Fehler.
+  Fehlschlag in `tests/wasm-adapter.test.js:58`:
+  NL-Adapter erzeugte bereits **3** Zeitformen,
+  der am Commit `11e9840` ausgeführte Test
+  erwartete noch **2** (Assertion `3 !== 2`).
+- Der **aktuelle** Branch-Test
+  `tests/wasm-adapter.test.js`
+  Blob `ab5b6a9a7d5410d4222ddc267c2818c73a198420`
+  verlangt korrekt **3** und **2 fehlende** Zeitformen;
+  Zukunft `zal/zult/zal/zullen/zullen/zullen lopen`
+  wird explizit geprüft. Es handelt sich bei diesem
+  historischen Runner-Befund um einen veralteten Test,
+  nicht um belegte Fehler der NL-Konjugationslogik.
+- **Nicht als grün deklarieren:** Ein neuer vollständiger
+  CI-Durchlauf des letzten Branchstands wurde NICHT
+  nachgewiesen. Die GitHub-Funktion
+  `fetch_commit_workflow_runs` liefert nur eingeschränkt
+  PR-bezogene Läufe; leere Resultate sind kein
+  Nachweis für fehlende oder erfolgreiche Runs.
+
+### Fortsetzung / Abnahmekriterien
+- Bereits bestehende Latein-Entwicklungsänderungen und
+  Übergabe erhalten; keine ältere Fassung wiederhergestellt
+  und keine parallele Handoff-Datei angelegt.
+- Für jeden neuen Build: Commit-SHA und konkreten
+  GitHub-Action-Run samt Logs prüfen, vollständige
+  `node --test tests/*.test.js`-Suite muss erfolgreich
+  sein. Danach echter WASM-Artefakt-/SHA256-Test.
+- Der Supabase-Mailbefund bestätigt **nicht** die
+  Sicherheitskonfiguration oder tatsächliche
+  Datenintegrität der öffentlichen Tabelle;
+  separate Datenschutz-/Sync-/Berechtigungsprüfung
+  vor Deployment bleibt verpflichtend.
+- `vocprog-test/main` und `vocprog/main` nicht
+  aktualisiert, keine Datenmigration und kein Analyse-Reset.
+
+
 ## Entwicklungsfortsetzung – Latein-Datenintegrität und lokaler Lexikoneingang (2026-11-12)
 
 **Freigabe und Deployment:** Fortsetzung unter der bestehenden ausdrücklichen

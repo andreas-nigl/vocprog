@@ -275,7 +275,7 @@
     // Subjonctif needs qu' before vowel-initial third-person forms.
     if(subj&&index===2&&/^[aeiouéèêàâîôûùüœh]/i.test(bare))
       return "qu'"+p+" "+bare;
-    return (subj?(elide?"qu'":"que "):"")+(elide?"j'":p+" ")+bare;
+    return (subj?"que ":"")+(elide?"j'":p+" ")+bare;
   }
   function allFrenchTrainingCards(verbBook,reference,entry,translated){
     const lemma=reference.infinitive;

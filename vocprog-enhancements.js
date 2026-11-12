@@ -287,7 +287,7 @@
       pendingScanBook=null;localStorage.removeItem(STORE+"_pendingScanBook");
       chooseBook(book.id);
     }
-    const b=books.find(x=>x.id===chosenBook);
+    let b=books.find(x=>x.id===chosenBook);
     if(!b)throw Error("Vor dem Scannen bitte ein Buch auswählen.");
     if(b.lang&&b.lang!==language)throw Error("Buch „"+b.name+"“ enthält bereits "+(LANGS[b.lang]||b.lang)+". Die neu erkannten Seiten sind "+LANGS[language]+". Bitte ein eigenes Buch anlegen.");
     if(!b.lang){

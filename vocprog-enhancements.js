@@ -198,10 +198,7 @@
       const kind=dropdown.value==="__new_verbs__"?"verbs":"vocab";
       const name=get("pickerNewName").value.trim();
       if(!name)return alert("Bitte einen Buchnamen eingeben.");
-      if(kind==="verbs"){
-        const knownLanguage=get("targetLang").value;
-        b=books.find(x=>bookKind(x)==="verbs"&&x.lang===knownLanguage);
-      }
+      // Language is only reliable after the scan; create a provisional book.
       if(!b)b=addBook("",name,kind);
     }
     if(!b)return;

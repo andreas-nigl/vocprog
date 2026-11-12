@@ -272,7 +272,10 @@
     const p=["je","tu","il/elle/on","nous","vous","ils/elles"][index];
     const subj=tense==="subjonctif présent";
     const elide=index===0&&/^[aeiouéèêàâîôûùüœh]/i.test(bare);
-    return (subj?"que ":"")+(elide?"j'":p+" ")+bare;
+    // Subjonctif needs qu' before vowel-initial third-person forms.
+    if(subj&&index===2&&/^[aeiouéèêàâîôûùüœh]/i.test(bare))
+      return "qu'"+p+" "+bare;
+    return (subj?(elide?"qu'":"que "):"")+(elide?"j'":p+" ")+bare;
   }
   function allFrenchTrainingCards(verbBook,reference,entry,translated){
     const lemma=reference.infinitive;

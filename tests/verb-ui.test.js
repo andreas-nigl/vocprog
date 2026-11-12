@@ -90,3 +90,30 @@ test("Duplicate French verb books merge without losing events or distinct forms"
   assert.ok(state.tombstones.some(x=>x.record_id==="book:b"));
   assert.ok(Object.keys(storage).some(x=>x.startsWith("vocprog_v2_verbbook_backup_fr-FR_")));
 });
+
+
+test("Ordinary vocabulary books renumber remaining entries per page without altering stored references",()=>{
+  const source=fragment("  filterVocabByPages=function(){","  const oldSave=saveToLocalStorage;");
+  const originals=[
+    {id:"w1",bookId:"book",page:"156",refVocab:"S156 V62",foreign:"bonjour"},
+    {id:"w2",bookId:"book",page:"156",refVocab:"S156 V64",foreign:"merci"},
+    {id:"w3",bookId:"book",page:"157",refVocab:"S157 V8",foreign:"salut"}
+  ];
+  const fields={pageRangeInput:{value:"156-157"}};
+  let filteredVocabList=[],populated=false;
+  const parsePageRanges=()=>[156,157];
+  const get=id=>fields[id];
+  const run=new Function("vocabList","chosenBook","parsePageRanges","get",
+    "populateSelectors","result",source+
+    "return {run:filterVocabByPages,getList:()=>filteredVocabList};")(
+    originals,"book",parsePageRanges,get,()=>{populated=true;},null
+  );
+  run.run();
+  assert.equal(populated,true);
+  assert.deepEqual(run.getList().map(v=>v.refVocab),[
+    "S156 V1","S156 V2","S157 V1"
+  ]);
+  assert.deepEqual(originals.map(v=>v.refVocab),[
+    "S156 V62","S156 V64","S157 V8"
+  ]);
+});

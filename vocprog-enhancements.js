@@ -5,7 +5,7 @@
   const DB_URL = "https://yiayotftqqaivoxvuzmz.supabase.co";
   const PUB_KEY = "sb_publishable_av4X69ihuWUjgxZqoEm9WA_2b9h-elp";
   const STORE = "vocprog_v2";
-  const LANGS = {"en-US":"Englisch","fr-FR":"Französisch","es-ES":"Spanisch","la-LA":"Lateinisch","pt-PT":"Portugiesisch","nl-NL":"Niederländisch"};
+  const LANGS = {"en-US":"Englisch","fr-FR":"Französisch","es-ES":"Spanisch","pt-PT":"Portugiesisch","nl-NL":"Niederländisch"};
   const get = id => document.getElementById(id);
   const id = () => globalThis.crypto?.randomUUID?.() || ("v"+Date.now().toString(36)+Math.random().toString(36).slice(2));
   const read = (key,fallback) => { try {return JSON.parse(localStorage.getItem(key)) ?? fallback;} catch {return fallback;} };
@@ -107,7 +107,8 @@
     refreshVerbSelection();
   }
   function sortedBooks(){
-    return [...books].sort((a,b)=>{
+    // Preserve historical Latin records as data, but exclude them from the UI.
+    return books.filter(b=>b.lang!=="la-LA").sort((a,b)=>{
       const nameOrder=String(a.name||"").localeCompare(String(b.name||""),"de",{numeric:true,sensitivity:"base"});
       return nameOrder||String(a.id||"").localeCompare(String(b.id||""));
     });
@@ -116,7 +117,7 @@
     const select=get("bookSelect");if(!select)return;
     select.replaceChildren();
     for(const b of sortedBooks())select.add(new Option(bookText(b),b.id));
-    if(!books.some(b=>b.id===chosenBook))chosenBook=sortedBooks()[0]?.id||"";
+    if(!sortedBooks().some(b=>b.id===chosenBook))chosenBook=sortedBooks()[0]?.id||"";
     if(chosenBook)select.value=chosenBook;
     renderBooks();
   }
@@ -756,7 +757,6 @@
     "es-ES":[["presente","Presente (Gegenwart)"],["pretérito perfecto compuesto","Pretérito perfecto compuesto (zusammengesetzte Vergangenheit)"],["pretérito indefinido","Pretérito indefinido (abgeschlossene Vergangenheit)"],["pretérito imperfecto","Pretérito imperfecto (unvollendete Vergangenheit)"],["pluscuamperfecto","Pluscuamperfecto (Vorvergangenheit)"],["futuro simple","Futuro simple (Zukunft)"],["condicional simple","Condicional simple (würde-Form)"],["presente de subjuntivo","Presente de subjuntivo (Subjunktiv Gegenwart)"]],
     "pt-PT":[["presente","Presente (Gegenwart)"],["pretérito perfeito","Pretérito perfeito (abgeschlossene Vergangenheit)"],["pretérito imperfeito","Pretérito imperfeito (unvollendete Vergangenheit)"],["mais-que-perfeito composto","Mais-que-perfeito composto (Vorvergangenheit)"],["futuro do presente","Futuro do presente (Zukunft)"],["condicional","Condicional (würde-Form)"],["presente do conjuntivo","Presente do conjuntivo (Konjunktiv Gegenwart)"]],
     "nl-NL":[["onvoltooid tegenwoordige tijd","Onvoltooid tegenwoordige tijd (Gegenwart)"],["onvoltooid verleden tijd","Onvoltooid verleden tijd (Vergangenheit)"],["voltooid tegenwoordige tijd","Voltooid tegenwoordige tijd (Perfekt)"],["voltooid verleden tijd","Voltooid verleden tijd (Plusquamperfekt)"],["onvoltooid toekomende tijd","Onvoltooid toekomende tijd (Zukunft)"]],
-    "la-LA":[["praesens","Praesens (Gegenwart)"],["imperfectum","Imperfectum (Imperfekt)"],["perfectum","Perfectum (Perfekt)"],["plusquamperfectum","Plusquamperfectum (Vorvergangenheit)"],["futurum i","Futurum I (Zukunft)"],["futurum ii","Futurum II (vollendete Zukunft)"]]
   };
   const baseVerbKinds=new Set(["verb-infinitive","verb-participle","verb-imperative","verb-principal","verb-ing","verb-gerund"]);
   function activeBook(){return books.find(b=>b.id===chosenBook);}
@@ -885,6 +885,7 @@
   function validMerge(first,second){
     if(!first||!second||first.id===second.id)return "Bitte zwei unterschiedliche Bücher auswählen.";
     if(!first.lang||!second.lang||first.lang!==second.lang)return "Die Bücher haben unterschiedliche oder ungeklärte Sprachen.";
+    if(first.lang==="la-LA")return "Latein wurde aus VOC entfernt.";
     if(bookKind(first)!==bookKind(second))return "Vokabel- und Verbenbücher dürfen nicht vermischt werden.";
     const left=allVocab().filter(v=>v.bookId===first.id);
     const right=allVocab().filter(v=>v.bookId===second.id);

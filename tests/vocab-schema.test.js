@@ -65,3 +65,16 @@ test("identical word in two different books remains separate",()=>{
   ]),2);
   assert.equal(memory.length,2);
 });
+
+
+test("French subjunctive surface includes correct que contractions",()=>{
+  const begin=extension.indexOf("  function frenchSurface(");
+  const end=extension.indexOf("  function allFrenchTrainingCards(",begin);
+  assert.ok(begin>=0&&end>begin);
+  const surface=new Function(extension.slice(begin,end)+
+    "\nreturn frenchSurface;")();
+  assert.equal(surface("subjonctif présent",0,"aille"),"que j'aille");
+  assert.equal(surface("subjonctif présent",2,"aille"),"qu'il/elle/on aille");
+  assert.equal(surface("imparfait",0,"allais"),"j'allais");
+  assert.equal(surface("présent",3,"mangeons"),"nous mangeons");
+});

@@ -49,7 +49,8 @@ test("Duplicate French verb books merge without losing events or distinct forms"
   const storage={"vocab_trainer_data_fr-FR":JSON.stringify([
     {id:"v1",bookId:"a",kind:"verb-infinitive",foreign:"venir",german:"kommen",verbId:"venir",page:"156"},
     {id:"v2",bookId:"b",kind:"verb-infinitive",foreign:"venir",german:"kommen",verbId:"venir",page:"156"},
-    {id:"v3",bookId:"b",kind:"verb-form",foreign:"je viens",german:"ich komme",verbId:"venir",tense:"présent",person:"je",page:"156"}
+    {id:"v3",bookId:"b",kind:"verb-form",foreign:"je viens",german:"ich komme",verbId:"venir",tense:"présent",person:"je",page:"156"},
+    {id:"v4",bookId:"b",kind:"verb-infinitive",foreign:"venir",german:"kommen",verbId:"venir",page:"157"}
   ])};
   Object.defineProperty(storage,"getItem",{value:k=>storage[k]||null});
   Object.defineProperty(storage,"setItem",{value:(k,v)=>{storage[k]=v;}});
@@ -78,7 +79,9 @@ test("Duplicate French verb books merge without losing events or distinct forms"
   assert.equal(result.first,1);
   assert.equal(result.second,0);
   assert.equal(result.books.length,1);
-  assert.equal(data.length,2);
+  assert.equal(data.length,3);
+  assert.ok(data.some(v=>v.page==="157"&&v.id==="v4"),
+    "identical verbs on other lesson pages must survive");
   assert.ok(data.every(v=>v.bookId==="a"));
   assert.equal(result.history[0].sourceId,"v1");
   assert.equal(result.history[0].bookId,"a");

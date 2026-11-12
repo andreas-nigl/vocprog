@@ -55,8 +55,10 @@ test("Dutch keeps past singular/plural and reports all missing tenses",()=>{
   const table={infinitive:"lopen",past:["liep","liepen"],
     past_participle:"gelopen",present:six,imperative:"loop"};
   const result=adapter.adapt(table,"nl-NL");
-  assert.equal(result.available.length,2);
-  assert.equal(result.missing.length,3);
+  assert.equal(result.available.length,3);
+  assert.equal(result.missing.length,2);
+  assert.deepEqual(result.forms["onvoltooid toekomende tijd"],
+    ["zal lopen","zult lopen","zal lopen","zullen lopen","zullen lopen","zullen lopen"]);
   assert.deepEqual(result.forms["onvoltooid verleden tijd"],
     ["liep","liep","liep","liepen","liepen","liepen"]);
   assert.deepEqual(result.principalParts,["lopen","liep","gelopen"]);
@@ -82,4 +84,55 @@ test("The wrapper passes immutable locale codes to the WASM boundary",()=>{
   const result=wrapper.conjugate(" manger ","fr-FR");
   assert.deepEqual(args,["manger","fra"]);
   assert.equal(result.infinitive,"manger");
+});
+
+
+test("Dutch perfects remain blocked without reviewed sense-specific auxiliary",()=>{
+  const table={infinitive:"lopen",present:six,past:["liep","liepen"],
+    past_participle:"gelopen"};
+  const noEvidence=adapter.adapt(table,"nl-NL");
+  const unsupported=adapter.adapt(table,"nl-NL",{
+    dutchAuxiliaryEvidence:{auxiliary:"zijn",context:"destination",reviewed:false,source:"manual"}
+  });
+  assert.equal(noEvidence.missing.length,2);
+  assert.equal(unsupported.missing.length,2);
+  assert.equal(noEvidence.auxiliary,null);
+});
+
+test("Dutch perfects use verified hebben for a specified sense",()=>{
+  const table={infinitive:"werken",present:six,past:["werkte","werkten"],
+    past_participle:"gewerkt"};
+  const evidence={auxiliary:"hebben",reviewed:true,
+    source:"reviewed dictionary",context:"ordinary activity"};
+  const result=adapter.adapt(table,"nl-NL",{dutchAuxiliaryEvidence:evidence});
+  assert.deepEqual(result.missing,[]);
+  assert.equal(result.forms["voltooid tegenwoordige tijd"][0],"heb gewerkt");
+  assert.equal(result.forms["voltooid tegenwoordige tijd"][2],"heeft gewerkt");
+  assert.equal(result.forms["voltooid verleden tijd"][3],"hadden gewerkt");
+  assert.equal(result.auxiliary,"hebben");
+});
+
+test("Dutch perfects use verified zijn for a movement-to-destination sense",()=>{
+  const table={infinitive:"lopen",present:six,past:["liep","liepen"],
+    past_participle:"gelopen"};
+  const result=adapter.adapt(table,"nl-NL",{dutchAuxiliaryEvidence:{
+    auxiliary:"zijn",reviewed:true,source:"reviewed lexicon",context:"movement to destination"
+  }});
+  assert.equal(result.forms["voltooid tegenwoordige tijd"][0],"ben gelopen");
+  assert.equal(result.forms["voltooid verleden tijd"][3],"waren gelopen");
+  assert.deepEqual(result.missing,[]);
+});
+
+test("Dutch perfects reject empty sources and arbitrary auxiliary values",()=>{
+  const table={infinitive:"lopen",present:six,past:["liep","liepen"],
+    past_participle:"gelopen"};
+  for(const auxiliary of ["beide","heeft",""]){
+    const result=adapter.adapt(table,"nl-NL",{dutchAuxiliaryEvidence:{
+      auxiliary,reviewed:true,source:"review",context:"movement"
+    }});
+    assert.equal(result.missing.length,2);
+  }
+  assert.equal(adapter.adapt(table,"nl-NL",{dutchAuxiliaryEvidence:{
+    auxiliary:"zijn",reviewed:true,source:"",context:"movement"
+  }}).missing.length,2);
 });

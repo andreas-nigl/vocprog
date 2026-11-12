@@ -728,6 +728,7 @@
   const originalExitTrainer=exitTrainer;
   exitTrainer=function(){
     originalExitTrainer();
+    const table=get("verbTablePanel");if(table)table.hidden=true;
     document.body.classList.remove("voc-training-active");
   };
   // Original nextCard and prevCard invoke showCard, which logs every displayed question.
@@ -897,62 +898,92 @@
     get("verbTableToggle").setAttribute("aria-expanded","false");
     panel.replaceChildren();
   };
+
   window.toggleVerbTable=function(){
-    const item=trainingItems[currentIndex],panel=get("verbTablePanel"),btn=get("verbTableToggle");
+    const item=trainingItems[currentIndex],panel=get("verbTablePanel"),button=get("verbTableToggle");
     if(!item||item.kind!=="verbs")return;
-    if(!panel.hidden){panel.hidden=true;btn.setAttribute("aria-expanded","false");return;}
+    if(!panel.hidden){
+      panel.hidden=true;button.setAttribute("aria-expanded","false");return;
+    }
+    const lemma=String(item.verbId||item.verbLemma||"").trim().toLocaleLowerCase();
     const entries=allVocab().filter(v=>v.bookId===item.bookId&&
-      (v.verbId||v.infinitive||v.lemma||v.foreign)===item.verbId);
-    const fragment=document.createDocumentFragment(),title=document.createElement("h4");
-    const info=allVocab().find(v=>v.bookId===item.bookId&&v.kind==="verb-infinitive"&&
-      (v.verbId||v.infinitive)===item.verbId);
-    const grammar=info?.regularity||specials.find(v=>v.bookId===item.bookId&&
-      v.kind==="verb-paradigm"&&v.lemma===String(item.verbId||"").toLowerCase())?.regularity||"";
-    title.textContent=item.verbLemma+(grammar?" ["+grammar+"]":"");
-    fragment.append(title);
-    const table=document.createElement("table"),thead=document.createElement("thead"),heading=document.createElement("tr");
+      String(v.verbId||v.infinitive||v.lemma||"").trim().toLocaleLowerCase()===lemma);
+    const paradigm=specials.find(v=>v.kind==="verb-paradigm"&&v.bookId===item.bookId&&
+      v.lemma===lemma);
+    const base=entries.find(v=>v.kind==="verb-infinitive");
+    const part=entries.find(v=>v.kind==="verb-participle");
+    const imperative=entries.find(v=>v.kind==="verb-imperative");
+    const grammar=base?.regularity||paradigm?.regularity||"";
+    const isFrench=activeBook()?.lang==="fr-FR";
+    const missing="– (noch nicht erfasst)";
+    const heading=document.createElement("h4");
+    heading.textContent=(base?.foreign||item.verbLemma)+(grammar?" ["+grammar+"]":"");
+    const table=document.createElement("table");
+    const thead=document.createElement("thead"),headingRow=document.createElement("tr");
     for(const label of [LANGS[activeBook()?.lang]||"Fremdsprache","Deutsch"]){
-      const cell=document.createElement("th");cell.textContent=label;heading.append(cell);
+      const th=document.createElement("th");th.textContent=label;headingRow.append(th);
     }
-    thead.append(heading);table.append(thead);
+    thead.append(headingRow);table.append(thead);
     const tbody=document.createElement("tbody");
-    const chosen=normalizeTense(item.verbTense);
-    const selected=entries.filter(v=>baseVerbKinds.has(v.kind)||normalizeTense(v.tense)===chosen);
-    let tenseHeaderAdded=false;
-    const catalog=TENSES[activeBook()?.lang]||[];
-    const germanTense=(catalog.find(([key])=>key===chosen)?.[1]||"").match(/\(([^)]+)\)$/)?.[1]||"Zeitform";
-    for(const e of selected.sort((a,b)=>(baseVerbKinds.has(a.kind)?0:1)-(baseVerbKinds.has(b.kind)?0:1))){
-      if(!baseVerbKinds.has(e.kind)&&!tenseHeaderAdded){
-        const header=document.createElement("tr");
-        for(const label of [catalog.find(([key])=>key===chosen)?.[1]?.split(" (")[0]||chosen,germanTense]){
-          const cell=document.createElement("th");cell.textContent=label;header.append(cell);
-        }
-        tbody.append(header);tenseHeaderAdded=true;
-      }
+    function row(foreign,german,section=false){
       const tr=document.createElement("tr");
-      const first=document.createElement("td"),second=document.createElement("td");
-      const labels={"verb-infinitive":"Infinitif : ","verb-participle":"Participe passé : ","verb-imperative":"Impératif : ","verb-principal":"Principal parts : ","verb-ing":"-ing form : ","verb-gerund":"Gerundio : "};
-      const prefix=labels[e.kind]||"";
-      first.append(document.createTextNode(prefix));
-      const lemma=String(item.verbLemma||"").toLowerCase();
-      const candidate=String(e.foreign||"");
-      // Mark only the inserted orthographic letter in near-regular French -ger/-cer verbs.
-      let highlight=-1,letter="";
-      if(activeBook()?.lang==="fr-FR"&&lemma.endsWith("ger")&&/\bmangeons\b/i.test(candidate)){
-        highlight=candidate.toLowerCase().indexOf("mangeons")+4;letter="e";
-      }else if(activeBook()?.lang==="fr-FR"&&lemma.endsWith("cer")&&/\bcommençons\b/i.test(candidate)){
-        highlight=candidate.toLowerCase().indexOf("commençons")+6;letter="ç";
+      for(const value of [foreign,german]){
+        const cell=document.createElement(section?"th":"td");
+        if(!section&&isFrench&&/ger$/.test(lemma)&&/\bmangeons\b/i.test(value)){
+          const index=value.toLocaleLowerCase().indexOf("mangeons")+4;
+          cell.append(document.createTextNode(value.slice(0,index)));
+          const strong=document.createElement("strong");strong.textContent=value[index];
+          cell.append(strong,document.createTextNode(value.slice(index+1)));
+        }else cell.textContent=value;
+        tr.append(cell);
       }
-      if(highlight>=0&&candidate[highlight]?.toLowerCase()===letter){
-        first.append(document.createTextNode(candidate.slice(0,highlight)));
-        const strong=document.createElement("strong");strong.textContent=candidate[highlight];first.append(strong);
-        first.append(document.createTextNode(candidate.slice(highlight+1)));
-      }else first.append(document.createTextNode(candidate));
-      second.textContent=e.german;
-      tr.append(first,second);tbody.append(tr);
+      tbody.append(tr);
     }
-    table.append(tbody);fragment.append(table);
-    panel.replaceChildren(fragment);panel.hidden=false;btn.setAttribute("aria-expanded","true");
+    // The subject-independent forms are always displayed, regardless of
+    // whether the current exercise happens to be a finite tense.
+    if(isFrench){
+      row("Infinitif : "+(base?.foreign||item.verbLemma),base?.german||missing);
+      row("Participe passé : "+(part?.foreign||
+        paradigm?.agreement||paradigm?.pastParticiple||missing),part?.german||missing);
+      const persons=["tu","nous","vous"];
+      const imp=imperative?.foreign||(Array.isArray(paradigm?.imperative)?
+        paradigm.imperative.map((v,i)=>"("+persons[i]+") "+v).join(" / "):"");
+      row("Impératif : "+(imp||missing),imperative?.german||missing);
+    }else{
+      row("Infinitiv : "+(base?.foreign||item.verbLemma),base?.german||missing);
+      for(const [kind,label] of [
+        ["verb-principal","Stammformen"],["verb-participle","Partizip"],
+        ["verb-ing","-ing-Form"],["verb-gerund","Gerundio"],
+        ["verb-imperative","Imperativ"]
+      ]){
+        const entry=entries.find(v=>v.kind===kind);
+        if(entry)row(label+" : "+entry.foreign,entry.german||missing);
+      }
+    }
+    const tense=normalizeTense(item.verbTense);
+    const catalog=TENSES[activeBook()?.lang]||[];
+    const title=catalog.find(([name])=>name===tense)?.[1]||tense;
+    const match=title.match(/^(.+?)\s*\(([^)]+)\)$/);
+    row(match?.[1]||title,match?.[2]||"Zeitform",true);
+    const filtered=entries.filter(v=>(v.kind==="conjugation"||v.kind==="verb-form")&&
+      normalizeTense(v.tense)===tense);
+    const order={"je":0,"j'":0,"tu":1,"il/elle/on":2,"nous":3,"vous":4,"ils/elles":5};
+    filtered.sort((a,b)=>(order[String(a.person||"").toLowerCase()]??99)-
+      (order[String(b.person||"").toLowerCase()]??99));
+    if(filtered.length){
+      const seen=new Set();
+      for(const entry of filtered){
+        const key=String(entry.person||"")+"|"+String(entry.foreign||"");
+        if(seen.has(key))continue;
+        seen.add(key);row(entry.foreign,entry.german||missing);
+      }
+    }else if(isFrench&&paradigm?.forms?.[tense]){
+      const names=["je","tu","il/elle/on","nous","vous","ils/elles"];
+      paradigm.forms[tense].forEach((form,i)=>row(names[i]+" "+form,missing));
+    }else row("Noch keine geprüften Formen",missing);
+    table.append(tbody);
+    panel.replaceChildren(heading,table);
+    panel.hidden=false;button.setAttribute("aria-expanded","true");
   };
 
   function validMerge(first,second){

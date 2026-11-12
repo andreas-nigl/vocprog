@@ -463,7 +463,7 @@
       updateScannedPagesUI();
       initPageInputAndSelectors();
       document.getElementById('rangeCard').classList.remove('hidden');
-      status.innerText = `${addedCount} neue Vokabeln, ${baseVerbs} erkannte Infinitive und ${countConjugations} abgedruckte Konjugationsformen gespeichert. Weitere Zeitformen benötigen noch die unabhängige Verifikation.`;
+      status.innerText = `${addedCount} neue Vokabeln, ${baseVerbs} erkannte Infinitive und ${countConjugations} abgedruckte Konjugationsformen gespeichert. ${window.VOCScanVerificationWarnings||0} widersprüchliche Formen zurückgewiesen. Noch nicht übersetzte oder nicht unabhängig bestätigte Formen bleiben vorerst von der Abfrage ausgeschlossen.`;
       rawImages = [];
       renderGallery();
     } catch (err) {

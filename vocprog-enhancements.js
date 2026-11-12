@@ -828,7 +828,12 @@
     const entries=allVocab().filter(v=>v.bookId===item.bookId&&
       (v.verbId||v.infinitive||v.lemma||v.foreign)===item.verbId);
     const fragment=document.createDocumentFragment(),title=document.createElement("h4");
-    title.textContent=item.verbLemma;fragment.append(title);
+    const info=allVocab().find(v=>v.bookId===item.bookId&&v.kind==="verb-infinitive"&&
+      (v.verbId||v.infinitive)===item.verbId);
+    const grammar=info?.regularity||specials.find(v=>v.bookId===item.bookId&&
+      v.kind==="verb-paradigm"&&v.lemma===String(item.verbId||"").toLowerCase())?.regularity||"";
+    title.textContent=item.verbLemma+(grammar?" ["+grammar+"]":"");
+    fragment.append(title);
     const table=document.createElement("table"),thead=document.createElement("thead"),heading=document.createElement("tr");
     for(const label of [LANGS[activeBook()?.lang]||"Fremdsprache","Deutsch"]){
       const cell=document.createElement("th");cell.textContent=label;heading.append(cell);
@@ -992,7 +997,10 @@
     const normalized=value=>simplified(value).replace(/\s*\/\s*/g,"/").replace(/\s*\(\s*/g,"(").replace(/\s*\)\s*/g,")");
     const expected=String(item.target||"");
     const grouped=item.record?.kind==="verb-principal"||item.record?.kind==="verb-imperative";
-    const correct=grouped?normalized(given)===normalized(expected):
+    const normalizeGroup=value=>normalized(value)
+      .replace(/\((?:tu|nous|vous)\)\s*/g,"")
+      .replace(/\s*\/\s*/g,"/");
+    const correct=grouped?normalizeGroup(given)===normalizeGroup(expected):
       expected.split(/\s*(?:;|\bor\b)\s*/i).some(candidate=>normalized(given)===normalized(candidate));
     analyzedThisCard=true;
     input.className=correct?"answer-correct":"answer-wrong";

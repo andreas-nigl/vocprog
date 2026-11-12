@@ -248,6 +248,25 @@
   window.isSelectedVerbBook=function(){
     return bookKind(books.find(b=>b.id===chosenBook)||{})==="verbs";
   };
+  function persistFrenchReference(verbBook,lemma){
+    if(verbBook.lang!=="fr-FR")return;
+    const reference=window.VOCFrenchReference?.conjugate(lemma);
+    if(!reference)return;
+    const word=String(lemma).trim().toLocaleLowerCase("fr");
+    const existing=specials.find(v=>v.bookId===verbBook.id&&v.kind==="verb-paradigm"&&v.lemma===word);
+    // Reference tables include all seven tenses, but missing verified German
+    // form translations must be supplied before individual cards may be trained.
+    if(existing)return;
+    specials.push({
+      id:id(),bookId:verbBook.id,kind:"verb-paradigm",lemma:word,
+      forms:reference.forms,persons:reference.persons,
+      imperative:reference.imperative,pastParticiple:reference.pastParticiple,
+      regularity:reference.regularity,agreement:reference.agreement,
+      verification:"french-reference-verified-german-pending",
+      source:reference.source,updatedAt:new Date().toISOString()
+    });
+    persistMetadata();
+  }
   window.ingestVerbInfinitives=function(entries,language){
     if(!Array.isArray(entries)||!entries.length||!LANGS[language])return 0;
     const valid=entries.filter(e=>e&&String(e.infinitive||"").trim()&&String(e.german||"").trim());
@@ -262,6 +281,7 @@
     for(const entry of valid){
       const infinitive=String(entry.infinitive).trim();
       const wordKey=infinitive.toLocaleLowerCase();
+      persistFrenchReference(verbBook,infinitive);
       if(existing.has(wordKey))continue;
       existing.add(wordKey);
       payload.push({bookId:verbBook.id,lang:language,kind:"verb-infinitive",
@@ -276,6 +296,7 @@
   };
 
   window.ingestConjugations=function(conjugations,language){
+    window.VOCScanVerificationWarnings=0;
     if(!Array.isArray(conjugations)||conjugations.length===0)return 0;
     const origin=books.find(b=>b.id===chosenBook);
     if(!origin)throw Error("Kein Quellbuch für Konjugationen ausgewählt.");
@@ -283,6 +304,7 @@
     const name=LANGS[language]+" – Verben";
     let conjBook=bookKind(origin)==="verbs"?origin:books.find(b=>b.lang===language&&bookKind(b)==="verbs");
     const persons=new Set(["je","j'","tu","il/elle/on","nous","vous","ils/elles"]);
+    const slot={"je":0,"j'":0,"tu":1,"il/elle/on":2,"nous":3,"vous":4,"ils/elles":5};
     const items=[];
     for(const group of conjugations){
       if(!group||!Array.isArray(group.forms)||!String(group.infinitive||"").trim())continue;
@@ -293,7 +315,16 @@
         const foreign=String(form.foreign||"").trim();
         const german=String(form.german||"").trim();
         if(!persons.has(person)||!foreign||!german)continue;
-        items.push({bookId:"",lang:language,kind:"conjugation",
+        let verification="scan-unverified";
+        if(language==="fr-FR"&&window.VOCFrenchReference){
+          const check=window.VOCFrenchReference.checkForm(group.infinitive,tense,slot[person],foreign);
+          if(check.status==="mismatch"){
+            window.VOCScanVerificationWarnings++;
+            continue;
+          }
+          if(check.status==="verified")verification="reference-verified";
+        }
+        items.push({bookId:"",lang:language,kind:"conjugation",verification,
           page:String(group.page||"?"),foreign,german,
           infinitive:String(group.infinitive).trim(),tense,person,
           sentence_foreign:"",sentence_german:""});
@@ -302,6 +333,7 @@
     if(!items.length)return 0;
     if(!conjBook){conjBook=addBook(language,name,"verbs");}
     // The original selected book may use the same language but a different ID.
+    for(const item of items)persistFrenchReference(conjBook,item.infinitive);
     const count=mergeVocabularies(items.map(item=>({...item,bookId:conjBook.id})));
     saveToLocalStorage();
     chooseBook(sourceBookId);
@@ -634,7 +666,8 @@
     if(!book||bookKind(book)!=="verbs")return [];
     const all=allVocab().filter(v=>v.bookId===book.id);
     return all.filter(v=>baseVerbKinds.has(v.kind)||
-      ((v.kind==="conjugation"||v.kind==="verb-form")&&normalizeTense(v.tense)===tense));
+      ((v.kind==="conjugation"||v.kind==="verb-form")&&normalizeTense(v.tense)===tense&&
+        v.verification!=="scan-unverified"));
   }
   const oldStartTraining=startTraining;
   startTraining=async function(event){

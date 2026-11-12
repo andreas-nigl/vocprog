@@ -425,6 +425,15 @@
         const foreign=String(form.foreign||"").trim();
         const german=String(form.german||"").trim();
         if(!persons.has(person)||!foreign||!german)continue;
+        // Keep the canonical reference form rather than duplicating it
+        // when full conjugation was already generated from an infinitive.
+        const already=allVocab().some(v=>v.kind==="verb-form"&&
+          v.bookId===conjBook?.id&&
+          String(v.infinitive||"").toLocaleLowerCase("fr")===
+            String(group.infinitive).trim().toLocaleLowerCase("fr")&&
+          normalizeTense(v.tense)===normalizeTense(tense)&&
+          v.person===person);
+        if(already)continue;
         let verification="scan-unverified";
         if(language==="fr-FR"&&window.VOCFrenchReference){
           const check=window.VOCFrenchReference.checkForm(group.infinitive,tense,slot[person],foreign);

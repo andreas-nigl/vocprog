@@ -134,7 +134,7 @@
     <h2>2. Datenverwaltung</h2>
     
     <label for="bookSelect">Buch</label>
-    <div class="book-manager"><select id="bookSelect" onchange="pickLearningBook()"></select><button type="button" id="renameBookBtn" title="Buch umbenennen" aria-label="Buch umbenennen" onclick="renameSelectedBook()">✎</button><button type="button" class="book-delete" id="deleteBookBtn" title="Buch löschen" aria-label="Buch löschen" onclick="confirmSelectedBookDeletion()">×</button></div>
+    <div class="book-manager"><select id="bookSelect" onchange="pickLearningBook()"></select><button type="button" id="renameBookBtn" title="Buch umbenennen" aria-label="Buch umbenennen" onclick="renameSelectedBook()">✎</button><button type="button" id="mergeBookBtn" title="Zwei Bücher zusammenführen" aria-label="Bücher zusammenführen" onclick="openMergeBooks()"><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h4c3 0 4 5 8 7M3 19h4c3 0 4-5 8-7M14 12h7m-4-4 4 4-4 4"/></svg></button><button type="button" class="book-delete" id="deleteBookBtn" title="Buch löschen" aria-label="Buch löschen" onclick="confirmSelectedBookDeletion()">×</button></div>
     <div class="status-badge" id="scannedPagesBadge">
       📖 Vorhandene Seiten: Keinen Speicherstand gefunden
     </div>
@@ -193,12 +193,13 @@
       <option value="foreign_to_de">Fremdsprache ➔ Deutsch</option>
     </select>
     
-    <label>Lernmodus</label>
+    <div id="studyModeWrap"><label>Lernmodus</label>
     <select id="studyMode">
       <option value="words">Einzelne Vokabeln</option>
       <option value="book_sentences">Beispielsätze aus dem Buch</option>
       <option value="ai_combined">Kombinierte Sätze (Vollständiger KI-Mix)</option>
-    </select>
+    </select></div>
+    <div id="tenseModeWrap" hidden><label for="tenseSelect">Zeitform</label><select id="tenseSelect" onchange="refreshVerbSelection()"></select></div>
     
     <label><input type="checkbox" id="randomize" style="width: auto; margin-right: 6px;" checked> Zufällige Reihenfolge</label>
     <button onclick="startTraining(event)">▶ Abfrage starten</button>
@@ -206,7 +207,7 @@
 
   <div class="trainer-card hidden" id="trainerCard">
     <div style="display: flex; justify-content: space-between; align-items: center;">
-      <span id="counter" style="font-size: 0.85rem; color: var(--text-muted);">1 / 10</span>
+      <span id="counter" style="font-size: 0.85rem; color: var(--text-muted);">1 / 10</span><button type="button" id="verbTableToggle" class="secondary" hidden onclick="toggleVerbTable()" aria-expanded="false" aria-controls="verbTablePanel">Tabelle</button>
       <button class="icon-btn" style="font-size: 0.9rem;" onclick="exitTrainer()">✕</button>
     </div>
     <div class="item-row">
@@ -224,6 +225,7 @@
       </div>
     </div>
     <div id="refText"></div>
+    <section id="verbTablePanel" class="verb-table-panel" hidden aria-label="Konjugationstabelle"></section>
     <div class="nav-controls">
       <button class="secondary" onclick="prevCard()">Zurück</button>
       <button onclick="advanceOrGrade()">Weiter</button>
@@ -928,8 +930,9 @@
 <label for="pickerBook">Vorhandenes oder neues Buch</label><select id="pickerBook"></select>
 <div id="pickerNewFields" hidden><label for="pickerNewName">Neuer Buchname</label><input id="pickerNewName" value="Muster" placeholder="Muster"><small>Die Sprache wird beim ersten erfolgreichen Scan automatisch erkannt.</small></div>
 <div class="dialog-buttons"><button type="button" onclick="commitBookPicker()">Weiter</button><button type="button" onclick="document.getElementById('bookPicker').close()">Abbrechen</button></div></dialog>
-<dialog id="analysisDialog" class="voc-dialog wide"><div class="dialog-head"><h2>Lernanalyse</h2><button type="button" onclick="document.getElementById('analysisDialog').close()">Schließen</button></div><div id="analysisContent"></div></dialog>
-<div class="voc-footer"><span id="connectionStatus">Online · Sync –</span><small>Testversion 0.4 · 10.11.26</small></div>
+<dialog id="mergeBooksDialog" class="voc-dialog"><h3>Bücher zusammenführen</h3><label for="mergeSource">Erstes Buch (Ziel)</label><select id="mergeSource" onchange="refreshMergePreview()"></select><label for="mergeTarget">Zweites Buch</label><select id="mergeTarget" onchange="refreshMergePreview()"></select><label for="mergeName">Name des zusammengeführten Buchs</label><input id="mergeName"><p id="mergeWarning" role="status"></p><div class="dialog-buttons"><button type="button" id="mergeConfirm" onclick="confirmMergeBooks()">Zusammenführen</button><button type="button" onclick="document.getElementById('mergeBooksDialog').close()">Abbrechen</button></div></dialog>
+<dialog id="analysisDialog" class="voc-dialog wide"><div class="dialog-head"><h2>LERNANALYSE</h2><button type="button" onclick="document.getElementById('analysisDialog').close()">Schließen</button></div><label for="analysisBookSelect">Buch</label><select id="analysisBookSelect" onchange="renderSelectedBookAnalysis()"></select><div id="analysisContent"></div></dialog>
+<div class="voc-footer"><span id="connectionStatus">Online · Sync –</span><small>Testversion 0.5 · Entwicklung</small></div>
 <div class="analysis-float-zone" role="group" aria-label="Auswertung"><button type="button" id="analysisOpenBtn" class="analysis-open" onclick="showLearningAnalysis()" title="Lernanalyse öffnen" aria-label="Lernanalyse öffnen"><svg viewBox="0 0 24 24" width="23" height="23" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V11M10 20V5M16 20v-8M22 20H2"/></svg></button></div>
 <script src="vocprog-enhancements.js"></script>
 </body>

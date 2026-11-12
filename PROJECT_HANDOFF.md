@@ -1,3 +1,100 @@
+## Nächster freigegebener Schritt – WASM-Buildvorbereitung und Sprachadapter (2026-11-12)
+
+**Ziel / Status:** Reproduzierbare Integration der etablierten
+`ablaut`-Konjugationsbibliothek vorbereiten; weiterhin **kein**
+öffentlicher v0.5-Testbuild und keine Produktiv- oder Datenänderung.
+
+### Repositoryabgleich
+- Arbeitsrepo `andreas-nigl/vocprog`, Branch
+  `develop/offline-supabase-20261105`.
+- Zu Beginn geglichen: `PROJECT_HANDOFF.md`
+  Blob `a4b21779eb283ef1faa043d4a824ba80d8bf5e86`,
+  `index.html` `da5ff459876bb63563e58cdbe87f1c80375d0ed4`,
+  `vocprog-enhancements.js`
+  `9bf208cf4fb726709eeb4a1f1faa4ecdf13c218a`,
+  `vocprog-fr-reference.js`
+  `ec49b5a5bd3441c592a4e7e21c3acb047374f85b`.
+- `main` und `vocprog-test/main` bleiben ohne diese
+  Neuentwicklungen.
+
+### Neuer WASM-Build (nur im Entwicklungsbranch)
+- Externes Open-Source-Projekt `ablaut-dev/ablaut`, Version
+  `0.11.0`, spezifischer **Quellcommit**
+  `ca8d2212c20d7e5ae83771dc3fe37023fda9c7cc`
+  durch GitHub-Commit-Suche ermittelt und im Build festgehalten.
+- `.github/workflows/voc-wasm-build.yml` hinzugefügt,
+  Commit `02fc5ce`:
+  nur bei Änderung der Build-Workflowdatei auf dem
+  Entwicklungsbranch oder manuell; festes Ubuntu 24.04;
+  `rustup target add wasm32-unknown-unknown`,
+  `cargo install wasm-pack --version 0.14.0 --locked`,
+  getrennte wasm-pack Builds für Web und Node.js;
+  native Node-WASM-Fixtures
+  `manger`/`aller` (FR), `go` (EN),
+  `lopen` (NL), `hablar` (ES), `falar` (PT);
+  SHA-256-Manifest des Browserbundles; Artefakt mit 14 Tagen
+  Aufbewahrung; **kein automatischer Deploy**.
+  actions/checkout durch vollständige Commit-SHA gepinnt.
+- Laufzeit- und Artefaktstatus: GitHub-Commit-Status-API
+  und von Connector sichtbare Workflow-Suche geben derzeit
+  **keinen bestätigten erfolgreichen Lauf** zurück.
+  Im lokalen Container kein Rust/`cargo`/`wasm-pack`
+  und kein externer GitHub-Netzzugang. **Es wurde
+  kein WASM-Binary generiert, heruntergeladen oder
+  als verfügbar ausgegeben.**
+
+### Sprachübergreifender, nicht aktivierter Adapter
+- `vocprog-wasm-adapter.js`, Commit `61cd3e9`;
+  Korrektur `e5b36f1`, im Entwicklungsbranch erstellt,
+  **noch nicht von `index.html` eingebunden**. Pure JS,
+  keine externe Laufzeitkommunikation, keine deutschen
+  Übersetzungen oder ungesicherte Ersatzformen.
+- Schnittstelle `VOCWasmAdapter.create(wasm.conjugate)` mit
+  Sprachcodes `fra/eng/spa/por/nld`, adaptierte
+  Tempus-/Modusnamen des VOC-Schulkatalogs;
+  strukturiertes `missing` für nicht vorhandene Zeitformen.
+- FR 7/7 Kategorien aus den Feldern des ablaut-FR-Tables.
+  ES 8/8 und PT 7/7 konzeptionell auf die verifizierten
+  Original-Feldnamen abgebildet.
+- EN 9/9: Simple Present/Past, Present/Past Perfect,
+  Will-Future aus Bibliotheksfeldern, Progressives mit
+  `am/is/are`/`was/were` + Present Participle,
+  Going-to-Future und Conditional per
+  klaren Hilfsverb-Kompositionsregeln.
+  Satzkontext/Sonderfälle weiterhin zu prüfen.
+- NL nur 2/5 sicher abgedeckte Tabellen:
+  Präsens und Vergangenheit (singulär/plural),
+  Principal parts separat; Perfekt, Plusquamperfekt
+  und Zukunft **absichtlich als 3 fehlende Tempora**.
+  Hilfsverbauswahl `hebben`/`zijn` nicht erraten.
+- LA nicht unterstützt: Ausnahme statt irreführender
+  Konjugation; lateinische Sonderquelle weiterhin offen.
+- `tests/wasm-adapter.test.js`, Commit `cfc8482`,
+  enthält explizite Regressionen für fünf Sprachen,
+  Fehlstellen und Latin-Ausnahme.
+- **Isoliert ausgeführt:** 10/10 Adapter-Funktionschecks
+  bestanden (FR, EN, ES, PT, NL, Latin-Ablehnung,
+  Incomplete-Slots). Keine echte WASM-Laufzeitprüfung.
+
+### Offene Abnahmen, Risiken und Fortsetzung
+1. Reproduzierbaren GitHub-Actions-WASM-Lauf tatsächlich
+   bestätigen; Artefakt herunterladen und SHA-256 überprüfen.
+   Danach Browser-/Node-Regressionsprüfungen mit echten
+   WASM-Daten. Nur geprüfte Artefakte ins App-Repo übernehmen,
+   dabei Drittquellenlizenz und Version dokumentieren.
+2. NL Hilfsverben für zusammengesetzte Zeiten verlässlich
+   bestimmen; Latein-Morphologie gesondert integrieren.
+3. Fachliche Abnahme aller 6 Sprachkataloge und der
+   deutschen Übersetzungen; unbekannte Verben nicht
+   stillschweigend als geprüft kennzeichnen.
+4. Rückwirkende Server-Buchumbenennung und Import der
+   alten Live-App-Bücher ausschließlich mit vollständigem
+   Sicherungs-/Merge- und Mehrgeräte-Test.
+5. Finaler Testbuild auf `vocprog-test/main` erst
+   nach API-, Browser-, Offline-, Synchronisierungs-
+   und E2E-Prüfung. Produktive App weiterhin unverändert.
+
+
 ## Entwicklungsfortsetzung 2026-11-12 – lokaler FR-Referenzmotor und sichere Kartenpersistenz
 **Status:** durch vorausgehende Gesamtfreigabe gedeckte Teilimplementierung,
 keine neue Nutzerabnahme; **nicht deployen** bis vollständige Daten- und

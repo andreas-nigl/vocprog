@@ -846,9 +846,21 @@
     const book=activeBook(),tense=normalizeTense(get("tenseSelect")?.value);
     if(!book||bookKind(book)!=="verbs")return [];
     const all=allVocab().filter(v=>v.bookId===book.id);
-    return all.filter(v=>baseVerbKinds.has(v.kind)||
+    const visible=all.filter(v=>baseVerbKinds.has(v.kind)||
       ((v.kind==="conjugation"||v.kind==="verb-form")&&normalizeTense(v.tense)===tense&&
         v.verification!=="scan-unverified"));
+    // Display references are per page and distinct verb lemma; never reuse
+    // OCR indices which contain gaps from unrelated vocabulary entries.
+    const indexByPage=new Map();
+    return visible.map(v=>{
+      const page=String(v.page||"?"),lemma=String(
+        v.verbId||v.infinitive||v.lemma||v.foreign
+      ).trim().normalize("NFKC").toLowerCase();
+      if(!indexByPage.has(page))indexByPage.set(page,new Map());
+      const indices=indexByPage.get(page);
+      if(!indices.has(lemma))indices.set(lemma,indices.size+1);
+      return {...v,refVocab:"S"+page+" V"+indices.get(lemma)};
+    });
   }
   const oldStartTraining=startTraining;
   startTraining=async function(event){

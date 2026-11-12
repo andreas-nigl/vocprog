@@ -99,3 +99,18 @@ test("Incomplete dictionary citations cannot pass four-part review",()=>{
     reviewed:true,source:"lexicon",forms:["fero","ferre","tuli","latum"]
   }),/Incomplete/);
 });
+
+
+test("Latin lookup uses local WordsEngine with accent-tolerant lexical matching",()=>{
+  const engine={parseWord:word=>({word,results:[sample.results[0]]})};
+  const found=adapter.lookupInfinitive("amāre",engine,
+    ()=> "amo, amare, amavi, amatus  V (1st)");
+  assert.equal(found.entries.length,1);
+  assert.equal(found.entries[0].sourcePrincipalParts[1],"amare");
+});
+
+test("Latin lookup rejects invalid text and a mismatched parser response",()=>{
+  const engine={parseWord:()=>({word:"videre",results:[]})};
+  assert.throws(()=>adapter.lookupInfinitive("<script>",engine,()=>""),/Invalid Latin/);
+  assert.throws(()=>adapter.lookupInfinitive("amare",engine,()=>""),/mismatched/);
+});

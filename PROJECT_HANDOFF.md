@@ -1,3 +1,59 @@
+## Referenzmotor-Prüfung – 2026-11-12 (Fortsetzung, noch kein Build)
+- Auf Grundlage des bestehenden freigegebenen Entwicklungsschritts nach
+  v0.5-Implementierungszwischenstand geprüft: `ablaut-dev/ablaut`
+  (<https://github.com/ablaut-dev/ablaut>), Rust-Paketversion
+  `0.11.0` im aktuell gelesenen `Cargo.toml`, Lizenz
+  `MIT OR Apache-2.0`, optionales `wasm`-Feature.
+- Die quelloffene Schnittstelle in `src/wasm.rs` liefert
+  `conjugate(infinitive, lang)` als strukturierte JavaScript-Objekte
+  (`serde_wasm_bindgen`), grundsätzlich geeignet für lokalen
+  Browserbetrieb **nach erfolgreichem Build und Qualitätstest**.
+  Verifizierte Implementierungsschnittstellen per Quelltext:
+  - Französisch `src/fra.rs`: `infinitive`, `auxiliary`,
+    `past_participle`, `imperative[3]`, `present[6]`,
+    `imperfect[6]`, `passe_compose[6]`,
+    `plus_que_parfait[6]`, `future[6]`,
+    `conditional[6]`, `subjunctive_present[6]`.
+  - Englisch `src/eng.rs`: `infinitive`, `past`,
+    `past_participle`, `present_participle`,
+    `present_row[6]`, `past_row[6]`,
+    `present_perfect_row[6]`, `past_perfect_row[6]`,
+    `future_row[6]`. **Keine eigenen Felder für
+    Present Progressive/Past Progressive/Going-to-Future
+    oder Conditionals:** Kompositionsregeln erforderlich.
+  - Spanisch `src/spa.rs`: `gerund`, `past_participle`,
+    `imperative[5]`, Präsens, Präteritum,
+    Imperfekt, Perfecto compuesto, Pluscuamperfecto,
+    Futur, Conditional, Presente de subjuntivo.
+  - Portugiesisch `src/por.rs`: `gerund`, `past_participle`,
+    `imperative[5]`, Presente, Imperfeito, Pretérito,
+    Condicional, Futur, Perfeito composto,
+    Mais-que-perfeito composto, Conjuntivo presente.
+  - Niederländisch `src/nld.rs`: `present[6]`,
+    `past[2]`, `past_participle`, `imperative`.
+    **Keine vollständigen zusammengesetzten Zeiten** als
+    Tabellenfelder; zusätzliche Regeln und Auxiliarwahl nötig.
+- **Latein fehlt** in den durch `Lang` unterstützten veröffentlichten
+  Sprachen; eigener geprüfter Konjugationsmotor und Quellenlizenz nötig.
+- Die im Projekt-README beworbenen 100-%-Scores beziehen sich auf
+  jeweilige Vergleichsmengen der unabhängigen Lexika, nicht auf
+  alle denkbaren Schulparadigmen bzw. die benötigte VOC-Integration.
+  Ohne separate VOC-Falltests keine uneingeschränkte Qualitätsfreigabe.
+- **Kein WASM eingebunden oder generiert.** Lokaler Buildversuch
+  hier blockiert: kein Rust/`cargo`/`wasm-pack` installiert;
+  Netzwerkzugriff auf npm im Container nicht verfügbar.
+  Keine fremde Laufzeitbibliothek blind über CDN eingebunden.
+- Weitere Arbeiten: WASM-Bundle mit fixierter Quelle, Prüfsummen
+  und offline verfügbaren Artefakten erzeugen, strukturierte
+  Schulzeit-Adapter testen, EN/NL fehlende analytische Zeiten
+  korrekt zusammensetzen, eigenständige Lateinquelle evaluieren;
+  erst dann vollständig erzeugte Konjugationen zulassen.
+- Zusätzliche Prüfung: zuvor gesicherter Entwicklungsstand
+  `index.html` (SHA `ebd7ca67126c532adf58c599d50b21b4f058795c`),
+  Erweiterung (SHA `e8ee31cbbb0937d9815a51ed202ab5de9b147420`)
+  und SW (v6) vor Recherche abgeglichen. Keine Änderung
+  an `vocprog-test/main` oder produktivem `vocprog/main`.
+
 ## Entwicklungszwischenstand nach Gesamtfreigabe – 2026-11-12
 **Freigabe:** Gesamter VOC-Entwicklungsblock durch Nutzer ausdrücklich freigegeben.
 **Release:** UNVOLLSTÄNDIG; bis zur Fertigstellung/Abnahmetests KEINE

@@ -1,3 +1,66 @@
+## Fortsetzung 2026-11-12 – vollständige Modultests und CI-Status
+
+**Auftrag:** „weiter“ nach Gmail/Supabase- und CI-Diagnose. **Keine Änderung an
+öffentlichen App-Versionen oder Cloud-Daten.** Bestehender Handoff fortgeführt.
+
+### GitHub- und E-Mail-Abgleich
+- Branch `develop/offline-supabase-20261105`; Handoff-Blob vor
+  diesem Block `4c66646f32668d4f6001b1b3bed206bf79b0c13a`.
+- Historischer GitHub-Actions-Fehler im Lauf
+  <https://github.com/andreas-nigl/vocprog/actions/runs/43225749898>
+  (Commit `11e9840`): **26/27 bestanden**, ein veralteter Test
+  erwartete NL 2/5 statt neuerdings 3/5 sicher modellierter
+  Schulzeiten. Runnerlogs aus Job `131208340381` bestätigt.
+- Aktueller Testblob `tests/wasm-adapter.test.js`
+  `ab5b6a9a7d5410d4222ddc267c2818c73a198420`
+  erwartet korrekt 3 verfügbare und 2 nicht abgesicherte NL-Zeiten.
+- Die eingeschränkte `fetch_commit_workflow_runs`-Schnittstelle
+  zeigt keine bestätigten aktuellen CI-Läufe. Das ist **keine**
+  grüne CI-Abnahme und kein Beleg für fehlende Actions-Läufe.
+- Gmail-Überprüfung bereits dokumentiert: Supabase-Willkommensmail
+  und keine konkrete Supabase-Ausfallmeldung; dies prüft weder
+  Cloud-Sicherheitskonfiguration noch aktuelle Datenintegrität.
+
+### Tatsächlich durchgeführte weitere Prüfung
+- Aktuelle GitHub-Quellen vollständig gelesen:
+  `vocprog-fr-reference.js`,
+  `vocprog-wasm-adapter.js`,
+  `vocprog-latin-principal.js`,
+  `vocprog-enhancements.js`,
+  `index.html`, `sw.js`, alle vier
+  `tests/*.test.js`-Dateien.
+- **42/42 vorhandene Tests in einer isolierten JavaScript-
+  Ausführung bestanden**. Hierzu die gespeicherten Testfälle mit
+  identischen JS-Quellen direkt evaluiert und Node-`assert`/
+  `node:test` durch kleine synchron ausgeführte Prüf-Helfer
+  ersetzt. Darunter FR-Konjugationsregressionen,
+  EN/ES/PT/NL-Adaption, lateinische Principal-Parts-
+  Review-Gates, Verbkarten-/Buch-Deduplizierung und
+  HTML/JS-Syntax.
+- **Prüfgrenze:** kein echter `node --test`-Lauf im
+  GitHub-Runtime- oder Container-Filesystem; Modul-Simulation
+  beansprucht **nicht** die volle native Node-Runner-
+  Semantik oder echte Browser-Interaktionen. Kein echtes
+  WASM-Binary geladen. Browser-/Supabase-/Offline-/Multi-
+  Device-Abnahme weiterhin offen.
+- Kein Bug aus aktuellem Stand belegt, der eine weitere
+  Codeänderung erfordert. **Kein Code geändert** in diesem
+  Prüfblock; nur die maßgebliche Übergabe fortgeschrieben.
+
+### Nächste bereits freigegebene Aufgaben
+1. Einen vollständigen echten `node --test tests/*.test.js`
+   GitHub-Actions-Lauf für den **aktuellen** Branchcommit
+   verifizieren; bei Fehler Joblogs lesen und Ursache beheben.
+2. WASM-Workflow im GitHub-Actions-Runner ausführen,
+   Artefakt und SHA-256 nachprüfen; erst dann Adapter
+   in die Browser-App integrieren.
+3. LAT/FR/EN/ES/PT/NL-Datenvertrag und deutsche
+   Übersetzungen mit realen Fällen prüfen, vollständige
+   Buchmigration und Cloud-Sync sicher testen.
+4. Test-App nur nach E2E-Freigabe aktualisieren.
+   Produktiv-App und Supabase-Daten bis zur gesonderten
+   Freigabe unangetastet; Analyse-Reset erst vor Live-Release.
+
 ## Gmail- und CI-Diagnose bei Wiedereinstieg – 2026-11-12
 
 **Status:** Diagnose und Handoff, **keine** Cloud-Datenbank-

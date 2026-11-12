@@ -568,7 +568,7 @@
     if(modeWrap)modeWrap.hidden=verb;
     const select=get("tenseSelect");if(!select||!verb)return;
     const lang=activeBook().lang,catalog=TENSES[lang]||[];
-    const old=select.value||localStorage.getItem(STORE+"_tense_"+lang)||"";
+    const old=localStorage.getItem(STORE+"_tense_"+lang)||select.value||"";
     select.replaceChildren(...catalog.map(([value,label])=>new Option(label,value)));
     select.value=catalog.some(([value])=>value===old)?old:(catalog[0]?.[0]||"");
     localStorage.setItem(STORE+"_tense_"+lang,select.value);
@@ -633,11 +633,38 @@
     }
     thead.append(heading);table.append(thead);
     const tbody=document.createElement("tbody");
-    for(const e of entries.filter(v=>baseVerbKinds.has(v.kind)||normalizeTense(v.tense)===normalizeTense(item.verbTense))){
+    const chosen=normalizeTense(item.verbTense);
+    const selected=entries.filter(v=>baseVerbKinds.has(v.kind)||normalizeTense(v.tense)===chosen);
+    let tenseHeaderAdded=false;
+    const catalog=TENSES[activeBook()?.lang]||[];
+    const germanTense=(catalog.find(([key])=>key===chosen)?.[1]||"").match(/\(([^)]+)\)$/)?.[1]||"Zeitform";
+    for(const e of selected.sort((a,b)=>(baseVerbKinds.has(a.kind)?0:1)-(baseVerbKinds.has(b.kind)?0:1))){
+      if(!baseVerbKinds.has(e.kind)&&!tenseHeaderAdded){
+        const header=document.createElement("tr");
+        for(const label of [catalog.find(([key])=>key===chosen)?.[1]?.split(" (")[0]||chosen,germanTense]){
+          const cell=document.createElement("th");cell.textContent=label;header.append(cell);
+        }
+        tbody.append(header);tenseHeaderAdded=true;
+      }
       const tr=document.createElement("tr");
       const first=document.createElement("td"),second=document.createElement("td");
       const labels={"verb-infinitive":"Infinitif : ","verb-participle":"Participe passé : ","verb-imperative":"Impératif : ","verb-principal":"Principal parts : ","verb-ing":"-ing form : ","verb-gerund":"Gerundio : "};
-      first.textContent=(labels[e.kind]||"")+e.foreign;
+      const prefix=labels[e.kind]||"";
+      first.append(document.createTextNode(prefix));
+      const lemma=String(item.verbLemma||"").toLowerCase();
+      const candidate=String(e.foreign||"");
+      // Mark only the inserted orthographic letter in near-regular French -ger/-cer verbs.
+      let highlight=-1,letter="";
+      if(activeBook()?.lang==="fr-FR"&&lemma.endsWith("ger")&&/\bmangeons\b/i.test(candidate)){
+        highlight=candidate.toLowerCase().indexOf("mangeons")+4;letter="e";
+      }else if(activeBook()?.lang==="fr-FR"&&lemma.endsWith("cer")&&/\bcommençons\b/i.test(candidate)){
+        highlight=candidate.toLowerCase().indexOf("commençons")+6;letter="ç";
+      }
+      if(highlight>=0&&candidate[highlight]?.toLowerCase()===letter){
+        first.append(document.createTextNode(candidate.slice(0,highlight)));
+        const strong=document.createElement("strong");strong.textContent=candidate[highlight];first.append(strong);
+        first.append(document.createTextNode(candidate.slice(highlight+1)));
+      }else first.append(document.createTextNode(candidate));
       second.textContent=e.german;
       tr.append(first,second);tbody.append(tr);
     }
@@ -730,11 +757,13 @@
     alert("Bücher lokal zusammengeführt. Der geräteübergreifende Stand folgt mit erfolgreicher Synchronisation.");
   };
 
-  const oldSimplify=simplified;
+  const oldGrade=window.gradeCurrentAnswer;
   // Slash-separated principal parts form one ordered answer, not alternatives.
   window.gradeCurrentAnswer=function(){
+    const item=trainingItems[currentIndex];
+    if(item?.kind!=="verbs")return oldGrade();
     if(analyzedThisCard)return;
-    const input=get("answerInput"),item=trainingItems[currentIndex],given=input.value.trim();
+    const input=get("answerInput"),given=input.value.trim();
     if(!given)return;
     const normalized=value=>simplified(value).replace(/\s*\/\s*/g,"/").replace(/\s*\(\s*/g,"(").replace(/\s*\)\s*/g,")");
     const expected=String(item.target||"");

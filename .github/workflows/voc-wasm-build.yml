@@ -1,4 +1,5 @@
 name: VOC conjugation WASM build (development)
+# Build only an artifact; do not deploy. Source pinned to ablaut 0.11.0.
 on:
   push:
     branches:
@@ -13,7 +14,7 @@ permissions:
 jobs:
   build-reference:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - name: Checkout VOC development sources
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683

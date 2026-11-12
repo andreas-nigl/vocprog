@@ -227,6 +227,37 @@
     loadFromLocalStorage();
     refreshBookChoices();
   };
+
+  window.isSelectedVerbBook=function(){
+    return bookKind(books.find(b=>b.id===chosenBook)||{})==="verbs";
+  };
+  window.ingestVerbInfinitives=function(entries,language){
+    if(!Array.isArray(entries)||!entries.length||!LANGS[language])return 0;
+    const valid=entries.filter(e=>e&&String(e.infinitive||"").trim()&&String(e.german||"").trim());
+    if(!valid.length)return 0;
+    const source=books.find(b=>b.id===chosenBook);
+    let verbBook=books.find(b=>b.lang===language&&bookKind(b)==="verbs");
+    if(!verbBook&&source&&bookKind(source)==="verbs")verbBook=source;
+    if(!verbBook)verbBook=addBook(language,LANGS[language],"verbs");
+    const existing=new Set(allVocab().filter(v=>v.bookId===verbBook.id&&v.kind==="verb-infinitive")
+      .map(v=>String(v.foreign||"").trim().toLocaleLowerCase()));
+    const payload=[];
+    for(const entry of valid){
+      const infinitive=String(entry.infinitive).trim();
+      const wordKey=infinitive.toLocaleLowerCase();
+      if(existing.has(wordKey))continue;
+      existing.add(wordKey);
+      payload.push({bookId:verbBook.id,lang:language,kind:"verb-infinitive",
+        foreign:infinitive,german:String(entry.german).trim(),page:String(entry.page||"?"),
+        infinitive,verbId:wordKey,verification:"printed-lemma",
+        sentence_foreign:"",sentence_german:""});
+    }
+    if(!payload.length)return 0;
+    const count=mergeVocabularies(payload);
+    saveToLocalStorage();
+    return count;
+  };
+
   window.ingestConjugations=function(conjugations,language){
     if(!Array.isArray(conjugations)||conjugations.length===0)return 0;
     const origin=books.find(b=>b.id===chosenBook);

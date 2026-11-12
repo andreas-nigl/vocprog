@@ -458,12 +458,12 @@
       const verbBookSelected=isSelectedVerbBook();
       let addedCount=verbBookSelected?0:mergeVocabularies(newVocabs);
       saveToLocalStorage();
-      const baseVerbs=ingestVerbInfinitives(parsedResponse.verbs||[],parsedResponse.detected_language_code);
+      const baseVerbs=await ingestVerbInfinitives(parsedResponse.verbs||[],parsedResponse.detected_language_code);
       const countConjugations=ingestConjugations(parsedResponse.conjugations||[], parsedResponse.detected_language_code);
       updateScannedPagesUI();
       initPageInputAndSelectors();
       document.getElementById('rangeCard').classList.remove('hidden');
-      status.innerText = `${addedCount} neue Vokabeln, ${baseVerbs} erkannte Infinitive und ${countConjugations} abgedruckte Konjugationsformen gespeichert. ${window.VOCScanVerificationWarnings||0} widersprüchliche Formen zurückgewiesen. Noch nicht übersetzte oder nicht unabhängig bestätigte Formen bleiben vorerst von der Abfrage ausgeschlossen.`;
+      status.innerText = `${addedCount} neue Vokabeln, ${baseVerbs} neue Infinitive, ${window.VOCGeneratedFrenchForms||0} unabhängig abgeglichene Formen und ${countConjugations} gedruckte Konjugationsformen gespeichert. ${window.VOCScanVerificationWarnings||0} widersprüchliche Formen zurückgewiesen. Noch nicht übersetzte oder nicht unabhängig bestätigte Formen bleiben vorerst von der Abfrage ausgeschlossen.`;
       rawImages = [];
       renderGallery();
     } catch (err) {

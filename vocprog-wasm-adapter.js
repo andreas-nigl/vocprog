@@ -113,9 +113,15 @@
       }
     } else if (language === "en-US") forms = englishTenses(table);
     else if (language === "nl-NL") forms = dutchTenses(table);
-    const required = language === "nl-NL" ?
-      ["onvoltooid tegenwoordige tijd", "onvoltooid verleden tijd"] :
-      Object.keys(SIX_MAP[language] || ENGLISH_KEYS);
+    const required = language === "nl-NL" ? [
+      "onvoltooid tegenwoordige tijd", "onvoltooid verleden tijd",
+      "voltooid tegenwoordige tijd", "voltooid verleden tijd",
+      "onvoltooid toekomende tijd"
+    ] : language === "en-US" ? [
+      "simple present", "present progressive", "simple past",
+      "past progressive", "present perfect", "past perfect",
+      "will future", "going to future", "conditional"
+    ] : Object.keys(SIX_MAP[language]);
     const present = Object.keys(forms);
     return {
       language,infinitive,forms,

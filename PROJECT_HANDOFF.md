@@ -31,6 +31,7 @@ Veröffentlichung dieses Zwischenstands auf `vocprog-test/main` oder
   - `86ae2f4`: neues Verbenbuch wird erst nach tatsächlicher
     Spracherkennung angelegt/wiederverwendet; Scan-Vormerkung
     bleibt lokal über Neustart erhalten.
+  - `1942650`: Zeitform-Auswahl speichert neuen Select-Wert vor dem Neuaufbau; verhindert Rücksprung auf veraltete Auswahl.
   - `95cb9a6` + `cfe0f44`: Buch-Merge verweist bei inhaltsgleichen
     Duplikaten auf bestehende Vokabel-IDs und berücksichtigt zuvor
     zurückgesetzte Analysedaten.

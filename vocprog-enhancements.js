@@ -87,9 +87,14 @@
     for(const n of nums.slice(1)){if(n===last+1){last=n;continue;}blocks.push(first===last?String(first):first+"–"+last);first=last=n;}
     blocks.push(first===last?String(first):first+"–"+last);return blocks.join(", ");
   }
+  function bookKind(b){return b.kind==="verbs"||b.kind==="conjugations"?"verbs":"vocab";}
+  function bookTitle(b){
+    const clean=String(b.name||"Muster").replace(/\s*[–-]\s*(?:Konjugationen|Verben|Vokabeln)(?:\s*\([^)]*\))?$/i,"").trim();
+    return clean+" – "+(bookKind(b)==="verbs"?"Verben":"Vokabeln")+" ("+(LANGS[b.lang]||"Sprache offen")+")";
+  }
   function bookText(b){
     const v=allVocab().filter(x=>x.bookId===b.id);
-    return b.name+" ("+(LANGS[b.lang]||"Sprache noch nicht erkannt")+")"+(v.length?": S. "+ranges(v.map(x=>x.page)):"");
+    return bookTitle(b)+(v.length?": S. "+ranges(v.map(x=>x.page)):"");
   }
   function renderBooks(){
     const el=get("scannedPagesBadge");if(!el)return;
@@ -97,6 +102,8 @@
     el.textContent=selected?bookText(selected):"Noch kein Buch vorhanden";
     get("renameBookBtn").disabled=!selected;
     get("deleteBookBtn").disabled=!selected;
+    get("mergeBookBtn").disabled=books.length<2;
+    refreshVerbSelection();
   }
   function sortedBooks(){
     return [...books].sort((a,b)=>{
@@ -164,9 +171,9 @@
     if(refresh) loadFromLocalStorage();
     refreshBookChoices();
   }
-  function addBook(lang,name){
+  function addBook(lang,name,kind="vocab"){
     if(!name?.trim())return null;
-    const b={id:id(),name:name.trim(),lang:lang||"",updatedAt:new Date().toISOString()};
+    const b={id:id(),name:name.trim(),lang:lang||"",kind,updatedAt:new Date().toISOString()};
     books.push(b);persistMetadata();refreshBookChoices();return b;
   }
   window.openBookPicker=function(source){
@@ -175,21 +182,27 @@
     const dropdown=get("pickerBook");
     dropdown.innerHTML="";
     sortedBooks().forEach(b=>dropdown.add(new Option(bookText(b),b.id)));
-    dropdown.add(new Option("＋ Neues Buch anlegen","__new__"));
-    dropdown.value=chosenBook||"__new__";
+    dropdown.add(new Option("＋ Neues Vokabelbuch anlegen","__new_vocab__"));
+    dropdown.add(new Option("＋ Neues Verbenbuch anlegen","__new_verbs__"));
+    dropdown.value=chosenBook||"__new_vocab__";
     get("pickerNewName").value="Muster";
-    get("pickerNewFields").hidden=dropdown.value!=="__new__";
-    dropdown.onchange=()=>get("pickerNewFields").hidden=dropdown.value!=="__new__";
+    get("pickerNewFields").hidden=!dropdown.value.startsWith("__new_");
+    dropdown.onchange=()=>get("pickerNewFields").hidden=!dropdown.value.startsWith("__new_");
     chosenForScan=source;
     modal.showModal();
   };
   window.commitBookPicker=function(){
     const dropdown=get("pickerBook");
     let b=books.find(b=>b.id===dropdown.value);
-    if(dropdown.value==="__new__"){
+    if(dropdown.value==="__new_vocab__"||dropdown.value==="__new_verbs__"){
+      const kind=dropdown.value==="__new_verbs__"?"verbs":"vocab";
       const name=get("pickerNewName").value.trim();
       if(!name)return alert("Bitte einen Buchnamen eingeben.");
-      b=addBook("",name);
+      if(kind==="verbs"){
+        const knownLanguage=get("targetLang").value;
+        b=books.find(x=>bookKind(x)==="verbs"&&x.lang===knownLanguage);
+      }
+      if(!b)b=addBook("",name,kind);
     }
     if(!b)return;
     chooseBook(b.id);
@@ -201,7 +214,17 @@
     const b=books.find(x=>x.id===chosenBook);
     if(!b)throw Error("Vor dem Scannen bitte ein Buch auswählen.");
     if(b.lang&&b.lang!==language)throw Error("Buch „"+b.name+"“ enthält bereits "+(LANGS[b.lang]||b.lang)+". Die neu erkannten Seiten sind "+LANGS[language]+". Bitte ein eigenes Buch anlegen.");
-    if(!b.lang){b.lang=language;b.updatedAt=new Date().toISOString();persistMetadata();}
+    if(!b.lang){
+      if(bookKind(b)==="verbs"){
+        const other=books.find(x=>x.id!==b.id&&bookKind(x)==="verbs"&&x.lang===language);
+        if(other){
+          const unused=allVocab().some(x=>x.bookId===b.id);
+          if(!unused){books=books.filter(x=>x.id!==b.id);markDeleted("book",b,new Date().toISOString());chosenBook=other.id;b=other;}
+        }
+      }
+      if(!b.lang){b.lang=language;b.updatedAt=new Date().toISOString();}
+      persistMetadata();
+    }
     get("targetLang").value=language;
     localStorage.setItem("vocab_trainer_current_lang",language);
     loadFromLocalStorage();
@@ -212,8 +235,8 @@
     const origin=books.find(b=>b.id===chosenBook);
     if(!origin)throw Error("Kein Quellbuch für Konjugationen ausgewählt.");
     const sourceBookId=origin.id;
-    const name=origin.name+" – Konjugationen";
-    let conjBook=books.find(b=>b.sourceBookId===sourceBookId&&b.kind==="conjugations");
+    const name=LANGS[language]+" – Verben";
+    let conjBook=bookKind(origin)==="verbs"?origin:books.find(b=>b.lang===language&&bookKind(b)==="verbs");
     const persons=new Set(["je","j'","tu","il/elle/on","nous","vous","ils/elles"]);
     const items=[];
     for(const group of conjugations){
@@ -232,12 +255,8 @@
       }
     }
     if(!items.length)return 0;
-    if(!conjBook){
-      conjBook=addBook(language,name);
-      conjBook.sourceBookId=sourceBookId;
-      conjBook.kind="conjugations";
-      persistMetadata();
-    }
+    if(!conjBook){conjBook=addBook(language,name,"verbs");}
+    // The original selected book may use the same language but a different ID.
     const count=mergeVocabularies(items.map(item=>({...item,bookId:conjBook.id})));
     saveToLocalStorage();
     chooseBook(sourceBookId);

@@ -590,7 +590,7 @@
       speechSynthesis.speak(utterance);
     }
     speakIndex(0);
-    if(type==="target"&&lastShownEvent)logEvent("spoken",item);
+    if(lastShownEvent&&item)logEvent("spoken",item,{side:type});
   };
   const originalRecognition=startSpeechRecognition;
   startSpeechRecognition=function(){

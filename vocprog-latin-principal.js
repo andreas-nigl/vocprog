@@ -8,17 +8,25 @@
 (function(root){
   "use strict";
 
+  const withoutMacrons=value=>String(value||"").normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"").normalize("NFC").trim().toLocaleLowerCase("la");
+
   function principalPartsFromAnalysis(analysis,dictionaryForm){
     if(!analysis||!Array.isArray(analysis.results)||
        typeof dictionaryForm!=="function")throw Error("Latin reference API required");
+    // A parsed Latin input must match the candidate's actual infinitive,
+    // not a different dictionary entry matching the same surface word.
+    const sought=withoutMacrons(analysis.word);
     const candidates=new Map();
     for(const parsed of analysis.results){
       const entry=parsed?.de;
       if(entry?.part?.pofs!=="V"||!Array.isArray(entry.stems))continue;
       const text=String(dictionaryForm(entry)||"");
+      if(!/\s{2,}V(?:\s|$)/.test(text))continue;
       const heading=text.split(/\s{2,}V\b/)[0].trim();
       const parts=heading.split(/\s*,\s*/).map(x=>x.trim()).filter(Boolean);
       if(parts.length<2||parts.length>4)continue;
+      if(sought&&withoutMacrons(parts[1])!==sought)continue;
       const kind=String(entry.part.v?.kind||"X").toUpperCase();
       const stableKey=parts.join("|")+"|"+kind;
       if(!candidates.has(stableKey)){
@@ -52,10 +60,16 @@
     if(candidate.verbKind==="DEP"||candidate.verbKind==="SEMIDEP"||
        candidate.verbKind==="PERFDEF")
       throw Error("Non-standard Latin principal parts require a separate paradigm");
+    if(candidate.sourcePrincipalParts.length!==4||
+       candidate.sourcePrincipalParts.some(x=>x==="-"||!x))
+      throw Error("Incomplete Latin source paradigm");
     const forms=reviewed.forms.map(x=>x.trim().normalize("NFC"));
-    const noMacron=value=>value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase();
-    if(noMacron(forms[0])!==noMacron(candidate.lemma))
-      throw Error("Principal-parts lemma mismatch");
+    // The 4th dictionary citation may use -us (participle) versus -um
+    // (supine), so compare only the first three without macrons.
+    for(let index=0;index<3;index++){
+      if(withoutMacrons(forms[index])!==withoutMacrons(candidate.sourcePrincipalParts[index]))
+        throw Error("Principal-parts source mismatch at "+(index+1));
+    }
     return Object.freeze({
       language:"la-LA",
       infinitive:forms[1],

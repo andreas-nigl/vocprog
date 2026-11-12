@@ -793,11 +793,17 @@
     // Historical event IDs are immutable cloud rows, so clone with a new ID and tombstone the old.
     for(const event of history.filter(x=>x.bookId===source.id)){
       markDeleted("event",event,now);
-      history.push({...event,id:id(),bookId:target.id,sourceId:remappedIds.get(event.sourceId)||event.sourceId});
+      const sourceCutoff=Date.parse(resetRecord(source.id,event.kind)?.resetAt||0);
+      // A previous reset in the source book must not become visible again after merging.
+      if(Date.parse(event.at||0)>sourceCutoff){
+        history.push({...event,id:id(),bookId:target.id,originalAt:event.originalAt||event.at,
+          at:now,sourceId:remappedIds.get(event.sourceId)||event.sourceId});
+      }
     }
     history=history.filter(x=>x.bookId!==source.id);
     for(const record of specials.filter(x=>x.bookId===source.id)){
       markDeleted("special",record,now);
+      if(record.kind==="analysis-reset")continue;
       const items=(record.items||[]).map(item=>({
         ...item,
         sourceId:remappedIds.get(item.sourceId)||item.sourceId,

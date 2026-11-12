@@ -647,6 +647,92 @@
     table.append(tbody);fragment.append(table);
     panel.replaceChildren(fragment);panel.hidden=false;btn.setAttribute("aria-expanded","true");
   };
+
+  function validMerge(first,second){
+    if(!first||!second||first.id===second.id)return "Bitte zwei unterschiedliche Bücher auswählen.";
+    if(!first.lang||!second.lang||first.lang!==second.lang)return "Die Bücher haben unterschiedliche oder ungeklärte Sprachen.";
+    if(bookKind(first)!==bookKind(second))return "Vokabel- und Verbenbücher dürfen nicht vermischt werden.";
+    const left=allVocab().filter(v=>v.bookId===first.id);
+    const right=allVocab().filter(v=>v.bookId===second.id);
+    const pageSet=list=>new Map([...new Set(list.map(v=>String(v.page||"?")))].map(page=>[
+      page,new Set(list.filter(v=>String(v.page||"?")===page).map(v=>[
+        v.kind||"words",v.foreign||"",v.german||"",v.tense||"",v.infinitive||"",v.person||""
+      ].map(x=>String(x).trim().normalize("NFKC").toLowerCase()).join("|")))]));
+    const l=pageSet(left),rr=pageSet(right);
+    for(const [page,values] of rr)if(l.has(page)){
+      const other=l.get(page);
+      if(values.size!==other.size||[...values].some(v=>!other.has(v)))
+        return "Seite "+page+" überschneidet sich, enthält aber unterschiedliche Einträge. Zusammenführen gesperrt.";
+    }
+    return "";
+  }
+  function mergePairs(){
+    return [books.find(x=>x.id===get("mergeSource").value),books.find(x=>x.id===get("mergeTarget").value)];
+  }
+  window.openMergeBooks=function(){
+    const source=get("mergeSource"),target=get("mergeTarget");
+    source.replaceChildren();target.replaceChildren();
+    for(const book of sortedBooks()){
+      source.add(new Option(bookTitle(book),book.id));
+      target.add(new Option(bookTitle(book),book.id));
+    }
+    source.value=chosenBook;
+    target.value=sortedBooks().find(x=>x.id!==chosenBook)?.id||"";
+    refreshMergePreview();get("mergeBooksDialog").showModal();
+  };
+  window.refreshMergePreview=function(){
+    const [first,second]=mergePairs(),message=validMerge(first,second);
+    const name=get("mergeName");
+    if(first)name.value=first.name;
+    get("mergeWarning").textContent=message||"Die Einträge werden mit ihren Lernstatistiken übernommen. Vorher wird ein Backup heruntergeladen.";
+    get("mergeConfirm").disabled=!!message;
+  };
+  function exportPreMergeBackup(){
+    const data={schemaVersion:4,books,vocabulary:allVocab(),specialSentences:specials,practiceEvents:history,deletedRecords:tombstones,createdAt:new Date().toISOString()};
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+    const url=URL.createObjectURL(blob),link=document.createElement("a");
+    link.href=url;link.download="vocprog-vor-buchzusammenfuehrung-"+new Date().toISOString().slice(0,10)+".json";
+    document.body.append(link);link.click();link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),2000);
+  }
+  window.confirmMergeBooks=function(){
+    const [target,source]=mergePairs(),error=validMerge(target,source);
+    if(error){get("mergeWarning").textContent=error;return;}
+    const newName=get("mergeName").value.trim();
+    if(!newName)return alert("Bitte einen Buchnamen angeben.");
+    if(!confirm("„"+bookTitle(source)+"“ in „"+bookTitle(target)+"“ übernehmen? Die Änderung wird auf andere Geräte synchronisiert."))return;
+    try{exportPreMergeBackup();}catch(e){alert("Backup fehlgeschlagen: "+e.message);return;}
+    const now=new Date().toISOString();
+    const key="vocab_trainer_data_"+source.lang,all=read(key,[]);
+    const destinationVocab=all.filter(v=>v.bookId===target.id);
+    const identity=v=>[String(v.page||"?"),v.kind||"words",v.foreign||"",v.german||"",v.tense||"",v.infinitive||"",v.person||""].join("\u0001").toLocaleLowerCase();
+    const known=new Set(destinationVocab.map(identity));
+    const next=[];
+    for(const v of all){
+      if(v.bookId!==source.id){next.push(v);continue;}
+      const code=identity(v);
+      if(known.has(code)){markDeleted("vocab",v,now);continue;}
+      known.add(code);next.push({...v,bookId:target.id,updatedAt:now});
+    }
+    // Historical event IDs are immutable cloud rows, so clone with a new ID and tombstone the old.
+    for(const event of history.filter(x=>x.bookId===source.id)){
+      markDeleted("event",event,now);
+      history.push({...event,id:id(),bookId:target.id});
+    }
+    history=history.filter(x=>x.bookId!==source.id);
+    for(const record of specials.filter(x=>x.bookId===source.id)){
+      markDeleted("special",record,now);
+      specials.push({...record,id:id(),bookId:target.id,updatedAt:now});
+    }
+    specials=specials.filter(x=>x.bookId!==source.id);
+    save(key,next);
+    target.name=newName;target.updatedAt=now;
+    markDeleted("book",source,now);books=books.filter(x=>x.id!==source.id);
+    chosenBook=target.id;persistMetadata();chooseBook(target.id);
+    get("mergeBooksDialog").close();
+    alert("Bücher lokal zusammengeführt. Der geräteübergreifende Stand folgt mit erfolgreicher Synchronisation.");
+  };
+
   const oldSimplify=simplified;
   // Slash-separated principal parts form one ordered answer, not alternatives.
   window.gradeCurrentAnswer=function(){

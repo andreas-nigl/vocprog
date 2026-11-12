@@ -1,3 +1,133 @@
+## VOC 0.5 – Korrekturen nach Nutzerabnahme der Testvorschau, 2026-11-12
+
+**Auftrag / Nutzerabnahme:** Nutzer bestätigte Vorschau grundsätzlich, meldete
+doppelte FR-Verbenbücher, Abweichungen der Buchbuttons, lückenhafte
+Nummerierung und falsche Trainer-Tabellenposition/Grundformen.
+Dieser Korrekturblock ist durch den bestehenden freigegebenen
+VOC-Entwicklungsauftrag und den ausdrücklichen Fortsetzungswunsch gedeckt.
+**Noch keine Nutzerabnahme dieser Korrekturfassung.**
+
+### Gesicherter Entwicklungs- und Veröffentlichungsstand
+- Repository `andreas-nigl/vocprog`, Branch
+  `develop/offline-supabase-20261105`.
+- `index.html`: `382fd8d` – Tabellenbutton im oberen
+  Trainerkopf, Panel aus Trainer-Karte heraus als Geschwister-
+  Karte unmittelbar darunter verschoben.
+- `vocprog-enhancements.css`: `47cc909` – Button
+  `Tabelle` mittig, ohne schwarzen Rand, 40 px hoch,
+  pill-förmig wie die bestehenden runden Bedienbuttons;
+  Buchbuttons Stift/Merge/X wieder 42 px, ursprüngliche
+  Farben/Radius; Tabellenkarte weiß mit 16-px-Ecken
+  und Schatten wie Trainerkarte.
+- `vocprog-enhancements.js`:
+  - `c32aa96`: Bei Anlage und Scans vorhandenes Verbenbuch
+    gleicher Sprache wiederverwenden. Historisch doppelte
+    Verbenbücher werden lokal deterministisch nach Buch-ID
+    konsolidiert und anschließend über vorhandene Tombstone-
+    Synchronisation fortgeschrieben. Zuvor ein vollständiger
+    lokaler Backup-Snapshot aller betroffenen Bücher, Vokabeln,
+    Sonderformen und Lernereignisse. Bei Backupfehler
+    **keine** automatische Migration.
+  - `fce5fc8`: Fehler beseitigt, bei dem ein
+    `const b` beim Erkennen einer vorhandenen Sprache
+    neu zugewiesen werden sollte.
+  - `9b9dbb3`: für jeden anderen Satz doppelter Bücher
+    eigenständiger Backup-Schlüssel.
+  - `25d7cc0`: Display-Referenzen für Verben pro Buchseite
+    und Verb-ID fortlaufend ab `V1`, unabhängig von
+    alten OCR-/Vokabelnummern; Originalreferenzen/IDs
+    bleiben im Datensatz erhalten.
+  - `1f0f8a6`: separate Tabellensektionen für
+    `Infinitif`, `Participe passé`, `Impératif`
+    und gewählte Zeitform. Vorhandene gespeicherte
+    Übersetzungen werden gezeigt; nicht vorhandene
+    Grundformen bleiben ausdrücklich als
+    `– (noch nicht erfasst)` markiert. Nur für
+    vier im lokalen FR-Referenzmotor erfasste Pilotverben
+    können Referenz-Partizip/Imperativ zusätzlich
+    zugrunde gelegt werden; für `venir` werden
+    **keine Formen erfunden**. Tabellenöffnung/
+    -schließung und Trainer-Exit schließen Panel korrekt.
+  - `d675eb0`: keine Zusammenlegung gleicher Verbformen
+    **auf unterschiedlichen Buchseiten**; nur vollständig
+    gleiche Datensätze innerhalb derselben Seite gelten
+    als Dublette. Wiederholung auf neuer Seite bleibt erhalten.
+- `sw.js`: `c44214a`, Cache `vocprog-staging-20261112-v9`.
+- Neue/erweiterte Regressionstests
+  `tests/verb-ui.test.js`: `d17f838`,
+  Erweiterung `b9218d9` für seitenübergreifende
+  Verbwiederholungen.
+- **Öffentliche Testversion `andreas-nigl/vocprog-test/main` aktualisiert**
+  mit HTML, Erweiterungs-JS/-CSS, SW.
+  Zuletzt: `1e47d9a42af7de1662692a3ffab5c995b9037b5d`.
+  URL <https://andreas-nigl.github.io/vocprog-test/>.
+  **Produktives `andreas-nigl/vocprog/main` NICHT verändert**,
+  kein eigener Standalone-Build; HTML-Live-Blob
+  zuletzt `4ddacd1f1c84ae4dc7a8b60128657545c212b681`.
+
+### Reale Prüfungen und Grenzen
+- **39/39 isolierte JS-Unit-/Regressionstests bestanden**,
+  inklusive neuer Funktionstests:
+  2 französische Verbenbücher → 1 Buch,
+  doppelte Vokabeln derselben Seite entfernt,
+  weitere Personalform und Wiederholung
+  auf anderer Seite erhalten, Lernereignis-
+  `sourceId` korrekt remappt, Tombstone
+  und lokale Backup-Datei vorhanden;
+  `S156 V1, V2` ohne Lücken; zweite Buchseite
+  beginnt wieder bei `V1`.
+- Zusätzlich isolierter DOM-Mock mit fotografiertem
+  Verbfamilienfall `venir` / Présent:
+  Tabelle öffnet/schließt; Infinitiv,
+  Partizip, Imperativ und Zeitformabschnitt
+  vorhanden, sechs gespeicherte Präsensformen
+  und deutsche Übersetzungen angezeigt;
+  fehlende Grundformen korrekt gekennzeichnet.
+- Inline-JS in HTML, Erweiterungs-JS, FR-Referenz
+  und Service Worker syntaktisch geprüft.
+- Test-HTML/CSS/JS- und SW-Blobs gegen
+  Entwicklungsbranch abgeglichen (5/5).
+- **NICHT bestanden oder nicht ausführbar nachgewiesen:**
+  tatsächlicher öffentlicher GitHub-Pages-HTTP-Abruf,
+  vollständiger Browser-/Smartphone-UI-Test,
+  echter Gemini-Scan, Supabase-Migration an
+  echten Cloud-Datensätzen und Konfliktprüfung
+  mit zwei gleichzeitig aktiven Geräten.
+  Die automatische lokale Dublettenmigration
+  ist für den Nutzer erst beim Start/Sync der App
+  aktiv; **keine direkten Supabase-Schreibvorgänge
+  durch diese Entwicklungstools**.
+- **WASM-Verifikation:** Der GitHub-Actions-
+  WASM-Buildworkflow existiert und wurde
+  durch Änderung an seiner Workflow-Datei
+  zum Auslösen gebracht; jedoch geben die
+  verfügbaren GitHub-Connectors für
+  `f71068a` und nachfolgende Commits
+  weder bestätigte erfolgreiche CI-Runs
+  noch WASM-Artefakt/Prüfsumme zurück.
+  Kein Rust/`cargo`/`wasm-pack`
+  im verfügbaren lokalen Container;
+  externer GitHub-Netzabruf dort nicht möglich.
+  **WASM-Build nicht als verifiziert deklarieren
+  und Motor nicht in Test-/Live-App einbinden.**
+
+### Nächste Arbeitsschritte / offene Abnahme
+1. Nutzer testet neue Vorschau, besonders
+   den erstmaligen Ein-Buch-Migrationslauf
+   in der tatsächlich verbundenen Supabase-Umgebung
+   und zweite Geräte-Synchronisierung. Vorher
+   möglichst vollständigen App-Export sichern,
+   zusätzlich zum automatischen lokalen Snapshot.
+2. Echtes WASM-Workflowprotokoll samt Run-ID
+   und SHA256-Bundle prüfen; erst dann
+   fünfsprachigen Motor und fehlende Formen
+   integrieren. Für `venir` sind Partizip/
+   Imperativ im aktuellen Fall ohne
+   unabhängige Bestätigung nicht vorhanden.
+3. Browser-/Offline-/OCR-/Gemini-/Sync-E2E-Prüfungen
+   dokumentieren, Testabnahme einholen;
+   produktives `main` weiterhin gesondert freigeben.
+
 ## VOC-0.5-Testvorschau / AGENTS.md / Latein entfernt — 2026-11-12
 
 ### Explizite aktuelle Nutzerentscheidung

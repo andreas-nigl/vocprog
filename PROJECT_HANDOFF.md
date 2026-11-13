@@ -1,3 +1,30 @@
+## Chatwechsel – gesicherter Einstiegspunkt 2026-11-13
+
+**Aktueller Auftrag:** Arbeitsstand sichern und im neuen Workchat nahtlos fortsetzen. In diesem Sicherungsblock ausschließlich diese Übergabe aktualisiert; keine App-, Cloud- oder Releaseänderungen.
+
+### Am 2026-11-13 direkt in GitHub abgeglichene Referenzen
+- Entwicklung: `andreas-nigl/vocprog`, `develop/offline-supabase-20261105`, HEAD vor diesem Dokumentationscommit `3013f7458fd63bc20fc3b38e326293dd1bd4dd24`.
+- Test: `andreas-nigl/vocprog-test/main`, HEAD `e7a4fdc5edf06588fe7f7a98c0fe31549bda9917`.
+- Live: `andreas-nigl/vocprog/main`, HEAD `f5b026e4a3342995db7d0342a3c66be680c14c6f`.
+- Root-`AGENTS.md` im Entwicklungsbranch gelesen. Diese Übergabe bleibt maßgeblich; neuere datierte Entscheidungen haben Vorrang vor historischen Abschnitten (insbesondere: kein Latein; öffentlicher Testbestand ohne Login).
+- Im aktuellen lokalen Arbeitsverzeichnis lagen keine ungesicherten Projektdateien. Kein neuer Standalone-Build; Test-PWA-Offlinecache laut bisherigem Nachtrag v10, echter Offline-Neustart weiterhin offen.
+
+### Tatsächlicher Stand gegenüber der letzten sichtbaren Chatantwort
+Die pauschale Aussage, es bestehe kein GitHub-Zugriff, trifft für diese Sitzung nicht zu: Repository und Übergabe konnten gelesen und können aktualisiert werden. Nicht erneut nur einen Umsetzungsauftrag formulieren.
+Die beiden unmittelbar folgenden Nachträge dokumentieren bereits gespeicherte Korrekturen: ein Verbenbuch je Sprache mit Backup/Konsolidierung, ursprüngliche Stift/Merge/X-Optik, lückenlose Anzeige je Seite, Tabellenbutton mittig und separate Tabellenkarte mit Grundformenabschnitten. Nicht ungeprüft erneut implementieren. Die Korrekturfassung ist noch nicht vom Nutzer abgenommen.
+Letzter dokumentierter Prüfstand: 40/40 isolierte JS-Tests; in diesem Sicherungsblock nicht erneut ausgeführt. Kein neuer Browser-, CI-, WASM-, Gemini- oder Supabase-Nachweis.
+
+### Nächster bereits freigegebener Arbeitsblock
+1. Branch/Commit und AGENTS.md abgleichen; vorhandene Korrekturen im Code und tatsächlichen Browser prüfen. Abnahme: ein FR-Verbenbuch auch nach Sync/Scan; Stift/Merge/X wie Referenz; Vokabelanzeige jeder Seite ab V1 ohne Lücken, persistierte IDs/Referenzen erhalten; Tabelle als zweiter abgerundeter Kasten unter Trainer; mittiger randloser Tabellenbutton in passender Farbe/Höhe/Rundung.
+2. Tatsächliche GitHub-Actions-Läufe und Buildlogs des ablaut-WASM-Builds ermitteln; Fehler beheben, echtes Artefakt herunterladen und Herkunft/SHA-256 sowie Browserladung verifizieren. Bisher KEIN erfolgreicher Build nachgewiesen. WASM ist die lokal im Browser ausführbare kompilierte Konjugationsbibliothek, nicht der Vokabelspeicher; Architekturbegründung auf Nachfrage erläutern.
+3. Fehlende vollständige Grundformen/Konjugationen für die fünf freigegebenen Sprachen unabhängig prüfen und integrieren. FR-Pilot deckt nur vier Verben ab; fehlende Formen wie bei venir nicht als erledigt ausgeben. Latein vollständig aus weiterem Entwicklungsumfang ausgeschlossen.
+4. Regression, Browser/Mobil, Offline, Import/Export und Supabase-Mehrgeräte-/Merge-/Reset-Verhalten prüfen; geeigneten Testbuild im bestehenden Testrepository bereitstellen und Übergabe aktualisieren. Live-Übernahme und einmaliger Analyse-Gesamtreset bleiben gesondert freizugeben.
+
+**Freigabe:** Der bestehende Entwicklungsauftrag und die ausdrücklich angeforderten Korrekturen/WASM-Verifikation gelten weiter. Kein erneutes allgemeines Freigabegespräch. Keine Datenlöschung, Rechteänderung oder produktive Veröffentlichung aus dem Sicherungsauftrag ableiten.
+**Minimaler Starttext:** „Weiter mit VOC im Repository andreas-nigl/vocprog, Branch develop/offline-supabase-20261105. Lies AGENTS.md und PROJECT_HANDOFF.md und setze beim nächsten freigegebenen Schritt fort.“
+
+---
+
 ## Nachtrag zur VOC-0.5-Korrektur: Vokabelbuch-Nummerierung (2026-11-12)
 
 - Nutzerwunsch präzisiert: In **normalen Vokabelbüchern** müssen

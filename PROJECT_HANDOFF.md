@@ -1,3 +1,15 @@
+## 2026-11-13 – Konturbuttons umgesetzt, WASM-Artefakt erstmals direkt verifiziert
+
+- Entwicklung: index `11cfe44`, CSS `4269c76`, SW `0d299c6`; Test: index `0ef9489`, CSS `e1f115f`, SW `043141c`. Drei App-Dateien jeweils blob-identisch. Cache v12. Produktiv-main unverändert.
+- Stift und X sind jetzt SVG-Konturen statt Schriftzeichen; alle drei Icons 20 px, stroke-width 2, ohne Füllung, Flex-Zentrierung. Weiß/schwarzer Rahmen, rotes X erhalten. Browserabnahme der neuen Fassung noch offen.
+- Korrektur früherer WASM-Aussagen: Über Actions-Runs-Collection zwei erfolgreiche Builds gefunden (43223467813, 43306504666). Letzter Build: Quellcommit f71068a1d9ca1264d12da1123226b03cec55d26b; alle Jobschritte inkl. Browser-/Node-Build, API-Fixtures und Upload erfolgreich.
+- Artefakt 13983474116, voc-ablaut-0110-browser-and-node, nicht abgelaufen, Ablauf 2026-11-26. ZIP heruntergeladen; SHA256 99e666636ebfcf6545d8048a2cbee75b9f99329342e9282bc88d1654d70946b2 stimmt mit GitHub digest überein. Interne SHA256SUMS für Browser-JS und WASM ebenfalls geprüft.
+- Echte lokale Binäraufrufe erfolgreich: manger/mangeons, aller/allons, go/went, lopen/liep; hablar und falar liefern Tabellenobjekte (keine vollständige linguistische Validierung). Browser-target JS+WASM unter Node initialisiert und venir/venons geprüft. Das ist noch kein Browser-E2E-Nachweis.
+- Vor dieser Änderung im tatsächlichen Testbrowser: genau ein FR-Verbenbuch, 166 auswählbare Présent-Einträge, nach Reload erhalten. Keine Testdaten importiert oder verändert. Kein Nachweis für Mehrgeräte-Sync oder andere Zeitformen daraus ableiten.
+- Nächster eng begrenzter Arbeitsblock: vorhandenen WASM-Adapter mit dem nun verfügbaren Artefakt abgleichen, Browserpaket in Test-App einbinden und Initialisierung/FR-Aufruf prüfen. Motor noch nicht in App aktiviert; keine vollständige Generierung behaupten. Neue Buttondarstellung und CI noch prüfen.
+
+---
+
 ## VOC 0.5.1 – Fortsetzung im bestehenden Workchat (2026-11-13)
 
 **Auftrag:** Nach fehlerhafter Aussage „kein GitHub-Zugriff“ im bestehenden Workchat fortsetzen, ursprüngliche Buchbuttons wiederherstellen, X im normalen Vokabeltrainer rechts ausrichten, vorhandene Verb-/Tabellenkorrekturen verifizieren und WASM-Build prüfen. Bestehende Freigabe gilt; keine produktive Live-Übernahme.

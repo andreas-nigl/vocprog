@@ -1,3 +1,34 @@
+## VOC 0.5.1 – Fortsetzung im bestehenden Workchat (2026-11-13)
+
+**Auftrag:** Nach fehlerhafter Aussage „kein GitHub-Zugriff“ im bestehenden Workchat fortsetzen, ursprüngliche Buchbuttons wiederherstellen, X im normalen Vokabeltrainer rechts ausrichten, vorhandene Verb-/Tabellenkorrekturen verifizieren und WASM-Build prüfen. Bestehende Freigabe gilt; keine produktive Live-Übernahme.
+
+### GitHub-Bestandsaufnahme und AGENTS.md
+- Aktueller Entwicklungsbranch `andreas-nigl/vocprog/develop/offline-supabase-20261105`, Test `andreas-nigl/vocprog-test/main`, Live `andreas-nigl/vocprog/main`.
+- **GitHub-Zugriff funktioniert**: Dateien und Commit-Diffs gelesen, Änderungen erfolgreich gepusht. Kein Wechsel in Codex/anderen Workchat erforderlich.
+- Die früheren Root-`AGENTS.md` sind inzwischen in allen drei Branches **entfernt** (Entwicklung/Live zuletzt Commit `0a3e3eb`, Test `6bc5581`, jeweils „restore AGENTS.md state of 2026-11-11“). Dies ist eine neuere dokumentierte Entscheidung. **Nicht ungefragt wieder anlegen.** Die maßgebliche `PROJECT_HANDOFF.md` bleibt bestehen.
+
+### Implementierung und veröffentlichter Teststand
+- Entwicklung `vocprog-enhancements.css`, Commit `1ba0f816`: Stift/Merge/X nun 40×40 px, weißer Hintergrund, feiner schwarzer Rand, schwarze Linien, dünnes rotes X. Rechte X-Schaltfläche des Vokabeltrainers explizit in **Grid-Spalte 3**, unabhängig davon, ob der mittige Tabellenbutton verborgen ist.
+- `vocprog-fr-reference.js`, Commit `b569abda`: lokales, kuratiertes Paradigma für **venir** (présent, imparfait, futur simple, conditionnel présent, subjonctif présent, passé composé, plus-que-parfait), Infinitiv, `venu(e)(s)`, Imperativ `viens / venons / venez`. Zusammengesetzte Zeiten mit `être` nur als kompakte **Anzeige**; automatische OCR-Verifikation dieser Formen bewusst nicht behauptet, da Genus/Numerus des Subjekts benötigt wird. Fünf lokal referenzierte französische Verben, keine allgemeine fünfsprachige Abdeckung.
+- `vocprog-enhancements.js`, Commit `04426a83`: Verbtabelle zeigt fehlende französische Grundformen aus lokal kuratierter Referenz, soweit verfügbar; Buchdaten und gespeicherte deutsche Übersetzungen haben Vorrang. Unbekannte Übersetzungen bleiben als nicht erfasst gekennzeichnet.
+- `tests/fr-reference.test.js` `ade7d2e`, `tests/verb-ui.test.js` `2a5fb1e`: neue Tests für venir, Übereinstimmung, Grid-Ausrichtung und Buchbutton-Stil.
+- Entwicklungs-`index.html` `336331f`, `sw.js` `bcb1ee5`: Version **VOC 0.5.1 Testvorschau**, Offlinecache `vocprog-staging-20261113-v11`.
+- Testrepository `andreas-nigl/vocprog-test/main` aktualisiert: CSS `9f1ae91`, FR-Referenz `7864948`, Erweiterungs-JS `fafdde7`, HTML `077ebc7`, SW `b03636d` (letzter App-Commit). Alle **5/5** App-Blob-SHAs mit Entwicklungsbranch identisch.
+- URL: <https://andreas-nigl.github.io/vocprog-test/>. GitHub-Pages-HTTP-Erreichbarkeit und echte Browser-/Gerätebedienung **nicht** verifiziert (externer Webabruf aus Arbeitsumgebung fehlgeschlagen). Produktives `main` und Supabase unverändert.
+
+### Tests / WASM / offene Punkte
+- **44/44 isolierte JS-Unit-/Regressionstests bestanden** über den vorhandenen Testquelltext mit Node-kompatiblem Test-Harness; HTML-Inline-JS, Erweiterungs-JS, SW, FR-Referenz, WASM-Adapter syntaktisch geprüft. Kein echter `node --test`-CI-Lauf und kein Browser-E2E-Test in dieser Sitzung.
+- WASM-Bibliothek `ablaut` 0.11.0 am festgelegten Upstream-Commit `ca8d2212c20d7e5ae83771dc3fe37023fda9c7cc` direkt über GitHub gelesen: `Cargo.toml` bietet Feature `wasm`, `src/wasm.rs` exportiert `conjugate(infinitive,lang)`; `src/fra.rs`, `src/eng.rs`, `src/nld.rs` enthalten die vom Adapter erwarteten Tabellenfelder. Das belegt Quellcode-/API-Kompatibilität, **nicht** den erfolgreichen Binärbuild.
+- GitHub-Connector `fetch_commit_workflow_runs` gibt für geprüfte Commits keine Runs zurück (beschränkt auf PR-triggered Runs), Commit-Statuses ebenfalls leer. Ohne Run-ID kann der Connector kein Artefakt/Joblog herunterladen. Öffentlicher API-Abruf scheiterte; lokal `cargo`, `rustc`, `wasm-pack` nicht installiert und externe Git-Verbindung nicht erreichbar. **Kein verifiziertes WASM-Artefakt**, Adapter absichtlich nicht aktiv geladen. Kein fertiger vollständiger Offline-Konjugationsmotor behauptet.
+- Bereits zuvor implementiert und durch Regressionstests abgedeckt: deterministische Konsolidierung doppelter FR-Verbenbücher mit Backup und Tombstones; Vokabel- und Verbnummerierung je Seite ab V1 ohne Änderung gespeicherter Referenzen; separate Tabellenkarte. Reale Supabase-Mehrgeräte-Migration noch durch Nutzer zu testen.
+- **Nächste Schritte:** echten GitHub-Actions-WASM-Run (ID/Log/ZIP/SHA256) über Actions-Oberfläche oder geeigneten Zugriff beschaffen; anschließend Browser-Ladung und sprachspezifische Adaption prüfen; echte Browser-/Mobil-/Offline-/Supabase-Tests, Nutzerabnahme der 0.5.1-Vorschau. Keine Live-Übernahme ohne separate Freigabe.
+
+### Bearbeitungszeit / Diagnose
+- In diesem Chat sind mehrere hundert historische Teilnachrichten referenziert und viele sequentielle GitHub-Datei-Updates erforderlich. Dies sind plausible Laufzeitfaktoren, aber **keine nachgewiesene Ursache** einer Plattformverlangsamung.
+- Root-`AGENTS.md` sind aktuell **nicht vorhanden**; sie können daher diese konkreten Arbeitsschritte nicht durch zusätzliche Regeln verlangsamen. Eine kausale Wirkung der GPT-Personalisierung ist nicht nachgewiesen.
+
+---
+
 ## Chatwechsel – gesicherter Einstiegspunkt 2026-11-13
 
 **Aktueller Auftrag:** Arbeitsstand sichern und im neuen Workchat nahtlos fortsetzen. In diesem Sicherungsblock ausschließlich diese Übergabe aktualisiert; keine App-, Cloud- oder Releaseänderungen.

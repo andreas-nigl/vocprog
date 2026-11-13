@@ -51,3 +51,15 @@ test("unknown verb or tense is not treated as verified",()=>{
   assert.equal(reference.checkForm("faire","présent",0,"je fais").status,"not-verified");
   assert.equal(reference.checkForm("manger","passé simple",0,"je mangeai").status,"not-verified");
 });
+
+test("venir shows the three imperative forms and compact être agreement",()=>{
+  const v=reference.conjugate("venir");
+  assert.equal(v.infinitive,"venir");
+  assert.equal(v.agreement,"venu(e)(s)");
+  assert.deepEqual(v.imperative,["viens","venons","venez"]);
+  assert.deepEqual(v.forms["présent"],["viens","viens","vient","venons","venez","viennent"]);
+  assert.deepEqual(v.forms["futur simple"],["viendrai","viendras","viendra","viendrons","viendrez","viendront"]);
+  assert.equal(v.forms["passé composé"][3],"sommes venu(e)s");
+  assert.equal(reference.checkForm("venir","passé composé",3,"nous sommes venues").status,"not-verified");
+  assert.equal(reference.checkForm("venir","présent",3,"nous venons").status,"verified");
+});

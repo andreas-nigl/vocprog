@@ -118,3 +118,18 @@ test("Ordinary vocabulary books renumber remaining entries per page without alte
     "S156 V62","S156 V64","S157 V8"
   ]);
 });
+
+test("Book action buttons are neutral outlined controls with thin red delete icon",()=>{
+  assert.match(css,/\.book-manager #deleteBookBtn \{background:#fff;color:#c62828/);
+  assert.match(css,/border:1px solid #111827/);
+  assert.match(css,/width:40px;min-width:40px;max-width:40px/);
+});
+test("Trainer close remains in the right grid column when table is hidden",()=>{
+  assert.match(css,/\.trainer-top-row > button:last-child \{grid-column:3;justify-self:end\}/);
+  assert.match(css,/#verbTableToggle\.icon-btn \{grid-column:2;grid-row:1\}/);
+});
+test("Verb table uses curated French reference for missing base forms",()=>{
+  assert.match(code,/const reference=isFrench\?window\.VOCFrenchReference\?\.conjugate\(lemma\):null/);
+  assert.match(code,/reference\?\.agreement\|\|reference\?\.pastParticiple/);
+  assert.match(code,/Array\.isArray\(reference\?\.imperative\)/);
+});

@@ -1,3 +1,12 @@
+## 2026-11-16 – Abschluss 0.5.16, normale App
+
+- Veröffentlicht nur https://andreas-nigl.github.io/vocprog/, Version 0.5.16. App-Commit 0de12970cecbd4fc8f27d3b6d2570052fe4af10f; Entwicklungsbranch 42025979b0deacb69f012c93a9a631b33e2cf5f8. Produktions-Pages 43912621069 und Entwicklungs-CI 43912633659 erfolgreich. Test-App nicht verändert/reaktiviert. Kein neuer Standalone; Offlineassets aktualisiert, physischer Offline-Neustart nicht erneut geprüft.
+- 113/113 automatisierte Tests, Syntax aller geänderten JS/SW und Diffprüfung erfolgreich. Browser unter 0.5.16: leerer Galeriecontainer display:none; gemessener Abstand sowohl Datenerfassung->Kamerabutton als auch Datensicherung->Exportbutton exakt 6 CSS-px.
+- Live-Abfrage Französisch->Deutsch für mettre Présent, erste Karte je mets: grauer Platzhalter Eine deutsche Übersetzung genügt, vollständige Antwortanzeige ich setze / ich stelle / ich lege erhalten. Wechsel Deutsch->Französisch: vollständige Bedeutungsanzeige als Frage, gewöhnlicher Platzhalter Übersetzung eingeben …. Einfacher Rückrichtungsfall j'ai -> ich habe ebenfalls gewöhnlicher Platzhalter. Keine Antworten in den echten Lernbestand zum Test bewertet; tatsächliche Gradehandler samt Gruppenantworten in isolierten Tests geprüft, Anzeige/Navigation live geprüft. Keine neuen Serverdatenformen/KI-Kosten ausgelöst.
+- Gruppierter Hinweis Je Form eine Übersetzung genügt automatisch getestet. Nutzerabnahme 0.5.16 ausstehend. Frühere reale KI-/Scan-/Mehrgeräte-Konflikt-Prüflücken unverändert. Nächster Schritt gezielte Nutzerbefunde, nur normale App weiterentwickeln.
+
+---
+
 ## 2026-11-16 – VOC 0.5.16: deutsche Antwortvarianten und kompakte Datenaufnahme
 
 - Nutzerauftrag ausschließlich normale App: Abstand Datenerfassung -> Kamera/Galerie wie Datensicherung -> Export/Einlesen. Ursache leere Galerie mit padding/margin; #imageGallery:empty display:none entfernt ausschließlich leeren Galerieplatz, Bilder bleiben sichtbar.

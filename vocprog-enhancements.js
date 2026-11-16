@@ -932,7 +932,7 @@
 
   // Only printed / individually validated forms are trainable. Do not invent inflections.
   const TENSES={
-    "fr-FR":[["présent","Présent (Gegenwart)"],["imparfait","Imparfait (unvollendete Vergangenheit)"],["passé composé","Passé composé (zusammengesetzte Vergangenheit)"],["plus-que-parfait","Plus-que-parfait (Vorvergangenheit)"],["futur simple","Futur simple (Zukunft)"],["conditionnel présent","Conditionnel présent (würde-Form)"],["subjonctif présent","Subjonctif présent (Subjonctif Gegenwart)"],["impératif","Impératif (Befehlsform)"]],
+    "fr-FR":[["présent","Présent (Gegenwart)"],["imparfait","Imparfait (unvollendete Vergangenheit)"],["passé composé","Passé composé (zusammengesetzte Vergangenheit)"],["plus-que-parfait","Plus-que-parfait (Vorvergangenheit)"],["futur proche","Futur composé / Futur proche (nahe Zukunft)"],["futur simple","Futur simple (Zukunft)"],["conditionnel présent","Conditionnel présent (würde-Form)"],["subjonctif présent","Subjonctif présent (Subjonctif Gegenwart)"],["impératif","Impératif (Befehlsform)"]],
     "en-US":[["simple present","Simple Present (Gegenwart)"],["present progressive","Present Progressive (Verlaufsform Gegenwart)"],["simple past","Simple Past (Vergangenheit)"],["past progressive","Past Progressive (Verlaufsform Vergangenheit)"],["present perfect","Present Perfect (vollendete Gegenwart)"],["past perfect","Past Perfect (Vorvergangenheit)"],["will future","Will-Future (Zukunft)"],["going to future","Going-to-Future (geplante Zukunft)"],["conditional","Conditional (würde-Form)"]],
     "es-ES":[["presente","Presente (Gegenwart)"],["pretérito perfecto compuesto","Pretérito perfecto compuesto (zusammengesetzte Vergangenheit)"],["pretérito indefinido","Pretérito indefinido (abgeschlossene Vergangenheit)"],["pretérito imperfecto","Pretérito imperfecto (unvollendete Vergangenheit)"],["pluscuamperfecto","Pluscuamperfecto (Vorvergangenheit)"],["futuro simple","Futuro simple (Zukunft)"],["condicional simple","Condicional simple (würde-Form)"],["presente de subjuntivo","Presente de subjuntivo (Subjunktiv Gegenwart)"]],
     "pt-PT":[["presente","Presente (Gegenwart)"],["pretérito perfeito","Pretérito perfeito (abgeschlossene Vergangenheit)"],["pretérito imperfeito","Pretérito imperfeito (unvollendete Vergangenheit)"],["mais-que-perfeito composto","Mais-que-perfeito composto (Vorvergangenheit)"],["futuro do presente","Futuro do presente (Zukunft)"],["condicional","Condicional (würde-Form)"],["presente do conjuntivo","Presente do conjuntivo (Konjunktiv Gegenwart)"]],
@@ -942,7 +942,7 @@
   const baseVerbKinds=new Set(["verb-infinitive","verb-participle","verb-imperative","verb-principal","verb-ing","verb-gerund"]);
   function activeBook(){return books.find(b=>b.id===chosenBook);}
   function isVerbBook(){return bookKind(activeBook()||{})==="verbs";}
-  function normalizeTense(value){return String(value||"").trim().toLocaleLowerCase().normalize("NFKC");}
+  function normalizeTense(value){const tense=String(value||"").trim().toLocaleLowerCase().normalize("NFKC");return tense==="futur composé"?"futur proche":tense;}
   function refreshVerbSelection(){
     const verb=isVerbBook(),tenseWrap=get("tenseModeWrap"),modeWrap=get("studyModeWrap");
     if(tenseWrap)tenseWrap.hidden=!verb;

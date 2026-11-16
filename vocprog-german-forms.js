@@ -137,7 +137,12 @@
     verb.translationPolicy='Schulische Zeitformzuordnung; Bedeutung aus dem Buch. Subjonctif ist kontextabhängig.';
     return verb;
   }
-  async function referenceRow(source,language,tense,lookup){
+  async function referenceRow(source,language,tense,lookup,auxiliary){
+    if(language==='fr-FR'&&['passé composé','plus-que-parfait'].includes(tense)&&['être','avoir'].includes(auxiliary)){
+      const aux=await lookup(language,auxiliary),row=aux?.forms?.[tense==='passé composé'?'présent':'imparfait'];
+      if(!row||!source?.participle?.length)return {row:null,sources:source?.sources};
+      return {row:row.map(slot=>slot.flatMap(value=>source.participle.map(part=>value+' '+part))),sources:[...(source.sources||[]),...(aux.sources||[])]};
+    }
     if(source?.forms?.[tense])return {row:source.forms[tense],sources:source.sources};
     const compounds={
       'es-ES':{'pretérito perfecto compuesto':['haber','presente'],
@@ -156,7 +161,7 @@
     let source=null;
     try{source=await lookup(language,verb.infinitive);}catch(error){verb.referenceError=String(error.message||error);}
     for(const [tense,cards] of Object.entries(verb.cards)){
-      const reference=await referenceRow(source,language,tense,lookup);
+      const reference=await referenceRow(source,language,tense,lookup,verb.auxiliary);
       const row=reference.row;
       for(let index=0;index<cards.length;index++){
         const card=cards[index],candidates=row?.[index];
@@ -164,14 +169,23 @@
           card.foreignVerification={status:'pending',reason:'Keine unabhängige Referenzform vorhanden'};
           continue;
         }
-        const generated=verb.forms[tense][index];
+        let generated=verb.forms[tense][index];
+        if(language==='fr-FR'&&card.printedForeign){
+          const printed=card.printedForeign.replace(/^(?:j['’]|je\s+|tu\s+|il\/elle\/on\s+|nous\s+|vous\s+|ils\/elles\s+)/i,'').replace(/\(e\)|\(s\)|\/(?:e|s|es)(?=\b|\/|$)/g,'');
+          if(!candidates.some(value=>normal(value)===normal(printed))){
+            card.foreignVerification={status:'pending',reason:'Gedruckte Form stimmt nicht mit der passenden Referenz überein'};continue;
+          }
+          generated=printed;verb.forms[tense][index]=printed;
+          card.foreign=root.VOCVerbDatabase.primaryFrench(tense,index,verb.persons[index],printed,verb.auxiliary);
+          card.acceptedForeign=root.VOCVerbDatabase.acceptedFrench(tense,index,printed,verb.auxiliary);
+        }
         const normalized=value=>normal(value).replace(/\(e\)|\(s\)/g,'');
         const matches=candidates.some(value=>normalized(value)===normalized(generated));
         if(!matches){
           const form=candidates[0];verb.forms[tense][index]=form;
-          card.foreign=language==='fr-FR'?root.VOCVerbDatabase.frenchSurface(tense,verb.persons[index],form):
+          card.foreign=language==='fr-FR'?root.VOCVerbDatabase.primaryFrench(tense,index,verb.persons[index],form,verb.auxiliary):
             verb.persons[index]+' '+form;
-          card.acceptedForeign=language==='fr-FR'?root.VOCVerbDatabase.acceptedFrench(tense,index,form,source.auxiliary):[card.foreign];
+          card.acceptedForeign=language==='fr-FR'?root.VOCVerbDatabase.acceptedFrench(tense,index,form,verb.auxiliary):[card.foreign];
           card.referenceCorrection={original:generated,replacement:form};
         }
         card.foreignVerification={status:'reference-matched',sources:reference.sources};

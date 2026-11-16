@@ -371,6 +371,7 @@
 
   window.describeVOCScan=function({words=0,infinitives=0,conjugations=0,language}){
     const generated=Number(window.VOCGeneratedFrenchForms)||0;
+    const corrected=Number(window.VOCScanCorrected)||0;
     const rejected=Number(window.VOCScanVerificationWarnings)||0;
     const verbBooks=new Set(books.filter(b=>b.lang===language&&bookKind(b)==="verbs").map(b=>b.id));
     const lemmas=new Set(allVocab().filter(v=>verbBooks.has(v.bookId))
@@ -380,6 +381,7 @@
     const parts=[total?"Scan abgeschlossen: "+words+" neue Vokabeln, "+infinitives+
       " neue Infinitive, "+conjugations+" gedruckte Konjugationsformen und "+generated+
       " unabhängig abgeglichene Formen gespeichert.":"Scan abgeschlossen: Keine neuen Einträge hinzugefügt."];
+    if(corrected)parts.push(corrected+" vorhandene Verbeinträge anhand des neuen Scans korrigiert.");
     if(lemmas.size)parts.push("Im Verbenbestand dieser Sprache sind insgesamt "+lemmas.size+" verschiedene Verben gespeichert.");
     if(!total)parts.push("Bereits vorhandene Einträge werden nicht erneut angelegt. Nicht übernehmbare Einträge können ebenfalls zu diesem Ergebnis führen.");
     if(rejected)parts.push(rejected+" widersprüchliche Formen wurden zurückgewiesen.");
@@ -397,24 +399,28 @@
       addBook(language,source.name,"verbs",source.id);
   }
 
+  function scannedAuxiliary(entry){
+    const evidence=entry.auxiliaryEvidence;
+    return ["être","avoir"].includes(entry.auxiliary)&&String(evidence?.text||"").trim()?
+      {auxiliary:entry.auxiliary,auxiliaryEvidence:{page:String(evidence.page||entry.page||"?"),text:String(evidence.text).trim()}}:{};
+  }
   window.ingestVerbInfinitives=async function(entries,language){
     if(!Array.isArray(entries)||!entries.length||!LANGS[language])return 0;
     const valid=entries.filter(e=>e&&String(e.infinitive||"").trim()&&String(e.german||"").trim());
     if(!valid.length)return 0;
     const source=books.find(b=>b.id===chosenBook);
     const verbBook=verbBookForSource(source,language);
-    const existing=new Set(allVocab().filter(v=>v.bookId===verbBook.id&&v.kind==="verb-infinitive")
-      .map(v=>String(v.foreign||"").trim().toLocaleLowerCase()));
     const payload=[];
     for(const entry of valid){
       const infinitive=String(entry.infinitive).trim();
       const wordKey=infinitive.toLocaleLowerCase();
       persistFrenchReference(verbBook,infinitive);
-      if(existing.has(wordKey))continue;
-      existing.add(wordKey);
+
       payload.push({bookId:verbBook.id,lang:language,kind:"verb-infinitive",
         foreign:infinitive,german:String(entry.german).trim(),page:String(entry.page||"?"),
         infinitive,verbId:wordKey,verification:"printed-lemma",
+        scanEvidence:{page:String(entry.page||"?"),source:"scan"},
+        ...scannedAuxiliary(entry),
         regularity:window.VOCFrenchReference?.conjugate(infinitive)?.regularity||"",
         sentence_foreign:"",sentence_german:""});
     }
@@ -445,15 +451,6 @@
         const foreign=String(form.foreign||"").trim();
         const german=String(form.german||"").trim();
         if(!persons.has(person)||!foreign||!german)continue;
-        // Keep the canonical reference form rather than duplicating it
-        // when full conjugation was already generated from an infinitive.
-        const already=allVocab().some(v=>v.kind==="verb-form"&&
-          v.bookId===conjBook?.id&&
-          String(v.infinitive||"").toLocaleLowerCase("fr")===
-            String(group.infinitive).trim().toLocaleLowerCase("fr")&&
-          normalizeTense(v.tense)===normalizeTense(tense)&&
-          v.person===person);
-        if(already)continue;
         let verification="scan-unverified";
         if(language==="fr-FR"&&window.VOCFrenchReference){
           const check=window.VOCFrenchReference.checkForm(group.infinitive,tense,slot[person],foreign);
@@ -465,6 +462,7 @@
         }
         items.push({bookId:"",lang:language,kind:"conjugation",verification,
           page:String(group.page||"?"),foreign,german,
+          scanEvidence:{page:String(group.page||"?"),source:"scan",tense},...scannedAuxiliary(group),
           infinitive:String(group.infinitive).trim(),tense,person,
           sentence_foreign:"",sentence_german:""});
       }
@@ -472,7 +470,13 @@
     if(!items.length)return 0;
     if(!conjBook){conjBook=verbBookForSource(origin,language);}
     // The original selected book may use the same language but a different ID.
-    for(const item of items)persistFrenchReference(conjBook,item.infinitive);
+    for(const item of items){
+      persistFrenchReference(conjBook,item.infinitive);
+      if(item.auxiliary){
+        const base=allVocab().find(entry=>entry.bookId===conjBook.id&&entry.kind==="verb-infinitive"&&entry.verbId===item.infinitive.toLocaleLowerCase());
+        if(base)mergeVocabularies([{...base,...scannedAuxiliary(item),scanEvidence:item.scanEvidence}]);
+      }
+    }
     const count=mergeVocabularies(items.map(item=>({...item,bookId:conjBook.id})));
     saveToLocalStorage();
     chooseBook(sourceBookId);

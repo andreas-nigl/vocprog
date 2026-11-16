@@ -9,6 +9,20 @@
   const six = row => Array.isArray(row) && row.length === 6 &&
     row.every(value => typeof value === "string" && value.trim());
 
+  function auxiliaryOf(entries){
+    const base=entries.find(entry=>entry.kind==="verb-infinitive");
+    if(["être","avoir"].includes(base?.auxiliary))return base.auxiliary;
+    const choices=new Set(entries.map(entry=>entry.auxiliary).filter(value=>["être","avoir"].includes(value)));
+    for(const entry of entries){
+      if(entry.kind!=="conjugation"||!["passé composé","plus-que-parfait"].includes(normal(entry.tense)))continue;
+      const form=normal(entry.foreign).replace(/^(?:j['’]|je\s+|tu\s+|il\/elle\/on\s+|nous\s+|vous\s+|ils\/elles\s+)/,"");
+      if(/^(?:suis|es|est|sommes|êtes|sont|étais|était|étions|étiez|étaient)\s/.test(form))choices.add("être");
+      if(/^(?:ai|as|a|avons|avez|ont|avais|avait|avions|aviez|avaient)\s/.test(form))choices.add("avoir");
+    }
+    if(choices.size>1)throw Error("Widersprüchliche Hilfsverbvorgaben für "+lemmaOf(base||entries[0]||{}));
+    return [...choices][0]||"";
+  }
+
   function signature(book, entries, paradigms, tenses) {
     return JSON.stringify([VERSION, book.id, book.lang, tenses,
       entries.map(entry => [entry.id, entry.kind, lemmaOf(entry), entry.page,
@@ -37,6 +51,10 @@
     return endings.map(ending => auxiliaryForm + participle + ending);
   }
 
+  function primaryFrench(tense,index,person,form,auxiliary){
+    return frenchSurface(tense,person,agreementVariants(form,index,auxiliary,tense)[0]);
+  }
+
   function acceptedFrench(tense, index, form, auxiliary) {
     const persons = [["je"], ["tu"], ["il", "elle", "on"], ["nous"], ["vous"], ["ils", "elles"]][index];
     const variants = agreementVariants(form, index, auxiliary, tense);
@@ -57,14 +75,14 @@
       const motor = morphology(lemma, book.lang);
       const curated = book.lang === "fr-FR" ? reference?.(lemma) : null;
       const persons = motor?.persons || curated?.persons || stored?.persons || [];
-      const auxiliary = curated?.auxiliary || motor?.auxiliary;
+      const auxiliary = auxiliaryOf(source) || curated?.auxiliary || motor?.auxiliary;
       const forms = {}, cards = {};
       for (const tense of tenses) {
         const generated = curated?.forms?.[tense] || motor?.forms?.[tense] || stored?.forms?.[tense];
         if (!six(generated) || persons.length !== 6) continue;
         forms[tense] = [...generated];
         cards[tense] = generated.map((form, index) => {
-          const foreign = book.lang === "fr-FR" ? frenchSurface(tense, persons[index], form) :
+          const foreign = book.lang === "fr-FR" ? primaryFrench(tense,index,persons[index],form,auxiliary) :
             persons[index] + " " + form;
           const acceptedForeign = book.lang === "fr-FR" ?
             [...new Set([foreign, ...acceptedFrench(tense, index, form, auxiliary)])] : [foreign];
@@ -74,7 +92,8 @@
             acceptedForeign.some(value => normal(value) === normal(entry.foreign)));
           const translation = String(saved?.german || "").trim();
           const germanBase = String(base?.german || "").trim();
-          return {foreign, acceptedForeign, german: translation, person: persons[index], tense,
+          const printed=source.find(entry=>entry.scanEvidence&&(!base?.scanCorrectedAt||Date.parse(entry.scanCorrectedAt||entry.updatedAt||0)>=Date.parse(base.scanCorrectedAt))&&["conjugation","verb-form"].includes(entry.kind)&&normal(entry.tense)===tense&&normal(entry.person)===normal(persons[index]));
+          return {foreign, acceptedForeign, printedForeign:printed?.foreign, german: translation, person: persons[index], tense,
             grammaticalPrompt: (germanBase || lemma) + " · " + tense + " · " + persons[index],
             germanBase, sourceId: saved?.id || base?.id || source[0]?.id,
             verification: curated ? "curated-morphology" : "local-morphology-not-language-reviewed"};
@@ -102,7 +121,11 @@
     let records = Object.create(null);
     const snapshots = new Map();
     let queue = Promise.resolve();
-    const normalKey = (language, lemma, german) => [language, lemma, normal(german)].join("|");
+    const normalKey = (language, lemma, german, context="") => [language, lemma, normal(german)].join("|")+(context?"|context="+context:"");
+    const consistent=record=>record.language!=="fr-FR"||!["être","avoir"].includes(record.verb?.auxiliary)||
+      ["passé composé","plus-que-parfait"].every(tense=>(record.verb.forms?.[tense]||[]).every(form=>
+        record.verb.auxiliary==="être"?!/^(?:ai|as|a|avons|avez|ont|avais|avait|avions|aviez|avaient)\s/.test(form):
+          !/^(?:suis|es|est|sommes|êtes|sont|étais|était|étions|étiez|étaient)\s/.test(form)));
     function hydrate() {
       let incoming;
       try { incoming = JSON.parse(storage.getItem(KEY) || "{}"); } catch { return; }
@@ -110,7 +133,7 @@
       for (const [key, value] of Object.entries(incoming)) {
         if (value?.version !== VERSION || typeof value.lemma !== "string" || value.verb?.referenceError ||
             !value.verb || typeof value.verb.cards !== "object" ||
-            key !== normalKey(value.language, value.lemma, value.german)) continue;
+            key !== normalKey(value.language, value.lemma, value.german,value.context)||!consistent(value)) continue;
         if (!records[key] || (!records[key].ready && value.ready)) records[key] = value;
       }
     }
@@ -125,7 +148,10 @@
           const source = entries.filter(entry => lemmaOf(entry) === lemma);
           const base = source.find(entry => entry.kind === "verb-infinitive");
           const german = String(base?.german || "").trim();
-          const key = normalKey(book.lang, lemma, german);
+          const auxiliary=auxiliaryOf(source);
+          const revision=source.map(entry=>entry.scanCorrectedAt||(entry.scanEvidence&&["conjugation","verb-form"].includes(entry.kind)?entry.updatedAt||"":"")).sort().pop();
+          const context=[auxiliary,revision?book.id+":"+revision:""].filter(Boolean).join("|");
+          const key = normalKey(book.lang, lemma, german,context);
           let record = records[key];
           if (!record) {
             const result = build(book, source, paradigms, tenses, morphology, reference);
@@ -135,7 +161,7 @@
               (enrich && verb.cards[tense].some(card => !card.german ||
                 card.foreignVerification?.status !== "reference-matched" ||
                 card.germanVerification?.status !== "reference-matched")));
-            record = {version: VERSION, key, bookId: book.id, language: book.lang, lemma, german,
+            record = {version: VERSION, key, ...(context?{context}:{}), bookId: book.id, language: book.lang, lemma, german,
               verb, ready: verb.missing.length === 0, checkedAt: new Date().toISOString()};
             // A failed fetch is not a completed check. Reopening can retry it;
             // completed records and genuine reference gaps stay cached.
@@ -165,5 +191,5 @@
       get(bookId) { return snapshots.get(bookId) || null; }
     });
   }
-  root.VOCVerbDatabase = Object.freeze({create, lemmaOf, frenchSurface, acceptedFrench});
+  root.VOCVerbDatabase = Object.freeze({create, lemmaOf, frenchSurface, acceptedFrench,auxiliaryOf,primaryFrench});
 })(typeof window === "undefined" ? globalThis : window);

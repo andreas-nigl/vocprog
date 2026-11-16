@@ -78,3 +78,17 @@ test("French subjunctive surface includes correct que contractions",()=>{
   assert.equal(surface("imparfait",0,"allais"),"j'allais");
   assert.equal(surface("présent",3,"mangeons"),"nous mangeons");
 });
+
+test('Explicit rescans correct existing verb records in place and identical scans leave timestamps unchanged',()=>{
+ const begin=html.indexOf('  function mergeVocabularies('),end=html.indexOf('  function rebuildReferences()',begin);
+ const memory=[],window={VOCScanCorrected:0};
+ const merge=new Function('vocabList','window','rebuildReferences','document',html.slice(begin,end)+'return mergeVocabularies;')(memory,window,()=>{},{getElementById:()=>({value:'fr-FR'})});
+ const base={id:'verb',bookId:'book',page:'154',kind:'verb-infinitive',infinitive:'sortir',foreign:'sortir',german:'hinausgehen',updatedAt:'old'};
+ merge([base]);
+ merge([{...base,auxiliary:'être',auxiliaryEvidence:{page:'154',text:'avec être'},scanEvidence:{page:'154'}}]);
+ assert.equal(memory.length,1);assert.equal(memory[0].id,'verb');assert.equal(memory[0].auxiliary,'être');assert.equal(window.VOCScanCorrected,1);
+ const timestamp=memory[0].updatedAt;
+ merge([{...base,auxiliary:'être',auxiliaryEvidence:{page:'154',text:'avec être'},scanEvidence:{page:'154'}}]);
+ assert.equal(memory[0].updatedAt,timestamp);assert.equal(window.VOCScanCorrected,1);
+ merge([{...base,german:'weggehen'}]);assert.equal(memory[0].german,'hinausgehen','No unrequested overwrite without new scan evidence');
+});

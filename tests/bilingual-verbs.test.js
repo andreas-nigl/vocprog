@@ -126,3 +126,56 @@ test("Transient lookup failures are retried on reopen without rechecking complet
     async verb=>{calls++;return verb;});
   await imported.prepare(book,words,[],tenses);assert.equal(calls,3);
 });
+
+test('Sortir in the going-out sense keeps être when the independent reference defaults to avoir',async()=>{
+ const h=await database();const data=await h.db.prepare(book,[entry('sortir','hinausgehen')],[],tenses);
+ const verb=data.verbs.sortir;assert.deepEqual(verb.missing,[]);assert.equal(verb.auxiliary,'être');
+ assert.equal(verb.cards['passé composé'][0].foreign,'je suis sorti');
+ assert.equal(verb.cards['passé composé'][3].foreign,'nous sommes sortis');
+ assert.equal(verb.cards['passé composé'][5].foreign,'ils/elles sont sortis');
+ assert.equal(verb.cards['plus-que-parfait'][0].foreign,"j'étais sorti");
+ assert.ok(verb.cards['passé composé'][2].acceptedForeign.includes('elle est sortie'));
+ assert.ok(verb.cards['passé composé'][5].acceptedForeign.includes('elles sont sorties'));
+ assert.ok(verb.cards['passé composé'].every(card=>!card.acceptedForeign.some(text=>/\b(?:ai|as|a|ont) sorti/.test(text))));
+ const before={...h.counters};await h.db.prepare(book,[entry('sortir','hinausgehen')],[],tenses);assert.deepEqual(h.counters,before);
+});
+test('An explicit book auxiliary overrides the motor and has an independent cache context',async()=>{
+ const h=await database(),base=entry('sortir','hinausgehen');
+ const first=await h.db.prepare(book,[base],[],tenses);
+ const second=await h.db.prepare({...book,id:'other'},[{...base,auxiliary:'avoir',auxiliaryEvidence:{page:'1',text:'avec avoir'}}],[],tenses);
+ assert.equal(first.verbs.sortir.cards['passé composé'][0].foreign,'je suis sorti');
+ assert.equal(second.verbs.sortir.cards['passé composé'][0].foreign,"j'ai sorti");
+ assert.equal(second.verbs.sortir.auxiliary,'avoir');
+ const before={...h.counters};await h.db.prepare(book,[base],[],tenses);assert.deepEqual(h.counters,before);
+});
+test('Old prepared auxiliary/form contradictions are repaired once rather than reused as ready',async()=>{
+ const h=await database(),base=entry('sortir','hinausgehen');await h.db.prepare(book,[base],[],tenses);
+ const saved=JSON.parse(h.disk.getItem());const record=Object.values(saved)[0];
+ record.verb.forms['passé composé'][0]='ai sorti';record.verb.cards['passé composé'][0].foreign="j'ai sorti";
+ const next=await database(storage(JSON.stringify(saved)));const data=await next.db.prepare(book,[base],[],tenses);
+ assert.equal(data.verbs.sortir.cards['passé composé'][0].foreign,'je suis sorti');assert.ok(next.counters.motor>0);
+});
+test('Changed printed forms create a new context only for the corrected verb and keep supported surface variants',async()=>{
+ const h=await database(),base=entry('sortir','hinausgehen');await h.db.prepare(book,[base],[],tenses);const before={...h.counters};
+ const printed={id:'printed',kind:'conjugation',infinitive:'sortir',tense:'passé composé',person:'je',foreign:'je suis sorti',scanEvidence:{page:'1',source:'scan'},scanCorrectedAt:'2026-11-16T18:00:00Z'};
+ const data=await h.db.prepare(book,[base,printed],[],tenses);assert.equal(data.verbs.sortir.cards['passé composé'][0].foreign,'je suis sorti');assert.ok(h.counters.motor>before.motor);
+ const after={...h.counters};await h.db.prepare(book,[base,printed],[],tenses);assert.deepEqual(h.counters,after);
+ const bad=await h.db.prepare(book,[base,{...printed,foreign:'je suis sortu',scanCorrectedAt:'2026-11-16T18:01:00Z'}],[],tenses);
+ assert.ok(bad.verbs.sortir.missing.includes('passé composé'));
+});
+
+test('A stored printed compound is auxiliary evidence even before the new scan metadata existed',async()=>{
+ const h=await database(),base=entry('sortir','hinausgehen');
+ const printed={kind:'conjugation',infinitive:'sortir',tense:'passé composé',person:'je',foreign:'je suis sorti/e',page:'154'};
+ const data=await h.db.prepare(book,[base,printed],[],tenses);
+ assert.equal(data.verbs.sortir.auxiliary,'être');assert.equal(data.verbs.sortir.cards['passé composé'][0].foreign,'je suis sorti');
+ assert.equal(VOCVerbDatabase.auxiliaryOf([{...printed,foreign:"j'ai sorti"}]),'avoir');
+ assert.throws(()=>VOCVerbDatabase.auxiliaryOf([printed,{...printed,foreign:"j'ai sorti"}]),/Widersprüchliche/);
+});
+
+test('A newly corrected explicit book auxiliary outranks older printed-form evidence',async()=>{
+ const h=await database(),base={...entry('sortir','hinausgehen'),auxiliary:'avoir',scanCorrectedAt:'2026-11-16T19:00:00Z'};
+ const old={kind:'conjugation',infinitive:'sortir',tense:'passé composé',person:'je',foreign:'je suis sorti',auxiliary:'être',scanEvidence:{page:'1'},updatedAt:'2026-11-16T18:00:00Z'};
+ const data=await h.db.prepare(book,[base,old],[],tenses);
+ assert.equal(data.verbs.sortir.cards['passé composé'][0].foreign,"j'ai sorti");assert.deepEqual(data.verbs.sortir.missing,[]);
+});

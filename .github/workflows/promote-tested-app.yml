@@ -1,0 +1,62 @@
+name: Promote tested vocprog
+on:
+  push:
+    paths:
+      - '.github/workflows/promote-tested-app.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: vocprog-production-promotion
+  cancel-in-progress: false
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Preserve previous production
+        run: |
+          git show-ref --verify --quiet refs/tags/pre-promotion-20261116 || git tag pre-promotion-20261116 3aba2daeaa5e6f1cb4acd5517e3e6a8b20dacebb
+          git push origin refs/tags/pre-promotion-20261116
+      - uses: actions/checkout@v4
+        with:
+          repository: andreas-nigl/vocprog-test
+          ref: 64a9863dd3fdc4d656ac511a8884663f72dd9298
+          path: tested-source
+          persist-credentials: false
+      - name: Verify tested source
+        working-directory: tested-source
+        run: |
+          echo 'ae1678916211a962599beda1ffe836710a6fcd508d0b1346a07e01a1b3101ed2  vendor/ablaut/ablaut_bg.wasm' | sha256sum --check
+          node --test tests/*.test.js
+          node --check vocprog-enhancements.js
+          node --check sw.js
+      - name: Promote without changing production identity
+        run: |
+          rsync -a tested-source/ ./ --exclude=.git --exclude=.github --exclude=tested-source --exclude=manifest.json --exclude=favicon.svg --exclude=icon.svg --exclude=icon-192.png --exclude=icon-512.png --exclude=261105_2307_vocprog.html
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          p.write_text(p.read_text().replace('Testvorschau 0.5.14','Version 0.5.14'))
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html sw.js vocprog-*.js vocprog-enhancements.css vendor reference tests docs PROJECT_HANDOFF.md
+          git diff --cached --quiet || git commit -m 'release: promote tested vocprog 0.5.14 preserving data and app identity'
+          git push origin HEAD:main
+      - name: Prepare static app
+        run: |
+          mkdir _site
+          git ls-files -z | tar --exclude='.github/*' --exclude='tests/*' --exclude='docs/*' --exclude='PROJECT_HANDOFF.md' --null -T - -cf - | tar -xf - -C _site
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - uses: actions/deploy-pages@v4
+        id: deployment

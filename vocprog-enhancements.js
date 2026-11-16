@@ -687,7 +687,10 @@
     get("practiceResultTitle").textContent=label;
     const percent=new Intl.NumberFormat("de-DE",{maximumFractionDigits:1}).format(result.percent)+" %";
     get("practiceResultPercent").textContent=percent;
-    get("practiceResultDetail").textContent=result.correct+" von "+result.asked+" Antworten richtig. Alle "+result.initialCount+" Lernkarten erfolgreich abgeschlossen.";
+    get("practiceResultDetail").textContent=result.skipped?
+      (result.asked?result.correct+" von "+result.asked+" bewerteten Antworten richtig. ":"Keine Antworten bewertet. ")+
+        result.skipped+(result.skipped===1?" Karte übersprungen.":" Karten übersprungen."):
+      result.correct+" von "+result.asked+" Antworten richtig. Alle "+result.initialCount+" Lernkarten erfolgreich abgeschlossen.";
     const maximum=Math.max(1,result.asked,result.spoken);
     const values=[["Asked",result.asked,result.asked/maximum*100],["Correct",percent,result.percent],["Spoken",result.spoken,result.spoken/maximum*100]];
     for(const [name,value,height] of values){
@@ -748,7 +751,8 @@
   const originalNextCard=nextCard;
   nextCard=function(){
     if(practiceSession&&!analyzedThisCard&&!get("answerInput").value.trim()){
-      get("answerFeedback").textContent="Bitte zuerst eine Antwort eingeben und prüfen lassen.";return;
+      practiceSession.skip(currentIndex);
+      if(practiceSession.complete()){finishPractice();return;}
     }
     if(!analyzedThisCard&&get("answerInput").value.trim()){
       window.gradeCurrentAnswer();

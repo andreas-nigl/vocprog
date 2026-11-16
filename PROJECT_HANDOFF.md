@@ -1,3 +1,12 @@
+## 2026-11-16 – VOC 0.5.17: leere Antworten dürfen übersprungen werden
+
+- Nutzer korrigiert Eingabepflicht ausdrücklich: Weiter bei vollständig leerem Antwortfeld zeigt nächste Karte, auch ohne Mikrofoneingabe. Leer/Whitespace wird als übersprungen geführt, weder richtig noch falsch bewertet, erzeugt keine neue Fehlerkarte. Antworten aus Tastatur und Mikrofon landen im selben Feld und werden gleich behandelt. Gefüllte Eingaben werden wie zuvor zuerst bewertet.
+- Sitzung besitzt zusätzlich getrennte skipped-Menge. Fortschritt zählt übersprungene Karten als bearbeitet, Gesamtzahl bleibt ursprünglich. Auch letzte Karte oder Fehlerwiederholung darf leer übersprungen werden, Runde kann dann regulär enden. Zurück zur übersprungenen Karte und nachträgliche Antwort entfernt Überspringstatus; echte falsche Antworten weiterhin FIFO anhängen. Keine Änderung an persistenten Antwort-/Sync-Verträgen, Überspringstatus nur sitzungsbezogen.
+- Ergebnis weist Überspringen ausdrücklich aus, statt alle Karten erfolgreich/richtig zu behaupten. Bewertete Antwortzahl und Richtigquote bleiben auf abgegebene bewertete Antworten bezogen; übersprungene Karten werden separat im Abschlusstext gezählt. Nur leere Antworten -> keine Antworten bewertet, Quote 0 %, übersprungene Anzahl angezeigt. Keine Einstufung als Fehler oder Erfolg.
+- 116/116 Node-Tests bestanden, inklusive tatsächlicher Weiter-/Grade-/Abschlusshandler: leere/Whitespaceeingabe, letzte Karte, Rücknavigation und spätere Bewertung, übersprungene Fehlerwiederholung. JS-Syntax und git diff --check erfolgreich. App/Assets 0.5.17/0.5.17-1. Veröffentlichung/Liveprüfung folgen. Nur normale App; Test-App unverändert deaktiviert; keine neue Standalone. Physischer Offline-Neustart und bekannte reale KI-/Scan-/Mehrgeräteprüfungen unverändert offen.
+
+---
+
 ## 2026-11-16 – Abschluss 0.5.16, normale App
 
 - Veröffentlicht nur https://andreas-nigl.github.io/vocprog/, Version 0.5.16. App-Commit 0de12970cecbd4fc8f27d3b6d2570052fe4af10f; Entwicklungsbranch 42025979b0deacb69f012c93a9a631b33e2cf5f8. Produktions-Pages 43912621069 und Entwicklungs-CI 43912633659 erfolgreich. Test-App nicht verändert/reaktiviert. Kein neuer Standalone; Offlineassets aktualisiert, physischer Offline-Neustart nicht erneut geprüft.

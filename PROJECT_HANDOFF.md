@@ -1,3 +1,11 @@
+## 2026-11-16 – Abschluss 0.5.17: leeres Weiter live geprüft
+
+- Normale App 0.5.17 live, App-Commit be561064fb4fd51ffaf15f96b5b26b67e4448a38; Entwicklungscommit 1c96a917e48d56a4ce271464a3ab8900abb54884. Pages 43914080377 und Entwicklungs-CI 43914092169 erfolgreich; 116/116 Node-Tests bestanden, JS-Syntax/Diffprüfung erfolgreich. Test-App bleibt pausiert, keine neue Standalone, Offlineassets gebaut/veröffentlicht; physischer Offline-Neustart nicht geprüft.
+- Live-Browser: zwei Infinitive, Eingabefeld leer, Weiter -> zweite Karte sein/être mit 2/2 ohne Eingabeaufforderung. Erneut leer Weiter -> regulärer Abschluss Verben / 0 % / Keine Antworten bewertet. 2 Karten übersprungen. Keine Antworten als richtig/falsch gewertet und keine Fehlerwiederholung angelegt. Ergebnis mit Fertig geschlossen. Mikrofonleerfall nutzt identische Feldprüfung; Mikrofonberechtigung/Audio nicht neu getestet.
+- Nutzerabnahme ausstehend. Nächster Schritt konkrete Nutzerbefunde in normaler App; bisherige weitere reale Prüflücken unverändert.
+
+---
+
 ## 2026-11-16 – VOC 0.5.17: leere Antworten dürfen übersprungen werden
 
 - Nutzer korrigiert Eingabepflicht ausdrücklich: Weiter bei vollständig leerem Antwortfeld zeigt nächste Karte, auch ohne Mikrofoneingabe. Leer/Whitespace wird als übersprungen geführt, weder richtig noch falsch bewertet, erzeugt keine neue Fehlerkarte. Antworten aus Tastatur und Mikrofon landen im selben Feld und werden gleich behandelt. Gefüllte Eingaben werden wie zuvor zuerst bewertet.

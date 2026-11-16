@@ -38,8 +38,8 @@ test('Actual grading/navigation/result flow counts retries, correct attempts and
  assert.equal(h.get('practiceResultSpokenValue').textContent,'2');
  assert.equal(h.state.exits,1);
 });
-test('Back navigation cannot regrade or enqueue an already answered attempt; blank next cannot skip',()=>{
- const h=harness();h.next();assert.equal(h.index(),0);
+test('Back navigation cannot regrade or enqueue an already answered attempt',()=>{
+ const h=harness();
  h.answer('wrong');h.next();h.back();h.answer('A');h.next();
  assert.equal(h.state.history.filter(e=>e.action==='graded').length,1);
  h.answer('B');h.next();h.answer('A');
@@ -62,4 +62,23 @@ test('Counter keeps original total and advances only after a correct answer, inc
  h.answer('wrong again');h.next();assert.equal(h.get('counter').textContent,'2 / 2');
  h.answer('A');assert.equal(h.get('practiceResultAskedValue').textContent,'4');
  assert.equal(h.get('practiceResultPercent').textContent,'50 %');
+});
+
+test('Blank or whitespace-only next skips without grading or adding a retry and permits final completion',()=>{
+ const h=harness();h.get('answerInput').value='  ';h.next();
+ assert.equal(h.index(),1);assert.equal(h.get('counter').textContent,'2 / 2');
+ assert.equal(h.state.history.filter(event=>event.action==='graded').length,0);
+ h.next();assert.equal(h.get('practiceResultDialog').open,true);
+ assert.equal(h.get('practiceResultAskedValue').textContent,'0');
+ assert.equal(h.get('practiceResultDetail').textContent,'Keine Antworten bewertet. 2 Karten übersprungen.');
+});
+test('A skipped card can be answered after navigating back; wrong answers still append in order',()=>{
+ const h=harness();h.next();h.back();h.answer('wrong');h.next();h.answer('B');h.next();h.answer('A');
+ assert.equal(h.get('practiceResultAskedValue').textContent,'3');assert.equal(h.get('practiceResultPercent').textContent,'66,7 %');
+ assert.doesNotMatch(h.get('practiceResultDetail').textContent,/übersprungen/);
+});
+test('Skipping a repeated error finishes without treating the blank as correct or another error',()=>{
+ const h=harness();h.answer('wrong');h.next();h.answer('B');h.next();h.next();
+ assert.equal(h.get('practiceResultAskedValue').textContent,'2');assert.equal(h.get('practiceResultPercent').textContent,'50 %');
+ assert.match(h.get('practiceResultDetail').textContent,/1 Karte übersprungen/);
 });

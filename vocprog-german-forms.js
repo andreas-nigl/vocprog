@@ -63,6 +63,9 @@
     }
     const werden=await lookup('de-DE','werden');
     for(const [tense,auxTense] of [['futur i','present'],['würde-form','konjunktiv2']]){
+      if(tense==='futur i'&&werden?.forms.present?.length===6&&werden.forms.present.every(slot=>slot?.length)){
+        forms[tense]=werden.forms.present.map(slot=>slot[0]+' '+meaning.lemma);continue;
+      }
       const direct=tense==='futur i'?verifiedRow(tense,'future1'):null;
       if(direct){forms[tense]=direct;continue;}
       if(werden?.forms[auxTense]?.length===6&&werden.forms[auxTense].every(slot=>slot?.length))

@@ -179,3 +179,39 @@ test('A newly corrected explicit book auxiliary outranks older printed-form evid
  const data=await h.db.prepare(book,[base,old],[],tenses);
  assert.equal(data.verbs.sortir.cards['passé composé'][0].foreign,"j'ai sorti");assert.deepEqual(data.verbs.sortir.missing,[]);
 });
+
+test('Futur proche forms all six persons from aller present plus the infinitive with verified German futures',async()=>{
+ const h=await database();const data=await h.db.prepare(book,[entry('rendre','zurückgeben'),entry('sortir','hinausgehen'),entry('être','sein'),entry('aller','gehen')],[],[...tenses,'futur proche']);
+ for(const [lemma,verb] of Object.entries(data.verbs)){
+ assert.deepEqual(verb.missing,[]);
+ assert.deepEqual(verb.forms['futur proche'],['vais','vas','va','allons','allez','vont'].map(aux=>aux+' '+lemma));
+ assert.equal(verb.cards['futur proche'].length,6);assert.ok(verb.cards['futur proche'].every(card=>card.german&&card.foreignVerification.status==='reference-matched'));
+ }
+ assert.equal(data.verbs.rendre.cards['futur proche'][0].foreign,'je vais rendre');
+ assert.equal(data.verbs.rendre.cards['futur proche'][0].german,'ich werde zurückgeben');
+ assert.equal(data.verbs.sortir.cards['futur proche'][3].foreign,'nous allons sortir');
+ assert.equal(data.verbs.être.cards['futur proche'][0].foreign,'je vais être');
+ assert.equal(data.verbs.aller.cards['futur proche'][0].foreign,'je vais aller');
+});
+test('An existing ready record receives only the missing futur proche, preserving its seven old tense objects and all cache reuse',async()=>{
+ const h=await database(),words=[entry('sortir','hinausgehen')];
+ const first=await h.db.prepare(book,words,[],tenses),old=first.verbs.sortir;
+ const next=await h.db.prepare(book,words,[],[...tenses,'futur proche']);
+ for(const tense of tenses)assert.equal(next.verbs.sortir.cards[tense],old.cards[tense]);
+ assert.equal(next.verbs.sortir.cards['passé composé'][0].foreign,'je suis sorti');
+ const before={...h.counters};await h.db.prepare(book,words,[],[...tenses,'futur proche']);assert.deepEqual(h.counters,before);
+ const reopened=await database(h.disk);await reopened.db.prepare(book,words,[],[...tenses,'futur proche']);assert.deepEqual(reopened.counters,{motor:0,checks:0});
+});
+test('A missing futur proche reference does not prevent existing prepared tenses from remaining available',async()=>{
+ const h=await database(),words=[entry('sortir','hinausgehen')];await h.db.prepare(book,words,[],tenses);const saved=h.disk.getItem();
+ const engine=await loaded;const db=VOCVerbDatabase.create(h.disk,(w,l)=>engine.conjugate(w,l),w=>VOCFrenchReference.conjugate(w),async()=>{throw Error('offline');});
+ const data=await db.prepare(book,words,[],[...tenses,'futur proche']);
+ assert.equal(data.verbs.sortir.cards['passé composé'][0].foreign,'je suis sorti');assert.ok(data.verbs.sortir.missing.includes('futur proche'));assert.equal(h.disk.getItem(),saved);
+});
+
+test('An already synchronized ready future extension is hydrated without regenerating it on another open client',async()=>{
+ const h=await database(),words=[entry('rendre','zurückgeben')];await h.db.prepare(book,words,[],tenses);
+ const other=await database(h.disk);await other.db.prepare(book,words,[],[...tenses,'futur proche']);
+ const before={...h.counters};const next=await h.db.prepare(book,words,[],[...tenses,'futur proche']);
+ assert.equal(next.verbs.rendre.cards['futur proche'][0].foreign,'je vais rendre');assert.deepEqual(h.counters,before);
+});

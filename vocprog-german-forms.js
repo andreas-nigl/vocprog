@@ -3,7 +3,7 @@
   'use strict';
   const MAP={
     'fr-FR':{'présent':'präsens','imparfait':'präteritum','passé composé':'perfekt',
-      'plus-que-parfait':'plusquamperfekt','futur simple':'futur i','conditionnel présent':'würde-form',
+      'plus-que-parfait':'plusquamperfekt','futur simple':'futur i','futur proche':'futur i','conditionnel présent':'würde-form',
       'subjonctif présent':'dass-präsens'},
     'en-US':{'simple present':'präsens','present progressive':'präsens','simple past':'präteritum',
       'past progressive':'präteritum','present perfect':'perfekt','past perfect':'plusquamperfekt',
@@ -138,6 +138,11 @@
     return verb;
   }
   async function referenceRow(source,language,tense,lookup,auxiliary){
+    if(language==='fr-FR'&&tense==='futur proche'){
+      const aller=await lookup(language,'aller'),row=aller?.forms?.['présent'];
+      if(!source||!row||row.length!==6||row.some(slot=>!slot?.length))return {row:null,sources:source?.sources};
+      return {row:row.map(slot=>slot.map(form=>form+' '+source.infinitive)),sources:[...(source.sources||[]),...(aller.sources||[]),{name:'OQLF : futur proche (aller + infinitif)',url:'https://vitrinelinguistique.oqlf.gouv.qc.ca/24122/la-grammaire/le-verbe/temps-grammaticaux/futur/le-futur-proche'}]};
+    }
     if(language==='fr-FR'&&['passé composé','plus-que-parfait'].includes(tense)&&['être','avoir'].includes(auxiliary)){
       const aux=await lookup(language,auxiliary),row=aux?.forms?.[tense==='passé composé'?'présent':'imparfait'];
       if(!row||!source?.participle?.length)return {row:null,sources:source?.sources};
@@ -161,7 +166,7 @@
     let source=null;
     try{source=await lookup(language,verb.infinitive);}catch(error){verb.referenceError=String(error.message||error);}
     for(const [tense,cards] of Object.entries(verb.cards)){
-      const reference=await referenceRow(source,language,tense,lookup,verb.auxiliary);
+      const reference=await referenceRow(source?{...source,infinitive:verb.infinitive}:source,language,tense,lookup,verb.auxiliary);
       const row=reference.row;
       for(let index=0;index<cards.length;index++){
         const card=cards[index],candidates=row?.[index];

@@ -78,7 +78,9 @@
       const auxiliary = auxiliaryOf(source) || curated?.auxiliary || motor?.auxiliary;
       const forms = {}, cards = {};
       for (const tense of tenses) {
-        const generated = curated?.forms?.[tense] || motor?.forms?.[tense] || stored?.forms?.[tense];
+        const aller=book.lang==="fr-FR"&&tense==="futur proche"?
+          reference?.("aller")?.forms?.["présent"]||morphology("aller",book.lang)?.forms?.["présent"]:null;
+        const generated = aller?aller.map(form=>form+" "+lemma):curated?.forms?.[tense] || motor?.forms?.[tense] || stored?.forms?.[tense];
         if (!six(generated) || persons.length !== 6) continue;
         forms[tense] = [...generated];
         cards[tense] = generated.map((form, index) => {
@@ -134,7 +136,9 @@
         if (value?.version !== VERSION || typeof value.lemma !== "string" || value.verb?.referenceError ||
             !value.verb || typeof value.verb.cards !== "object" ||
             key !== normalKey(value.language, value.lemma, value.german,value.context)||!consistent(value)) continue;
-        if (!records[key] || (!records[key].ready && value.ready)) records[key] = value;
+        if (!records[key] || (!records[key].ready && value.ready)||
+            (value.ready&&Object.keys(value.verb.cards).length>Object.keys(records[key].verb.cards).length&&
+              Date.parse(value.checkedAt)>=Date.parse(records[key].checkedAt))) records[key] = value;
       }
     }
     hydrate();
@@ -153,10 +157,22 @@
           const context=[auxiliary,revision?book.id+":"+revision:""].filter(Boolean).join("|");
           const key = normalKey(book.lang, lemma, german,context);
           let record = records[key];
-          if (!record) {
-            const result = build(book, source, paradigms, tenses, morphology, reference);
+          const extend=record&&book.lang==="fr-FR"&&tenses.includes("futur proche")&&
+            !record.verb.cards["futur proche"]&&!record.verb.extensionAttempts?.includes("futur proche");
+          if (!record||extend) {
+            const result = build(book, source, paradigms, extend?["futur proche"]:tenses, morphology, reference);
             let verb = result.verbs[lemma];
-            if (enrich) verb = await enrich(verb, book.lang, morphology);
+            if (enrich){
+              try{verb = await enrich(verb, book.lang, morphology);}
+              catch(error){if(!extend)throw error;verb.referenceError=String(error.message||error);}
+            }
+            if(extend){
+              const previous=record.verb;
+              verb={...previous,forms:{...previous.forms,...verb.forms},cards:{...previous.cards,...verb.cards},
+                verificationSources:[...new Map([...(previous.verificationSources||[]),...(verb.verificationSources||[])].map(item=>[item.url,item])).values()],
+                extensionAttempts:[...(previous.extensionAttempts||[]),"futur proche"],
+                ...(verb.referenceError?{referenceError:verb.referenceError}:{})};
+            }
             verb.missing = tenses.filter(tense => (!Array.isArray(verb.cards[tense]) || verb.cards[tense].length !== 6) ||
               (enrich && verb.cards[tense].some(card => !card.german ||
                 card.foreignVerification?.status !== "reference-matched" ||

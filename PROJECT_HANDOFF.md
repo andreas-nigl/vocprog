@@ -1,3 +1,11 @@
+## 2026-11-16 – Futur proche: Browserbefund und deutsche Zukunftsform korrigiert
+
+- Erste Livefassung 0.5.19 zeigte Auswahl/Abfrage/Tabelle aller sechs korrekten französischen Formen, aber die unabhängige deutsche future1-Referenz führte als erste Alternative eine markierte verkürzte Form hinausgeh⁵n. Diese darf keine primäre Lernform werden.
+- Deutsche Futur-I-Zeilen werden jetzt aus unabhängig belegtem werden-Präsens + zugehörigem Wörterbuchinfinitiv aufgebaut, statt diese annotierte direkte Zukunftszeile zu bevorzugen. Bei schon ergänzten futur-proche-Records mit hochgestellter Quellenmarkierung ausschließlich diese neue Zeitform gezielt reparieren; alte sieben Zeiten bleiben unverändert. Regel gilt ebenso bei anderer Bildung zukünftiger deutscher Lernentsprechungen, bestehende alte Cachekarten werden nicht pauschal erneuert.
+- 129/129 Tests einschließlich exaktem ich werde hinausgehen und Reparatur eines markierten neuen Zukunftscaches bestanden. Assetkennung 0.5.19-2. Abschließende Veröffentlichung/erneute Liveprüfung folgen. Test-App bleibt pausiert.
+
+---
+
 ## 2026-11-16 – VOC 0.5.19: Futur composé / Futur proche
 
 - Nutzer meldet fehlendes Futur composé, aktuell Unterrichtsstoff, und beauftragt unmittelbare Ergänzung. Ursache: bisherige feste französische UI-Liste und Datensatzvorbereitung enthalten nur die sieben bisherigen Personalformzeiten plus Imperativ/Infinitiv; aller+Infinitiv fehlte, nicht unter Futur simple versteckt. Begriff hier Futur proche / futur périphrastique, schulisch auch Futur composé. Grammatikquelle OQLF https://vitrinelinguistique.oqlf.gouv.qc.ca/24122/la-grammaire/le-verbe/temps-grammaticaux/futur/le-futur-proche .

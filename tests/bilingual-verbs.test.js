@@ -190,6 +190,7 @@ test('Futur proche forms all six persons from aller present plus the infinitive 
  assert.equal(data.verbs.rendre.cards['futur proche'][0].foreign,'je vais rendre');
  assert.equal(data.verbs.rendre.cards['futur proche'][0].german,'ich werde zurückgeben');
  assert.equal(data.verbs.sortir.cards['futur proche'][3].foreign,'nous allons sortir');
+ assert.equal(data.verbs.sortir.cards['futur proche'][0].german,'ich werde hinausgehen');
  assert.equal(data.verbs.être.cards['futur proche'][0].foreign,'je vais être');
  assert.equal(data.verbs.aller.cards['futur proche'][0].foreign,'je vais aller');
 });
@@ -214,4 +215,12 @@ test('An already synchronized ready future extension is hydrated without regener
  const other=await database(h.disk);await other.db.prepare(book,words,[],[...tenses,'futur proche']);
  const before={...h.counters};const next=await h.db.prepare(book,words,[],[...tenses,'futur proche']);
  assert.equal(next.verbs.rendre.cards['futur proche'][0].foreign,'je vais rendre');assert.deepEqual(h.counters,before);
+});
+
+test('An annotated German futur proche cache entry is repaired without replacing old tense data',async()=>{
+ const h=await database(),words=[entry('sortir','hinausgehen')];await h.db.prepare(book,words,[],[...tenses,'futur proche']);
+ const saved=JSON.parse(h.disk.getItem()),record=Object.values(saved)[0],old=JSON.stringify(record.verb.cards['passé composé']);
+ record.verb.cards['futur proche'][0].german='ich werde hinausgeh⁵n';
+ const next=await database(storage(JSON.stringify(saved)));const data=await next.db.prepare(book,words,[],[...tenses,'futur proche']);
+ assert.equal(data.verbs.sortir.cards['futur proche'][0].german,'ich werde hinausgehen');assert.equal(JSON.stringify(data.verbs.sortir.cards['passé composé']),old);
 });

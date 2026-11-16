@@ -158,7 +158,8 @@
           const key = normalKey(book.lang, lemma, german,context);
           let record = records[key];
           const extend=record&&book.lang==="fr-FR"&&tenses.includes("futur proche")&&
-            !record.verb.cards["futur proche"]&&!record.verb.extensionAttempts?.includes("futur proche");
+            ((!record.verb.cards["futur proche"]&&!record.verb.extensionAttempts?.includes("futur proche"))||
+              record.verb.cards["futur proche"]?.some(card=>/[⁰¹²³⁴⁵⁶⁷⁸⁹]/.test(card.german)));
           if (!record||extend) {
             const result = build(book, source, paradigms, extend?["futur proche"]:tenses, morphology, reference);
             let verb = result.verbs[lemma];

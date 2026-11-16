@@ -80,6 +80,8 @@ body.voc-training-active .voc-footer,body.voc-training-active .analysis-float-zo
 .verb-table-panel{width:100%;background:#fff;border:0;border-radius:16px;padding:20px;box-shadow:0 4px 12px rgba(0,0,0,.08);margin:0;overflow-x:auto;box-sizing:border-box}
 .verb-table-panel h4{margin:2px 0 10px}
 .verb-table-panel table{border-collapse:collapse;width:100%;font-size:.84rem}
+.verb-table-panel .verb-reference-note,.verb-table-panel .verb-reference-sources{font-size:.75rem;line-height:1.35}
+.verb-table-panel .verb-reference-sources a{font-size:inherit}
 .verb-table-panel th,.verb-table-panel td{text-align:left;border-bottom:1px solid var(--border);padding:6px 8px;vertical-align:top}
 .verb-table-panel th:first-child,.verb-table-panel td:first-child{width:55%}
 .voc-analysis-section h3{cursor:pointer;user-select:none;margin-bottom:4px}
@@ -124,3 +126,31 @@ body.voc-training-active .voc-footer,body.voc-training-active .analysis-float-zo
 /* Consistent outline icons, independent of font glyph metrics. */
 .book-manager #renameBookBtn,.book-manager #mergeBookBtn,.book-manager #deleteBookBtn{display:flex;align-items:center;justify-content:center;line-height:1}
 .book-manager #renameBookBtn svg,.book-manager #mergeBookBtn svg,.book-manager #deleteBookBtn svg{display:block;width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;flex:none}
+
+/* Sync must never reveal setup controls during an active exercise. */
+body:has(#trainerCard:not(.hidden)) #rangeCard{display:none!important}
+
+/* Compact inventory directly below the learning start button, for every book. */
+#startTrainingBtn{margin-bottom:0}
+#verbPreparationStatus{margin:4px 0 0;font-size:.85rem;line-height:1.35;color:var(--text-muted)}
+
+.generation-busy{background:#94a3b8!important;color:#fff!important;cursor:pointer;opacity:.75}
+#newSentencesBtn{justify-self:center;width:auto;padding:0 10px;font-size:.85rem;white-space:nowrap}
+#newSentencesBtn[hidden]{display:none!important}
+
+#practiceResultDialog{box-sizing:border-box;width:min(480px,calc(100vw - 28px));border:0;border-radius:16px;padding:22px;color:var(--text)}
+#practiceResultDialog::backdrop{background:rgba(15,23,42,.35)}
+#practiceResultDialog h2{text-align:center;margin:0 0 8px}.practice-result-percent{text-align:center;font-size:2rem;font-weight:700;margin:8px 0}
+#practiceResultDetail{text-align:center;font-size:.85rem;color:var(--text-muted)}
+.practice-result-chart{display:flex;gap:20px;margin:30px 0 20px;min-width:0}
+.practice-result-column{flex:1;min-width:0;text-align:center;font-size:.8rem}
+.practice-result-track{height:150px;display:flex;align-items:flex-end;margin-bottom:8px}
+.practice-result-track .voc-analysis-bar{flex:1;min-height:0}
+.practice-result-track .voc-analysis-bar span{font-size:.9rem}
+
+.data-section-label{font-size:.8rem;font-weight:600;margin:0 0 6px;color:var(--text-muted)}
+#pageRangeInput{margin-bottom:4px}#pageRangeInput[aria-invalid="true"]{border-color:#b91c1c}
+.page-range-help,.page-range-error{font-size:.78rem;line-height:1.35;margin:0 0 12px;color:var(--text-muted)}
+.page-range-error{color:#b91c1c}.page-range-error[hidden]{display:none}
+
+.settings-heading{font-size:.85rem;font-weight:700;margin:4px 0 6px;color:var(--text-muted)}

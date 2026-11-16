@@ -24,6 +24,7 @@
   let lastShownEvent = null;
   let syncTimer = null;
   let syncing = false;
+  let initialSyncReady=Promise.resolve();
   let scanQueueReady = false;
   let dbPromise;
 
@@ -435,6 +436,24 @@
     return count;
   }
 
+  window.describeVOCScan=function({words=0,infinitives=0,conjugations=0,language}){
+    const generated=Number(window.VOCGeneratedFrenchForms)||0;
+    const rejected=Number(window.VOCScanVerificationWarnings)||0;
+    const verbBooks=new Set(books.filter(b=>b.lang===language&&bookKind(b)==="verbs").map(b=>b.id));
+    const lemmas=new Set(allVocab().filter(v=>verbBooks.has(v.bookId))
+      .map(v=>String(v.infinitive||v.verbId||v.lemma||(v.kind==="verb-infinitive"?v.foreign:"")||"").trim().toLocaleLowerCase())
+      .filter(Boolean));
+    const total=words+infinitives+conjugations+generated;
+    const parts=[total?"Scan abgeschlossen: "+words+" neue Vokabeln, "+infinitives+
+      " neue Infinitive, "+conjugations+" gedruckte Konjugationsformen und "+generated+
+      " unabhängig abgeglichene Formen gespeichert.":"Scan abgeschlossen: Keine neuen Einträge hinzugefügt."];
+    if(lemmas.size)parts.push("Im Verbenbestand dieser Sprache sind insgesamt "+lemmas.size+" verschiedene Verben gespeichert.");
+    if(!total)parts.push("Bereits vorhandene Einträge werden nicht erneut angelegt. Nicht übernehmbare Einträge können ebenfalls zu diesem Ergebnis führen.");
+    if(rejected)parts.push(rejected+" widersprüchliche Formen wurden zurückgewiesen.");
+    parts.push("Die Konjugationen werden vor der Abfrage lokal vorbereitet. Die Liste zeigt nur Grundformen; fehlende Formenübersetzungen werden als Konjugationsaufgabe mit Person und Zeitform abgefragt.");
+    return parts.join(" ");
+  };
+
   window.ingestVerbInfinitives=async function(entries,language){
     if(!Array.isArray(entries)||!entries.length||!LANGS[language])return 0;
     const valid=entries.filter(e=>e&&String(e.infinitive||"").trim()&&String(e.german||"").trim());
@@ -460,14 +479,8 @@
     }
     const count=payload.length?mergeVocabularies(payload):0;
     if(payload.length)saveToLocalStorage();
-    let generated=0;
-    for(const entry of valid){
-      try{generated+=await expandFrenchPilotVerb(verbBook,entry);}
-      catch(error){
-        console.warn("Konjugationsübersetzungen noch nicht verfügbar",error);
-      }
-    }
-    window.VOCGeneratedFrenchForms=generated;
+    window.VOCGeneratedFrenchForms=0;
+    await scheduleVerbPreparation();
     return count;
   };
 
@@ -522,10 +535,27 @@
     const count=mergeVocabularies(items.map(item=>({...item,bookId:conjBook.id})));
     saveToLocalStorage();
     chooseBook(sourceBookId);
+    scheduleVerbPreparation();
     return count;
   };
   window.pickLearningBook=function(){chooseBook(get("bookSelect").value)};
 
+  const learningPageSelections=new Map();
+  parsePageRanges=value=>window.VOCPageSelection.parse(value).pages;
+  window.applyLearningPages=function(normalize=false,initial=false){
+    if(!initial)cancelSentenceGeneration();
+    const input=get("pageRangeInput"),error=get("pageRangeError");
+    const parsed=window.VOCPageSelection.parse(input.value);
+    input.setCustomValidity(parsed.error);input.setAttribute("aria-invalid",String(!parsed.valid));
+    error.textContent=parsed.error;error.hidden=parsed.valid;
+    if(parsed.valid){
+      if(normalize)input.value=formatPageRanges(parsed.pages);
+      if(!initial)learningPageSelections.set(chosenBook,input.value);
+      filterVocabByPages();
+      if(!filteredVocabList.length){error.textContent="Für diese Seiten sind in diesem Buch keine Vokabeln vorhanden.";error.hidden=false;}
+    }
+    updateVerbReadiness();
+  };
   const oldLoad=loadFromLocalStorage;
   loadFromLocalStorage=function(){
     oldLoad();
@@ -537,9 +567,14 @@
     const book=books.find(b=>b.id===chosenBook);
     if(!book)return;
     const target=vocabList.filter(v=>v.bookId===book.id);
-    get("pageRangeInput").value=formatPageRanges([...new Set(target.map(x=>Number(x.page)).filter(Number.isFinite))].sort((a,b)=>a-b));
-    filterVocabByPages();
-    get("rangeCard").classList.toggle("hidden",target.length===0);
+    const input=get("pageRangeInput"),sameBook=input.dataset.bookId===book.id;
+    if(!sameBook||(!learningPageSelections.has(book.id)&&document.activeElement!==input)){
+      input.value=learningPageSelections.get(book.id)||formatPageRanges([...new Set(target.map(x=>Number(x.page)).filter(Number.isFinite))].sort((a,b)=>a-b));
+    }
+    input.dataset.bookId=book.id;
+    window.applyLearningPages(false,true);
+    scheduleVerbPreparation();
+    get("rangeCard").classList.toggle("hidden",target.length===0||!get("trainerCard").classList.contains("hidden")||isVerbBook());
   };
   filterVocabByPages=function(){
     const allowed=parsePageRanges(get("pageRangeInput").value);
@@ -563,7 +598,7 @@
       if(!v.bookId)v.bookId=chosenBook;
       if(!v.updatedAt)v.updatedAt=new Date().toISOString();
     });
-    oldSave();scheduleSync();
+    oldSave();scheduleSync();scheduleVerbPreparation();
   };
   const oldOnLang=onLanguageChange;
   onLanguageChange=function(){
@@ -593,14 +628,19 @@
   const oldRemove=removeImage;
   removeImage=function(index){oldRemove(index);tempImages(rawImages);};
   const oldAnalyze=analyzePages;
+  let analyzingVerbInput=false;
   analyzePages=async function(){
     if(!navigator.onLine)return;
+    analyzingVerbInput=true;updateVerbReadiness();
     analysisInterrupted=false;updateOnlineState();
     try{
       await oldAnalyze();
       if(!rawImages.length){await tempImages([]);analysisInterrupted=false;}
       else if(!navigator.onLine)analysisInterrupted=true;
-    }finally{updateOnlineState();}
+    }finally{
+      await scheduleVerbPreparation();
+      analyzingVerbInput=false;updateVerbReadiness();updateOnlineState();
+    }
   };
   const oldRender=renderGallery;
   renderGallery=function(){oldRender();updateOnlineState();};
@@ -628,6 +668,7 @@
   window.cleanSpokenText=function(text){
     return String(text||"").replace(/<[^>]*>/g,"")
       .replace(/\[[^\]]*\]/g,"")
+      .replace(/\((?:tu|nous|vous|du|wir|ihr|Sie)\)\s*/g,"")
       .replace(/\((?:AE|BE|AmE|BrE|UK|US|American English|British English|ugs\.?|fig\.?|pl\.?|sing\.?)\)/gi,"")
       .replace(/\b(?:AE|BE|AmE|BrE)\s*:/g,"")
       .replace(/\s+/g," ").trim();
@@ -675,7 +716,7 @@
       get("answerInput").value=e.results[0][0].transcript;
       get("answerInput").focus();
     };
-    recognition.onerror=e=>get("answerFeedback").textContent="Spracherkennung: "+e.error;
+    recognition.onerror=e=>get("answerFeedback").textContent=e.error==="not-allowed"?"Mikrofon oder Spracherkennung blockiert. Bitte Mikrofonzugriff in den Website-Einstellungen und im Betriebssystem erlauben und die Seite neu laden.":"Spracherkennung: "+e.error;
     recognition.start();
   };
   function logEvent(action,item,other={}){
@@ -684,16 +725,46 @@
       sourceId:item.sourceId||item.ref||"",at:new Date().toISOString(),
       action,...other};
     history.push(entry);save(STORE+"_events",history);scheduleSync();
+    if(practiceSession&&action==="spoken")practiceSession.speak();
+    if(practiceSession&&action==="graded"){
+      practiceSession.grade(currentIndex,other.correct===true,other.answer||"");
+      get("counter").textContent=(currentIndex+1)+" / "+trainingItems.length;
+      if(practiceSession.complete())finishPractice();
+    }
     return entry;
+  }
+  let practiceSession=null;
+  function finishPractice(){
+    if(!practiceSession?.complete())return;
+    const result=practiceSession.statistics(),kind=trainingItems[0]?.kind;
+    const label={words:"Vokabeln",verbs:"Verben",sentences:"Einfache Sätze",special:"KI-Spezialsätze"}[kind]||"Vokabeln";
+    exitTrainer();
+    get("practiceResultTitle").textContent=label;
+    const percent=new Intl.NumberFormat("de-DE",{maximumFractionDigits:1}).format(result.percent)+" %";
+    get("practiceResultPercent").textContent=percent;
+    get("practiceResultDetail").textContent=result.correct+" von "+result.asked+" Antworten richtig. Alle "+result.initialCount+" Lernkarten erfolgreich abgeschlossen.";
+    const maximum=Math.max(1,result.asked,result.spoken);
+    const values=[["Asked",result.asked,result.asked/maximum*100],["Correct",percent,result.percent],["Spoken",result.spoken,result.spoken/maximum*100]];
+    for(const [name,value,height] of values){
+      get("practiceResult"+name+"Value").textContent=String(value);
+      get("practiceResult"+name+"Bar").style.height=Math.max(0,height)+"%";
+    }
+    get("practiceResultDialog").showModal();
   }
   const oldShow=showCard;
   showCard=function(){
     oldShow();
-    analyzedThisCard=false;
+    if(!practiceSession||practiceSession.items!==trainingItems)practiceSession=window.VOCPractice.create(trainingItems);
+    const previous=practiceSession.answers.get(currentIndex);
+    analyzedThisCard=!!previous;
     const input=get("answerInput"),feedback=get("answerFeedback");
-    input.value="";input.className="";feedback.textContent="";
+    input.value=previous?.answer||"";input.className=previous?(previous.correct?"answer-correct":"answer-wrong"):"";
+    feedback.textContent=previous?(previous.correct?"Richtig":"Nicht richtig – zur Wiederholung angehängt"):"";
+    if(previous)get("targetText").classList.remove("masked");
     const item=trainingItems[currentIndex];
-    lastShownEvent=logEvent("shown",item);
+    if(!practiceSession.shown.has(currentIndex)){
+      practiceSession.shown.add(currentIndex);lastShownEvent=logEvent("shown",item);
+    }
     document.body.classList.add("voc-training-active");
     if(window.matchMedia("(min-width: 641px) and (pointer: fine)").matches)setTimeout(()=>input.focus(),0);
   };
@@ -727,6 +798,9 @@
   };
   const originalNextCard=nextCard;
   nextCard=function(){
+    if(practiceSession&&!analyzedThisCard&&!get("answerInput").value.trim()){
+      get("answerFeedback").textContent="Bitte zuerst eine Antwort eingeben und prüfen lassen.";return;
+    }
     if(!analyzedThisCard&&get("answerInput").value.trim()){
       window.gradeCurrentAnswer();
       return;
@@ -735,38 +809,117 @@
   };
   const originalExitTrainer=exitTrainer;
   exitTrainer=function(){
+    practiceSession=null;
+    cancelSentenceGeneration();
     originalExitTrainer();
     const table=get("verbTablePanel");if(table)table.hidden=true;
     document.body.classList.remove("voc-training-active");
+    updateVerbReadiness();
   };
   // Original nextCard and prevCard invoke showCard, which logs every displayed question.
   const oldStart=startTraining;
   startTraining=async function(e){
-    if(get("bookSelect")?.value)chooseBook(get("bookSelect").value);
+    if(get("bookSelect")?.value&&get("bookSelect").value!==chosenBook)chooseBook(get("bookSelect").value);
     // Avoid original implicit window.event bug for Gemini mix button.
+    if(get("studyMode").value==="ai_combined")return runSentenceTraining(sentenceSlice(),get("startTrainingBtn"),get("randomize").checked);
     await oldStart(e);
   };
   const oldGenerate=generateAllCombinedSentences;
-  generateAllCombinedSentences=async function(slice,btn,label,random){
-    const key=JSON.stringify(slice.map(v=>v.id||v.refVocab));
-    let cached=specials.find(x=>x.bookId===chosenBook&&x.key===key);
-    if(!navigator.onLine){
-      if(!cached)throw Error("KI-Mix wurde noch nicht gespeichert; Internet nötig.");
-      trainingItems=cached.items.map(x=>({...x}));
-      if(random)trainingItems.sort(()=>Math.random()-0.5);
-      btn.innerText=label;btn.disabled=false;
-      enterTraining();return;
+  let sentenceJob=null;
+  let lastSentenceAddition=null;
+  function cancelSentenceGeneration(){
+    if(!sentenceJob)return;
+    sentenceJob.controller.abort();sentenceJob=null;
+    for(const key of ["startTrainingBtn","newSentencesBtn"]){
+      const button=get(key);if(button){button.classList.remove("generation-busy");button.removeAttribute("aria-busy");button.disabled=false;button.textContent=key==="newSentencesBtn"?"Neue Sätze":"▶ Abfrage starten";}
     }
-    await oldGenerate(slice,btn,label,random);
-    const page=String(slice[0]?.page||"?");
-    trainingItems=trainingItems.map(x=>({...x,bookId:chosenBook,page:x.page||page,kind:"special",sourceId:x.ref||id()}));
-    if(!cached) {
-      cached={id:id(),bookId:chosenBook,key,page,items:trainingItems,updatedAt:new Date().toISOString()};
-      specials.push(cached);
-    } else {cached.items=trainingItems;cached.updatedAt=new Date().toISOString();}
-    persistMetadata();
+    updateVerbReadiness();
+  }
+  function sentenceSlice(){
+    const start=Number(get("startVocab").value),end=Number(get("endVocab").value);
+    return Number.isInteger(start)&&Number.isInteger(end)&&start<=end?filteredVocabList.slice(start,end+1):[];
+  }
+  function sentenceCards(sentences,random){
+    const reverse=get("direction").value==="foreign_to_de";
+    trainingItems=sentences.map(s=>({prompt:reverse?s.foreign:s.german,target:reverse?s.german:s.foreign,
+      pLang:reverse?s.lang:"de-DE",tLang:reverse?"de-DE":s.lang,
+      isHtmlPrompt:reverse,isHtmlTarget:!reverse,kind:"special",sourceId:s.id,
+      bookId:s.bookId,page:s.page,pages:s.pages,ref:s.ref||"KI-Satz"}));
+    if(random)trainingItems.sort(()=>Math.random()-0.5);
+    enterTraining();
+  }
+  async function runSentenceTraining(slice,button,random,force=false){
+    if(sentenceJob){cancelSentenceGeneration();return;}
+    if(!slice.length){alert("Bitte wähle gültige Start- und Stopp-Vokabeln aus.");return;}
+    const available=window.VOCSentences.eligible(specials,chosenBook,slice);
+    if(available.length&&!force){sentenceCards(available,random);return;}
+    if(!navigator.onLine){alert(force?"Für neue Sätze ist Internet nötig.":"Keine Sätze vorhanden.");return;}
+    const controller=new AbortController(),job={controller,bookId:chosenBook};sentenceJob=job;
+    button.disabled=false;button.classList.add("generation-busy");button.setAttribute("aria-busy","true");
+    button.textContent="Generierung abbrechen";
+    const timeout=setTimeout(()=>controller.abort(),90000);
+    try{
+      if(navigator.onLine){
+        await initialSyncReady;
+        if(typeof syncNow==="function"){
+          if(syncing)throw Error("Serverabgleich läuft noch. Bitte kurz warten und erneut starten.");
+          const ready=await syncNow();
+          if(ready!==true)throw Error("Satzbestand konnte nicht vollständig vom Server geladen werden. Keine neue Generierung gestartet.");
+        }
+      }
+      if(controller.signal.aborted)return;
+      const cached=window.VOCSentences.eligible(specials,job.bookId,slice);
+      if(cached.length&&!force){sentenceCards(cached,random);return;}
+      if(!navigator.onLine){alert("Keine Sätze vorhanden.");return;}
+      const apiKey=get("apiKey").value.trim();
+      if(!apiKey)throw Error("Bitte einen API-Key eingeben.");
+      const language=activeBook()?.lang||get("targetLang").value;
+      const words=slice.map(v=>({id:String(v.id||v.refVocab),foreign:v.foreign,german:v.german}));
+      const previousSentences=window.VOCSentences.stored(specials,job.bookId);
+      const prompt="Erstelle kurze Übungssätze auf "+language+" mit deutscher Übersetzung. Decke alle übergebenen Vokabeln ab. Maximal 10 Wörter und 4 Lernvokabeln pro Satz. Markiere die Lernwörter im fremdsprachigen Satz mit <u>. Jeder Satz muss in vocabIds genau die IDs der darin tatsächlich verwendeten Lernvokabeln nennen. Verwende nur übergebene IDs. Antworte ausschließlich als JSON-Liste: [{german: Deutscher Satz, foreign: Fremdsprachiger Satz, vocabIds: [ID]}]. Vokabeln: "+JSON.stringify(words)+" Erzeuge andere Sätze als diese bereits gespeicherten Satzpaare: "+JSON.stringify(previousSentences.slice(-100).map(s=>({german:s.german,foreign:s.foreign})));
+      const response=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key="+encodeURIComponent(apiKey),{
+        method:"POST",signal:controller.signal,headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
+      if(!response.ok)throw Error("KI-Anfrage fehlgeschlagen (HTTP "+response.status+").");
+      const data=await response.json();
+      if(controller.signal.aborted||sentenceJob!==job)return;
+      const output=(data.candidates?.[0]?.content?.parts||[]).map(part=>part.text||"").join("");
+      const items=window.VOCSentences.validate(JSON.parse(output.replace(/```json|```/g,"").trim()),slice);
+      const existing=new Set(window.VOCSentences.stored(specials,job.bookId).map(window.VOCSentences.pairKey));
+      const when=new Date().toISOString(),added=[];
+      for(const item of items){
+        const key=window.VOCSentences.pairKey(item);if(existing.has(key))continue;existing.add(key);
+        added.push({...item,id:id(),bookId:job.bookId,kind:"ai-sentence",lang:language,
+          page:String(slice[0]?.page||"?"),pages:[...new Set(slice.filter(v=>item.vocabIds.includes(String(v.id||v.refVocab))).map(v=>String(v.page)))],updatedAt:when});
+      }
+      if(!added.length){alert("Die KI hat nur bereits gespeicherte Sätze geliefert. Keine zusätzlichen Sätze gespeichert.");return;}
+      const previousLength=specials.length;
+      specials.push(...added);
+      try{persistMetadata();}catch(error){specials.splice(previousLength);throw error;}
+      lastSentenceAddition={bookId:job.bookId,count:added.length};
+      updateVerbReadiness();
+      if(typeof syncNow==="function"){
+        const synced=await syncNow();
+        lastSentenceAddition.serverConfirmed=synced===true;
+        if(synced!==true)alert(added.length+" neue Sätze sind lokal gespeichert. Die Serverübertragung ist noch nicht bestätigt; sie wird beim nächsten Abgleich erneut versucht.");
+      }
+      if(controller.signal.aborted||sentenceJob!==job)return;
+      sentenceCards(force?added:window.VOCSentences.eligible(specials,job.bookId,slice),random);
+    }catch(error){
+      if(error.name!=="AbortError")alert(error.message);
+    }finally{
+      clearTimeout(timeout);
+      if(sentenceJob===job){sentenceJob=null;button.classList.remove("generation-busy");button.removeAttribute("aria-busy");button.disabled=false;button.textContent=button.id==="newSentencesBtn"?"Neue Sätze":"▶ Abfrage starten";updateVerbReadiness();}
+    }
+  }
+  generateAllCombinedSentences=async function(slice,button,_label,random){
+    return runSentenceTraining(slice,button,random);
+  };
+  window.newCombinedSentences=function(){
+    return runSentenceTraining(sentenceSlice(),get("newSentencesBtn"),get("randomize").checked,true);
   };
   function enterTraining(){
+    practiceSession=window.VOCPractice.create(trainingItems);
     currentIndex=0;
     for(const n of ["configCard","scanCard","rangeCard"])get(n).classList.add("hidden");
     get("trainerCard").classList.remove("hidden");showCard();
@@ -822,12 +975,13 @@
 
   // Only printed / individually validated forms are trainable. Do not invent inflections.
   const TENSES={
-    "fr-FR":[["présent","Présent (Gegenwart)"],["imparfait","Imparfait (unvollendete Vergangenheit)"],["passé composé","Passé composé (zusammengesetzte Vergangenheit)"],["plus-que-parfait","Plus-que-parfait (Vorvergangenheit)"],["futur simple","Futur simple (Zukunft)"],["conditionnel présent","Conditionnel présent (würde-Form)"],["subjonctif présent","Subjonctif présent (Subjonctif Gegenwart)"]],
+    "fr-FR":[["présent","Présent (Gegenwart)"],["imparfait","Imparfait (unvollendete Vergangenheit)"],["passé composé","Passé composé (zusammengesetzte Vergangenheit)"],["plus-que-parfait","Plus-que-parfait (Vorvergangenheit)"],["futur simple","Futur simple (Zukunft)"],["conditionnel présent","Conditionnel présent (würde-Form)"],["subjonctif présent","Subjonctif présent (Subjonctif Gegenwart)"],["impératif","Impératif (Befehlsform)"]],
     "en-US":[["simple present","Simple Present (Gegenwart)"],["present progressive","Present Progressive (Verlaufsform Gegenwart)"],["simple past","Simple Past (Vergangenheit)"],["past progressive","Past Progressive (Verlaufsform Vergangenheit)"],["present perfect","Present Perfect (vollendete Gegenwart)"],["past perfect","Past Perfect (Vorvergangenheit)"],["will future","Will-Future (Zukunft)"],["going to future","Going-to-Future (geplante Zukunft)"],["conditional","Conditional (würde-Form)"]],
     "es-ES":[["presente","Presente (Gegenwart)"],["pretérito perfecto compuesto","Pretérito perfecto compuesto (zusammengesetzte Vergangenheit)"],["pretérito indefinido","Pretérito indefinido (abgeschlossene Vergangenheit)"],["pretérito imperfecto","Pretérito imperfecto (unvollendete Vergangenheit)"],["pluscuamperfecto","Pluscuamperfecto (Vorvergangenheit)"],["futuro simple","Futuro simple (Zukunft)"],["condicional simple","Condicional simple (würde-Form)"],["presente de subjuntivo","Presente de subjuntivo (Subjunktiv Gegenwart)"]],
     "pt-PT":[["presente","Presente (Gegenwart)"],["pretérito perfeito","Pretérito perfeito (abgeschlossene Vergangenheit)"],["pretérito imperfeito","Pretérito imperfeito (unvollendete Vergangenheit)"],["mais-que-perfeito composto","Mais-que-perfeito composto (Vorvergangenheit)"],["futuro do presente","Futuro do presente (Zukunft)"],["condicional","Condicional (würde-Form)"],["presente do conjuntivo","Presente do conjuntivo (Konjunktiv Gegenwart)"]],
     "nl-NL":[["onvoltooid tegenwoordige tijd","Onvoltooid tegenwoordige tijd (Gegenwart)"],["onvoltooid verleden tijd","Onvoltooid verleden tijd (Vergangenheit)"],["voltooid tegenwoordige tijd","Voltooid tegenwoordige tijd (Perfekt)"],["voltooid verleden tijd","Voltooid verleden tijd (Plusquamperfekt)"],["onvoltooid toekomende tijd","Onvoltooid toekomende tijd (Zukunft)"]],
   };
+  for(const catalog of Object.values(TENSES))catalog.unshift(["infinitiv","Infinitive (Grundformen)"]);
   const baseVerbKinds=new Set(["verb-infinitive","verb-participle","verb-imperative","verb-principal","verb-ing","verb-gerund"]);
   function activeBook(){return books.find(b=>b.id===chosenBook);}
   function isVerbBook(){return bookKind(activeBook()||{})==="verbs";}
@@ -844,70 +998,215 @@
     localStorage.setItem(STORE+"_tense_"+lang,select.value);
   }
   window.refreshVerbSelection=function(){
+    const first=filteredVocabList[Number(get("startVocab").value)]?.id;
+    const last=filteredVocabList[Number(get("endVocab").value)]?.id;
     if(isVerbBook()){
       const current=get("tenseSelect")?.value,lang=activeBook()?.lang;
       if(current&&lang)localStorage.setItem(STORE+"_tense_"+lang,current);
     }
     refreshVerbSelection();
-    if(isVerbBook())filterVocabByPages();
+    if(isVerbBook()){
+      filterVocabByPages();
+      const start=filteredVocabList.findIndex(entry=>entry.id===first);
+      const end=filteredVocabList.findIndex(entry=>entry.id===last);
+      if(start>=0)get("startVocab").value=String(start);
+      if(end>=0)get("endVocab").value=String(end);
+    }
+    updateVerbReadiness();
   };
+  const preparedStorage={
+    getItem(){return JSON.stringify(Object.fromEntries(specials.filter(item=>item.kind==="prepared-verb"&&item.record?.key)
+      .map(item=>[item.record.key,item.record])));},
+    setItem(key,text){
+      const values=JSON.parse(text),now=new Date().toISOString();
+      const others=specials.filter(item=>item.kind!=="prepared-verb");
+      const prepared=Object.values(values).map(record=>({
+        id:"prepared-verb:"+encodeURIComponent(record.key),kind:"prepared-verb",bookId:record.bookId,
+        record,updatedAt:record.checkedAt||now}));
+      const next=[...others,...prepared];
+      const legacyKey="vocprog_v2_prepared_verbs_v1",legacy=localStorage.getItem(legacyKey);
+      try{save(STORE+"_special",next);}
+      catch(error){
+        if(error.name!=="QuotaExceededError"||legacy===null)throw error;
+        localStorage.removeItem(legacyKey);
+        try{save(STORE+"_special",next);}
+        catch(failure){try{localStorage.setItem(legacyKey,legacy);}catch{}throw failure;}
+      }
+      if(legacy!==null)localStorage.removeItem(legacyKey);
+      specials=next;scheduleSync();
+    }
+  };
+  const verbDatabase=window.VOCVerbDatabase.create(preparedStorage,
+    (lemma,lang)=>window.VOCMorphology?.conjugate(lemma,lang),
+    lemma=>window.VOCFrenchReference?.conjugate(lemma),
+    (verb,language,morphology)=>window.VOCGermanForms.enrich(verb,language,morphology));
+  let preparationRevision=0,preparingVerbData=false,preparationError="";
   function selectedVerbEntries(){
-    const book=activeBook(),tense=normalizeTense(get("tenseSelect")?.value);
+    const book=activeBook();
     if(!book||bookKind(book)!=="verbs")return [];
     const all=allVocab().filter(v=>v.bookId===book.id);
-    const visible=all.filter(v=>baseVerbKinds.has(v.kind)||
-      ((v.kind==="conjugation"||v.kind==="verb-form")&&normalizeTense(v.tense)===tense&&
-        v.verification!=="scan-unverified"));
-    // Display references are per page and distinct verb lemma; never reuse
-    // OCR indices which contain gaps from unrelated vocabulary entries.
-    const indexByPage=new Map();
-    return visible.map(v=>{
-      const page=String(v.page||"?"),lemma=String(
-        v.verbId||v.infinitive||v.lemma||v.foreign
-      ).trim().normalize("NFKC").toLowerCase();
+    const base=all.filter(v=>v.kind==="verb-infinitive");
+    const known=new Set(base.map(v=>window.VOCVerbDatabase.lemmaOf(v)));
+    // Older imports may contain only conjugations: expose a display-only lemma.
+    const fallback=[];
+    for(const entry of all){
+      const lemma=window.VOCVerbDatabase.lemmaOf(entry);
+      if(!lemma||known.has(lemma))continue;
+      known.add(lemma);
+      fallback.push({...entry,kind:"verb-infinitive",foreign:lemma,german:"",
+        infinitive:lemma,verbId:lemma});
+    }
+    const indexByPage=new Map(),seen=new Set();
+    return [...base,...fallback].sort((a,b)=>{
+      const page=String(a.page||"?"),other=String(b.page||"?");
+      const pageOrder=page==="?"?(other==="?"?0:1):other==="?"?-1:page.localeCompare(other,"de",{numeric:true});
+      return pageOrder||Number(String(a.refVocab||"").match(/\bV\s*(\d+)/i)?.[1]||Infinity)-Number(String(b.refVocab||"").match(/\bV\s*(\d+)/i)?.[1]||Infinity)||0;
+    }).flatMap(v=>{
+      const page=String(v.page||"?"),lemma=window.VOCVerbDatabase.lemmaOf(v);
+      const key=page+"|"+lemma;
+      if(!lemma||seen.has(key))return [];
+      seen.add(key);
       if(!indexByPage.has(page))indexByPage.set(page,new Map());
       const indices=indexByPage.get(page);
-      if(!indices.has(lemma))indices.set(lemma,indices.size+1);
-      return {...v,refVocab:"S"+page+" V"+indices.get(lemma)};
+      indices.set(lemma,indices.size+1);
+      return [{...v,foreign:lemma,verbId:lemma,refVocab:"S"+page+" V"+indices.get(lemma)}];
     });
   }
+  function selectedVerbRange(){
+    const start=Number(get("startVocab").value),end=Number(get("endVocab").value);
+    return filteredVocabList.slice(Math.max(0,start),end+1);
+  }
+  function vocabularyBookSummary(entries,caches){
+    const normalized=value=>String(value||"").normalize("NFC").replace(/\s+/g," ").trim();
+    const pair=(first,second)=>JSON.stringify([normalized(first),normalized(second)].sort());
+    const sentences=new Set(entries.filter(entry=>normalized(entry.sentence_foreign)&&normalized(entry.sentence_german))
+      .map(entry=>pair(entry.sentence_foreign,entry.sentence_german)));
+    const generated=new Set(caches.flatMap(cache=>cache.kind==="ai-sentence"?[{prompt:cache.german,target:cache.foreign}]:Array.isArray(cache.items)?cache.items:[])
+      .filter(item=>normalized(item.prompt)&&normalized(item.target)).map(item=>pair(item.prompt,item.target)));
+    return entries.length+(entries.length===1?" Vokabel":" Vokabeln")+" · "+sentences.size+
+      (sentences.size===1?" Buchsatz":" Buchsätze")+(generated.size?" · "+generated.size+
+      (generated.size===1?" gespeicherter KI-Satz.":" gespeicherte KI-Sätze."):".");
+  }
+  function updateVerbReadiness(){
+    const button=get("startTrainingBtn"),status=get("verbPreparationStatus");
+    if(!button||!status)return;
+    if(!isVerbBook()){
+      const book=activeBook();button.disabled=!filteredVocabList.length||get("pageRangeInput")?.getAttribute?.("aria-invalid")==="true";status.hidden=!book;
+      button.textContent=sentenceJob?"Generierung abbrechen":"▶ Abfrage starten";
+      status.textContent=book?vocabularyBookSummary(allVocab().filter(entry=>entry.bookId===book.id),
+        specials.filter(entry=>entry.bookId===book.id)):"";
+      if(lastSentenceAddition&&lastSentenceAddition.bookId===book?.id)status.textContent+=" "+lastSentenceAddition.count+" neu hinzugefügt"+
+        (lastSentenceAddition.serverConfirmed?" und auf dem Server bestätigt.":"; lokal gespeichert.");
+      return;
+    }
+    status.hidden=false;
+    const conjugations=normalizeTense(get("tenseSelect")?.value)!=="infinitiv";
+    if(get("tenseSelect"))get("tenseSelect").disabled=false;
+    if(!conjugations){
+      const selected=selectedVerbRange(),missing=selected.filter(entry=>!String(entry.german||"").trim());
+      button.disabled=analyzingVerbInput||!selected.length||missing.length>0||get("pageRangeInput")?.getAttribute?.("aria-invalid")==="true";
+      status.textContent=missing.length?"Grundbedeutung fehlt: "+missing.map(entry=>entry.foreign).join(", "):
+        selected.length+(selected.length===1?" Verb – nur Grundform.":" Verben – nur Grundformen.");
+      get("rangeCard").classList.toggle("hidden",analyzingVerbInput||!filteredVocabList.length||!get("trainerCard").classList.contains("hidden"));
+      return;
+    }
+    const snapshot=verbDatabase.get(chosenBook),tense=normalizeTense(get("tenseSelect")?.value);
+    const selected=selectedVerbRange();
+    const slots=tense==="impératif"?3:6;
+    const missing=selected.filter(entry=>tense==="impératif"?
+      window.VOCVerbPresentation.imperativeCards(snapshot?.verbs[entry.verbId]).length!==3:
+      snapshot?.verbs[entry.verbId]?.cards[tense]?.length!==6||snapshot.verbs[entry.verbId]?.missing?.includes(tense));
+    button.disabled=preparingVerbData||analyzingVerbInput||!!preparationError||!selected.length||missing.length>0||get("pageRangeInput")?.getAttribute?.("aria-invalid")==="true";
+    status.textContent=preparingVerbData?"Konjugationen werden vorbereitet …":
+      preparationError?"Vorbereitung fehlgeschlagen: "+preparationError:
+      missing.length?"Formen/Übersetzungen noch nicht vollständig abgeglichen: "+missing.map(v=>v.foreign).join(", "):
+      selected.length+(selected.length===1?" Verb · ":" Verben · ")+(selected.length*slots)+" Formen mit deutschen Lernentsprechungen abgeglichen.";
+    get("rangeCard").classList.toggle("hidden",preparingVerbData||analyzingVerbInput||!filteredVocabList.length||
+      !get("trainerCard").classList.contains("hidden"));
+  }
+  function scheduleVerbPreparation(){
+    const revision=++preparationRevision;
+    preparingVerbData=true;preparationError="";
+    updateVerbReadiness();
+    const ready=Promise.resolve().then(async()=>{
+      await initialSyncReady;
+      await window.VOCMorphology?.ready;
+      if(revision!==preparationRevision)return;
+      const entries=allVocab();
+      for(const book of books.filter(b=>bookKind(b)==="verbs")){
+        await verbDatabase.prepare(book,entries.filter(v=>v.bookId===book.id),
+          specials.filter(v=>v.bookId===book.id&&v.kind==="verb-paradigm"),
+          (TENSES[book.lang]||[]).map(([tense])=>tense).filter(tense=>tense!=="impératif"&&tense!=="infinitiv"));
+      }
+    }).catch(error=>{
+      if(revision===preparationRevision)preparationError=String(error.message||error);
+    }).finally(()=>{
+      if(revision===preparationRevision){preparingVerbData=false;updateVerbReadiness();}
+    });
+    window.VOCVerbDataReady=ready;
+    return ready;
+  }
+  window.updateVerbReadiness=updateVerbReadiness;
   const oldStartTraining=startTraining;
   startTraining=async function(event){
     if(!isVerbBook())return oldStartTraining(event);
-    const all=selectedVerbEntries();
-    const start=Number(get("startVocab").value),end=Number(get("endVocab").value);
-    const slice=all.slice(Math.max(0,start),end+1);
-    if(!slice.length)return alert("Für diese Zeitform liegen noch keine verifizierten Konjugationen vor.");
+    updateVerbReadiness();
+    if(get("startTrainingBtn").disabled)return;
+    const selected=selectedVerbRange();
+    const tense=normalizeTense(get("tenseSelect").value);
     const reverse=get("direction").value==="foreign_to_de";
-    trainingItems=slice.map(v=>{
-      const foreign=String(v.foreign||""),german=String(v.german||"");
-      return {prompt:reverse?foreign:german,target:reverse?german:foreign,
+    if(tense==="infinitiv"){
+      trainingItems=selected.map(base=>({
+        prompt:reverse?base.foreign:base.german,target:reverse?base.german:base.foreign,
         pLang:reverse?activeBook().lang:"de-DE",tLang:reverse?"de-DE":activeBook().lang,
-        ref:v.refVocab||"",sourceId:v.id,bookId:v.bookId,page:v.page,
-        kind:"verbs",verbLemma:v.infinitive||v.lemma||foreign,verbId:v.verbId||v.infinitive||v.lemma||foreign,
-        verbTense:get("tenseSelect").value,record:v};
-    });
+        ref:base.refVocab||"",sourceId:base.id,bookId:base.bookId,page:base.page,
+        kind:"verbs",verbLemma:base.foreign,verbId:base.verbId,verbTense:tense,
+        acceptedTargets:reverse?String(base.german).split(/\s*[,;\/]\s*/):[base.foreign],record:base
+      }));
+      if(get("randomize").checked)trainingItems.sort(()=>Math.random()-0.5);
+      enterTraining();return;
+    }
+    const snapshot=verbDatabase.get(chosenBook);
+    trainingItems=selected.flatMap(base=>(tense==="impératif"?window.VOCVerbPresentation.imperativeCards(snapshot.verbs[base.verbId]):snapshot.verbs[base.verbId].cards[tense]).map(card=>{
+      const german=card.german;
+      return {prompt:reverse?card.foreign:german,
+        target:reverse?card.german:card.foreign,
+        pLang:reverse?activeBook().lang:"de-DE",tLang:reverse?"de-DE":activeBook().lang,
+        ref:base.refVocab||"",sourceId:base.id,bookId:base.bookId,page:base.page,
+        kind:"verbs",verbLemma:base.foreign,verbId:base.verbId,verbTense:tense,
+        acceptedTargets:reverse?card.acceptedGerman:card.acceptedForeign,
+        translationTask:reverse&&!card.german?"Deutsche Grundbedeutung":"",
+        record:{...base,...card,kind:"verb-form",infinitive:base.foreign}};
+    }));
     if(get("randomize").checked)trainingItems.sort(()=>Math.random()-0.5);
     enterTraining();
   };
   const oldFilterVocab=filterVocabByPages;
   filterVocabByPages=function(){
-    if(!isVerbBook())return oldFilterVocab();
-    filteredVocabList=selectedVerbEntries();
+    if(get("pageRangeInput")?.getAttribute?.("aria-invalid")==="true"){updateVerbReadiness();return;}
+    if(!isVerbBook()){oldFilterVocab();updateVerbReadiness();return;}
+    const allowed=parsePageRanges(get("pageRangeInput").value);
+    const all=selectedVerbEntries();
+    filteredVocabList=get("pageRangeInput").value.trim()&&allowed.length?
+      all.filter(v=>allowed.includes(parseInt(v.page))):all;
     populateSelectors();
+    updateVerbReadiness();
   };
   function escapeText(value){return String(value||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
   const oldCard=showCard;
   showCard=function(){
     oldCard();
-    const item=trainingItems[currentIndex],isVerb=item?.kind==="verbs";
+    const item=trainingItems[currentIndex];
+    if(item?.translationTask)get("promptText").textContent=item.prompt+" · "+item.translationTask;
+    const isVerb=item?.kind==="verbs";
     get("verbTableToggle").hidden=!isVerb;
+    get("newSentencesBtn").hidden=item?.kind!=="special";
     const panel=get("verbTablePanel");panel.hidden=true;
     get("verbTableToggle").setAttribute("aria-expanded","false");
     panel.replaceChildren();
   };
 
-  window.toggleVerbTable=function(){
+  window.toggleVerbTable=async function(){
     const item=trainingItems[currentIndex],panel=get("verbTablePanel"),button=get("verbTableToggle");
     if(!item||item.kind!=="verbs")return;
     if(!panel.hidden){
@@ -916,13 +1215,15 @@
     const lemma=String(item.verbId||item.verbLemma||"").trim().toLocaleLowerCase();
     const entries=allVocab().filter(v=>v.bookId===item.bookId&&
       String(v.verbId||v.infinitive||v.lemma||"").trim().toLocaleLowerCase()===lemma);
-    const paradigm=specials.find(v=>v.kind==="verb-paradigm"&&v.bookId===item.bookId&&
-      v.lemma===lemma);
+    const prepared=verbDatabase.get(item.bookId)?.verbs[lemma];
+    if(!prepared)return;
+    const paradigm=null;
     const base=entries.find(v=>v.kind==="verb-infinitive");
     const part=entries.find(v=>v.kind==="verb-participle");
     const imperative=entries.find(v=>v.kind==="verb-imperative");
     const isFrench=activeBook()?.lang==="fr-FR";
-    const reference=isFrench?window.VOCFrenchReference?.conjugate(lemma):null;
+    const morphology=prepared;
+    const reference={...prepared,pastParticiple:prepared.participle};
     const grammar=base?.regularity||paradigm?.regularity||reference?.regularity||"";
     const missing="– (noch nicht erfasst)";
     const heading=document.createElement("h4");
@@ -952,13 +1253,15 @@
     // whether the current exercise happens to be a finite tense.
     if(isFrench){
       row("Infinitif : "+(base?.foreign||item.verbLemma),base?.german||missing);
-      row("Participe passé : "+(part?.foreign||
-        paradigm?.agreement||paradigm?.pastParticiple||reference?.agreement||reference?.pastParticiple||missing),part?.german||missing);
+      row("Participe passé : "+(prepared.participle||
+        paradigm?.agreement||paradigm?.pastParticiple||reference?.agreement||reference?.pastParticiple||missing),prepared.participleGerman||part?.german||missing);
       const persons=["tu","nous","vous"];
-      const imp=imperative?.foreign||(Array.isArray(paradigm?.imperative)?
+      const imp=typeof prepared.imperative==="string"?prepared.imperative:(Array.isArray(paradigm?.imperative)?
         paradigm.imperative.map((v,i)=>"("+persons[i]+") "+v).join(" / "):
         Array.isArray(reference?.imperative)?reference.imperative.map((v,i)=>"("+persons[i]+") "+v).join(" / "):"");
-      row("Impératif : "+(imp||missing),imperative?.german||missing);
+      const imperativeCards=window.VOCVerbPresentation?.imperativeCards(prepared)||[];
+      row("Impératif : "+(imperativeCards.length===3?imperativeCards.map(card=>card.foreign).join(" / "):imp||missing),
+        window.VOCVerbPresentation?.germanImperative(prepared.imperativeGerman||imperative?.german||missing)||prepared.imperativeGerman||imperative?.german||missing);
     }else{
       row("Infinitiv : "+(base?.foreign||item.verbLemma),base?.german||missing);
       for(const [kind,label] of [
@@ -968,6 +1271,14 @@
       ]){
         const entry=entries.find(v=>v.kind===kind);
         if(entry)row(label+" : "+entry.foreign,entry.german||missing);
+        else {
+          const value=kind==="verb-principal"?morphology?.principalParts?.filter(Boolean).join(" / "):
+            kind==="verb-participle"?morphology?.participle:
+            (kind==="verb-ing"&&activeBook()?.lang==="en-US")||
+            (kind==="verb-gerund"&&["es-ES","pt-PT"].includes(activeBook()?.lang))?morphology?.presentParticiple:
+            kind==="verb-imperative"?(Array.isArray(morphology?.imperative)?morphology.imperative.join(" / "):morphology?.imperative):null;
+          if(value)row(label+" : "+value,missing);
+        }
       }
     }
     const tense=normalizeTense(item.verbTense);
@@ -975,24 +1286,24 @@
     const title=catalog.find(([name])=>name===tense)?.[1]||tense;
     const match=title.match(/^(.+?)\s*\(([^)]+)\)$/);
     row(match?.[1]||title,match?.[2]||"Zeitform",true);
-    const filtered=entries.filter(v=>(v.kind==="conjugation"||v.kind==="verb-form")&&
-      normalizeTense(v.tense)===tense);
-    const order={"je":0,"j'":0,"tu":1,"il/elle/on":2,"nous":3,"vous":4,"ils/elles":5};
-    filtered.sort((a,b)=>(order[String(a.person||"").toLowerCase()]??99)-
-      (order[String(b.person||"").toLowerCase()]??99));
-    if(filtered.length){
-      const seen=new Set();
-      for(const entry of filtered){
-        const key=String(entry.person||"")+"|"+String(entry.foreign||"");
-        if(seen.has(key))continue;
-        seen.add(key);row(entry.foreign,entry.german||missing);
-      }
-    }else if(isFrench&&(paradigm?.forms?.[tense]||reference?.forms?.[tense])){
-      const names=["je","tu","il/elle/on","nous","vous","ils/elles"];
-      (paradigm?.forms?.[tense]||reference.forms[tense]).forEach((form,i)=>row(names[i]+" "+form,missing));
-    }else row("Noch keine geprüften Formen",missing);
+    const cards=tense==="impératif"?(window.VOCVerbPresentation?.imperativeCards(prepared)||[]):prepared.cards[tense]||[];
+    for(const card of cards)row(card.foreign,card.german||
+      "Konjugationsaufgabe: "+card.grammaticalPrompt);
+    if(tense==="infinitiv")row(item.verbLemma,item.record?.german||item.target);
+    else if(!cards.length)row("Keine vorbereiteten Formen",missing);
     table.append(tbody);
-    panel.replaceChildren(heading,table);
+    const note=document.createElement("p");
+    note.className="verb-reference-note";
+    note.textContent="Formen mit separaten Referenzdaten abgeglichen. Deutsche Bedeutung aus dem Buch; schulische Zeitformzuordnung. Subjonctif ist kontextabhängig.";
+    const evidence=document.createElement("div");
+    evidence.className="verb-reference-sources";
+    const sources=new Map((prepared.verificationSources||[]).map(source=>[source.url,source]));
+    for(const source of sources.values()){
+      if(!/^https:\/\//.test(source.url))continue;
+      const link=document.createElement("a");link.href=source.url;link.target="_blank";link.rel="noopener noreferrer";
+      link.textContent=source.name;link.style.marginRight="0.6em";evidence.append(link);
+    }
+    panel.replaceChildren(heading,table,note,evidence);
     panel.hidden=false;button.setAttribute("aria-expanded","true");
   };
 
@@ -1119,7 +1430,8 @@
       .replace(/\((?:tu|nous|vous)\)\s*/g,"")
       .replace(/\s*\/\s*/g,"/");
     const correct=grouped?normalizeGroup(given)===normalizeGroup(expected):
-      expected.split(/\s*(?:;|\bor\b)\s*/i).some(candidate=>normalized(given)===normalized(candidate));
+      (item.acceptedTargets||expected.split(/\s*(?:;|\bor\b)\s*/i))
+        .some(candidate=>normalized(given)===normalized(candidate));
     analyzedThisCard=true;
     input.className=correct?"answer-correct":"answer-wrong";
     get("answerFeedback").textContent=correct?"Richtig":"Nicht richtig – Lösung aufgedeckt";
@@ -1296,17 +1608,32 @@
     }});
   }
   window.syncVocprog=syncNow;
-  let lastError="";
-  async function syncNow(){
-    if(syncing||!navigator.onLine)return;
+  let lastError="",syncAgain=false;
+  let syncQueue=Promise.resolve();
+  function syncNow(){
+    const task=syncQueue.then(performSync);
+    syncQueue=task.catch(()=>false);
+    return task;
+  }
+  async function performSync(){
+    if(syncing||!navigator.onLine)return false;
     syncing=true;renderStatus();
     try{
       const table="/rest/v1/vocprog_public_records";
-      let res=await publicFetch(table+"?select=record_id,record_type,payload,updated_at&limit=10000");
-      if(!res.ok)throw Error("Öffentliche Tabelle noch nicht eingerichtet (HTTP "+res.status+").");
-      const remote=await res.json();
-      if(!Array.isArray(remote))throw Error("Ungültige Datenbankantwort.");
-      if(remote.length>=10000)throw Error("Datensatzgrenze erreicht – Paging erforderlich.");
+      const remote=[],seen=new Set(),pageSize=500;
+      let res;
+      for(let offset=0;;){
+        res=await publicFetch(table+"?select=record_id,record_type,payload,updated_at&order=record_id.asc&limit="+pageSize+"&offset="+offset,{cache:"no-store"});
+        if(!res.ok)throw Error("Serverbestand nicht vollständig lesbar (HTTP "+res.status+").");
+        const page=await res.json();
+        if(!Array.isArray(page))throw Error("Ungültige Datenbankantwort.");
+        if(!page.length)break;
+        for(const row of page){
+          if(!row.record_id||seen.has(row.record_id))throw Error("Serverbestand hat sich beim Laden verändert. Bitte Synchronisierung erneut starten.");
+          seen.add(row.record_id);
+        }
+        remote.push(...page);offset+=page.length;
+      }
       mergeRemote(remote);
       consolidateVerbBooks();
       const server=new Map(remote.map(x=>[x.record_id,x]));
@@ -1318,12 +1645,22 @@
           body:JSON.stringify(outgoing.slice(i,i+100))
         });
         if(!res.ok)throw Error("Öffentlicher Schreibzugriff nicht eingerichtet (HTTP "+res.status+").");
+        const sentenceIds=outgoing.slice(i,i+100).filter(row=>row.payload?.kind==="ai-sentence").map(row=>row.record_id);
+        if(sentenceIds.length){
+          const query=new URLSearchParams({select:"record_id",record_id:"in.("+sentenceIds.join(",")+")"});
+          const confirmation=await publicFetch(table+"?"+query.toString(),{cache:"no-store"});
+          if(!confirmation.ok)throw Error("Speicherung der KI-Sätze konnte nicht bestätigt werden.");
+          const confirmed=await confirmation.json(),ids=new Set(confirmed.map(row=>row.record_id));
+          if(sentenceIds.some(id=>!ids.has(id)))throw Error("Nicht alle neuen KI-Sätze sind auf dem Server angekommen.");
+        }
       }
       lastSync=new Date().toISOString();localStorage.setItem(STORE+"_synced",lastSync);lastError="";
-    }catch(e){lastError=e.message;console.warn("VOC Sync:",e);}
-    finally{syncing=false;renderStatus();}
+      return true;
+    }catch(e){lastError=e.message;console.warn("VOC Sync:",e);return false;}
+    finally{syncing=false;renderStatus();if(syncAgain){syncAgain=false;scheduleSync();}}
   }
   function scheduleSync(){
+    if(syncing){syncAgain=true;return;}
     clearTimeout(syncTimer);
     if(navigator.onLine)syncTimer=setTimeout(syncNow,1300);
   }
@@ -1349,8 +1686,12 @@
     save(STORE+"_events",history);
     ensureMigration();
     consolidateVerbBooks();
+    initialSyncReady=Promise.race([syncNow(),new Promise(resolve=>setTimeout(resolve,5000))]);
     if(chosenBook&&books.some(b=>b.id===chosenBook&&b.lang!=="la-LA"))chooseBook(chosenBook);else refreshBookChoices();
     updateOnlineState();
+    for(const key of ["studyMode","startVocab","endVocab","bookSelect","direction"])
+      get(key)?.addEventListener("change",()=>{cancelSentenceGeneration();updateVerbReadiness();});
+    window.addEventListener("offline",cancelSentenceGeneration);
     tempImages().then(images=>{
       if(Array.isArray(images)&&images.length&&!rawImages.length){
         rawImages=images;renderGallery();get("scanStatus").textContent="Nicht analysierte Scanbilder wiederhergestellt.";
@@ -1360,7 +1701,6 @@
     if("serviceWorker" in navigator&&location.protocol==="https:"){
       navigator.serviceWorker.register("./sw.js").catch(e=>console.warn("SW registration failed",e));
     }
-    syncNow();
     setInterval(()=>{if(navigator.onLine)syncNow();},15*60*1000);
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",onReady);

@@ -1,3 +1,24 @@
+## 2026-11-16 – Abschluss der Produktivübernahme 0.5.14
+
+- Verfügbar und live geprüft: https://andreas-nigl.github.io/vocprog/ (Version 0.5.14) und https://andreas-nigl.github.io/vocprog-test/ (Testvorschau 0.5.14). Test-App bleibt Entwicklungsumgebung. Produktiv-App-Commit fa3d958b06058ab7b3919e9a0068ed740b107464; Test-App-Commit 64a9863dd3fdc4d656ac511a8884663f72dd9298. Keine neue Standalone gebaut; vorhandene Altdatei ist kein 0.5.14-Build.
+- Produktionssicherung: Tag pre-promotion-20261116 verweist geprüft auf 3aba2daeaa5e6f1cb4acd5517e3e6a8b20dacebb. Workflowlauf 43878919019 / Job 133339240942 vollständig erfolgreich einschließlich Backup, gepinnter Quellübernahme, WASM-SHA256, 102 Node-Tests und Pages-Deployment. Test-Pages-Lauf 43878803693 erfolgreich. Einmaliger Übernahmeworkflow wird nach Erfolg entfernt; nachvollziehbar in Commit 6c54e9ed07e66197f01f133b09adff22beb1e792. Kein erneuter Enginebuild/-upload nötig.
+- Produktivicons und Manifest einschließlich bisherigem start_url/short_name erhalten. Keine Repo-Umbenennung, keine Datensatz-/Speicherkey-/DB-Änderung. Kein API-Key im Server gespeichert. Derselbe Browser und HTTPS-Host teilen localStorage auch über beide Pfade; fremde Rechner/Browserprofile übernehmen keinen lokal gespeicherten Key. Test-PWA wird nicht automatisch zur Produktiv-PWA umbenannt; Produktionsverknüpfung bei Bedarf separat installieren.
+- Live-Browserabnahme durch Agent: beide Titel 0.5.14; kein Konjugationen-Schalter; erster Zeitformeintrag Infinitive (Grundformen), Selector bleibt bedienbar. Test und Produktiv jeweils 2 ausgewählte Grundformen, Start aktiv, eine Karte je Verb, korrekte Paare haben/avoir und sein/être. Produktiv Présent aus vorhandenen Daten startet; Tabelle mit sechs DE/FR-Personen sowie Imperativ/Partizip/Referenzhinweisen sichtbar. Produktiv Aplus2 zeigt derzeit 95 Vokabeln, 81 Buchsätze, 25 gespeicherte KI-Sätze; kombinierte Sätze nutzt Abfrage starten und startet 1/25 ohne Generierung; Neue Sätze erscheint oben in Abfrage. Sync auf beiden Pfaden erfolgreich. Keine Antworten zum Test abgegeben, keine KI-Kosten ausgelöst.
+- Offline: scopegetrennte Cachelöschung, Fremdpfadausschluss und eigener Offlinefallback automatisiert bestanden; echter physischer Offline-Neustart/Android-Samsung-Installation nicht geprüft. Neuer echter KI-Generierungs-/Server-Readback und Scan benötigen gültigen API-Key/Material; Browser-API-Feld leer. Gleichzeitiger Konflikttest zweier physischer Geräte offen. Diese Grenzen sind Prüfbedarf, keine behaupteten bestandenen Abnahmen. Nicht universelle sprachliche Referenzabdeckung bleibt erhalten; unvollständige/ungeeignete Imperative werden nicht erfunden (z.B. vollständige Auswahl devoir/pouvoir/vouloir kann gesperrt sein). Aktuelle Nutzerabnahme 0.5.14 steht aus.
+- Maßgeblicher Entwicklungsbranch develop/offline-supabase-20261105 wird auf die tatsächlich veröffentlichten vollständigen Quellen einschließlich Referenzdaten/WASM nachgezogen; vorhandene Dev-Test-/WASM-Workflows bleiben erhalten. Übergabedatei identisch in Entwicklung, Produktion und Test gespiegelt. Nächster Schritt: konkrete Nutzerbefunde und ausstehende reale Prüfungen; keine automatische Neugenerierung bestehender Konjugationen/Sätze.
+
+---
+
+## 2026-11-16 – VOC 0.5.14: Grundformen im Zeitformmenü und freigegebene Produktivübernahme
+
+- Nutzer gibt alle offenen Implementierungen und Übernahme nach vocprog ausdrücklich frei; vocprog-test bleibt als Entwicklungsfassung erhalten. Kein Repository löschen/umbenennen, keine Datensätze löschen.
+- Infinitive (Grundformen) steht als erster Eintrag in allen Verb-Zeitformkatalogen. Zusätzlicher Konjugationen-Schalter entfernt, Einstellungen bleibt über Zufällige Reihenfolge. Grundformen starten mit einer Karte je Verb ohne Konjugationsabhängigkeit; Pseudozeitform wird nicht an Vorbereitungsengine geschickt. Vorhandene gespeicherte Zeitformauswahl bleibt erhalten.
+- Service Worker trennt Cachepräfix nach Registrierungspfad; Aktivierung löscht nur eigene Versionen, Offline-Fallback liest ausschließlich eigenen Cache, Fremdpfade werden nicht abgefangen. Legacycaches werden nicht pauschal gelöscht. Gemeinsame localStorage-Schlüssel, Supabase-Tabellen und Datensatz-IDs bleiben unverändert; API-Key weiterhin ausschließlich lokal.
+- 102/102 Node-Tests bestanden einschließlich echter WASM, Grundformen in beiden Richtungen und neuer Offline-/Scope-Isolationstests; JS-/SW-Syntax und Diffprüfung bestanden. Browser- und Veröffentlichungsprüfung folgen. Kein Nachweis eines physischen Offline-Neustarts oder eines neuen echten KI-Server-Readbacks aus diesen automatisierten Tests.
+- Produktiv-Ausgangscommit gesichert in bestehender Git-Historie: 3aba2daeaa5e6f1cb4acd5517e3e6a8b20dacebb. Produktivicons/Manifest vom 13.11. erhalten; WASM wird direkt vom gepinnten Testrepository kopiert und per SHA256 geprüft, keine Base64-/Binärübertragung durch Chat. Produktivübernahme/Pages-Erfolg erst nach tatsächlicher Ausführung dokumentieren.
+
+---
+
 ## 2026-11-16 – VOC 0.5.12/0.5.13: sichtbare Seitenauswahl, Datenerfassung und Grundformen-Schalter
 
 - Nutzer konkretisiert vorher nur vorgeschlagenes Seitenfeld: fest sichtbar direkt unter 3. Lernbereich, vorhandene Seiten vorbefüllt; Einzelzahlen/aufsteigende Bereiche mit Komma editieren. Über Kamera/Galerie Überschrift Datenerfassung. Anschließende Erweiterung desselben Arbeitsblocks: Einstellungen über Zufällige Reihenfolge; nur für Verbücher davor standardmäßig aktivierter, abwählbarer Schalter Konjugationen. Aus fragt ausschließlich Infinitiv/Grundbedeutung, keine weiteren neuen Modi.
@@ -122,7 +143,6 @@
 - Prüfung lokal: 68/68 Node-Tests; neue Fälle für korrekte Inventarzählung/Deduplikation und temporäre Quellenfehler ohne dauerhaft eingefrorenen Fehlerzustand. git diff --check erfolgreich. Online-Browserprüfung erfolgreich: 0.5.4 / Scriptkennung 0.5.4-3; kein Wiederholungsbutton in beiden Bucharten; Status direkt nach Startbutton mit 4 px Abstand. Verbenstatus 58 Verben / 348 Formen; Vokabelbuch 76 Vokabeln / 64 Buchsätze / 0 gespeicherte KI-Sätze. Gewählter Einzelbereich startet mit 1/1 statt 1/76. App-Commit 4a6499bccdef0f91f7dc08af1f98711deb80153d, Pages-Lauf 43658649395 completed/success. Lokaler Vorschau-Dienst von anderer Aufgabe belegt und nicht gestoppt. Online-Testfassung verfügbar; keine neue Standalone gebaut. Echter Offline-Neustart weiterhin ausstehend.
 - Was tatsächlich offen bleibt: realer Scan-End-to-End mit einer neuen Buchseite; echter Offline-Neustart; Konfliktverhalten bei gleichzeitigen Änderungen auf zwei Geräten; nicht universelle Referenzabdeckung/mehrteilige Bedeutungen außerhalb der belegten Fälle. Bestehende 58 Verben benötigen keinen manuellen Nachprüfschritt. Nutzerabnahme 0.5.4 und etwaige produktive Übernahme stehen aus; Produktivübernahme gesondert freigeben.
 
-
 ---
 
 ## 2026-11-14 – VOC 0.5.3: deutsche Formen und dauerhafte Einzelverb-Prüfung
@@ -145,7 +165,7 @@
 
 ---
 
-### 2026-11-13 – VOC 0.5.2: Formenbestand vor Lernfreigabe (Build v15)
+## 2026-11-13 – VOC 0.5.2: Formenbestand vor Lernfreigabe (Build v15)
 
 - Ausdrücklicher Nutzerauftrag: Nach der Scan-Auswertung alle Konjugationen vorbereiten; erst dann Lernbereich/Abfrage freigeben. Auswahl nur Infinitive; Tabelle und Training lesen denselben bereits gespeicherten Bestand. Bestehende Freigabe für Test-App gilt, keine Produktivübernahme.
 - Ausgangsstand Test `c048a98970bdf114e922c8504ab24502cd69a5a4`; Entwicklung `9b223a4c5d958c0bf6e1f55623883768d84362b1`. Die aktuelle WASM-App liegt tatsächlich im Testrepository; der Entwicklungsbranch enthält noch nicht das Browserartefakt. Diesen Unterschied nicht übersehen oder unvollständige App-Dateien in Entwicklung übertragen. Maßgebliche Projektübergabe im Entwicklungsbranch fortführen; vorhandene Test-Kopie spiegeln. Root-AGENTS.md laut Remote-Bestand entfernt, alte lokale Checkouts sind veraltet.
@@ -156,8 +176,29 @@
 - Alle angebotenen Zeitformen werden vorab lokal gespeichert. Bekannte passende Formenübersetzungen bleiben erhalten. Ohne deutsche Formenübersetzung: Aufgabe mit Grundbedeutung, Zeitform und Person; umgekehrte Richtung fragt ausdrücklich die deutsche Grundbedeutung. Keine erfundenen deutschen Konjugationen und keine zusätzlichen Gemini-Übersetzungsaufrufe. Französische Subjektalternativen und feminine/pluralische être-Varianten werden bei der Bewertung berücksichtigt; keine vollständige linguistische Validierung der gesamten WASM-Bibliothek behaupten.
 - Prüfstand lokal: 58/58 Node-Tests, JS/Inline-/SW-Syntax; reales WASM-Browserpaket mit vorhandenen Git-Blob-SHAs abgeglichen. Nutzerexport erzeugt 58 × 7 × 6 = 2.436 Personalformen, keine fehlende Zeitform; Quell-Export unverändert. Cache-Persistenz/Neuladen ohne Motoraufruf, Quelleninvalidierung, Speicherfehler und Wiederanlauf getestet.
 - Browser in lokaler Vorschau: 58 ausschließlich infinitive Auswahleinträge, Sperre während Vorbereitung, 348 Présent-Karten bei Gesamtauswahl, 6 Karten bei Einzelverb; rendre Présent/Imparfait, être Présent, Tabelle, Antwortbewertung, Neuladen und ausgeblendeter Lernbereich geprüft. Keine neue kostenpflichtige OCR-Anfrage und kein echter Offline-Neustart oder Mehrgeräte-Konflikttest.
+- Parallel eingetroffener Icon-Commit `39d23e28285d5fc8bcffc647215c15036caf987d` baut direkt auf dem App-Commit auf; Icon-/Manifest-/HTML-Head-Änderungen vollständig erhalten, keine Rücksetzung auf die vorherige Baumversion.
 - Online: App-Commit `1e13289fe783498cbf88dacfe7a5851b02c3c6a4`, GitHub-Pages-Run `43472187308` erfolgreich (Build und Deploy). Ausgelieferte 0.5.2 im Browser bestätigt: 58 Infinitive, Vorbereitungssperre, rendre/être je 6 Présent-Karten und vollständige Tabelle. Beim Update kurz gemischter Cache aus alter JS-/neuer HTML-Fassung; nach erneutem Laden konsistenter Stand. Cache v15. Produktiv `vocprog/main` unverändert. Kein Standalone-Build; geprüfte App-Quellensicherung als ZIP. Nutzerabnahme der 0.5.2 steht aus.
 - Nächster Schritt: Nutzerprüfung mit eigenem Browser/Scan, danach gegebenenfalls gezielte Korrektur. Echter Offline-Neustart und Mehrgeräte-Konflikte weiter offen. Spätere kontrollierte Übernahme der tatsächlichen Testquellen inkl. verifizierter Binärdatei in den Entwicklungsbranch separat dokumentieren; kein WASM-Inhalt in Werkzeug-/Chat-Ausgaben.
+
+---
+
+## 2026-11-13 – Scanmeldung und Abfrageansicht korrigiert
+
+- Nutzer bestätigt 33 vorhandene Verben; Null-Neuzugangsmeldung ist kein Beleg für Datenverlust. Scanmeldung trennt neue Einträge vom vorhandenen sprachweiten Verbenbestand, blendet Null-Warnungen aus und erklärt fehlende Übersetzungen.
+- Scanbezogene Zähler werden vor jedem Import zurückgesetzt. Keine Änderungen an gespeicherten Datensätzen oder Konjugationsregeln.
+- Synchronisierung darf den Lernbereich während einer Abfrage nicht einblenden: Sichtbarkeitsprüfung plus CSS-Schutz. Offlinecache v14.
+- Vorheriger Upload e3cc521 erfolgreich veröffentlicht, WASM/Adapter online hashidentisch; 50 Tests und Training/Tabelle/Neuladen im Browser geprüft. Aktuelle Änderung: gezielte Regressionen und Browserprüfung erforderlich; kein echter kostenpflichtiger OCR-Aufruf ohne Scanmaterial/API.
+
+## 2026-11-13 – WASM-Integration lokal fertig, Veröffentlichung blockiert
+
+- Ausgangsbasis Entwicklung `9b223a4`, Test `043141c`; Live unverändert.
+- Artefakt 13983474116 erneut geladen, ZIP-SHA256 `99e666636ebfcf6545d8048a2cbee75b9f99329342e9282bc88d1654d70946b2` bestätigt. Browserpaket in `vendor/ablaut`, Lizenzen und SHA256SUMS erhalten; kein Neubuild oder Binärdump.
+- Adapter auf reale camelCase-Felder korrigiert (alle fünf Sprachen). Browserlade-Service mit 8-s-Grenze, Fehlerfallback und begrenztem Cache; in HTML und Offlinecache v13 eingebunden.
+- Tabelle ergänzt fehlende Personalformen und Grundformen direkt aus lokalem Motor, auch für schon gespeicherte Verben ohne erneuten Scan. Gespeicherte Formen/Übersetzungen und kuratierte französische Referenz haben Vorrang. Keine automatischen Datenbankänderungen oder neuen Lernkarten ohne Übersetzung. Zusammengesetzte französische être-Formen sind Anzeige mit Genus-/Numerushinweis. Niederländisch Perfekt/Plusquamperfekt bleiben ohne unabhängig belegtes Hilfsverb offen.
+- 50/50 echte Node-Tests: vorhandene Regressionen, echte Aufrufe des Browserpakets für venir/go/hablar/falar/lopen, funktionale Tabellenprüfung für finir mit fehlenden Formen, Übersetzungserhalt und Öffnen/Schließen. Keine linguistische Vollvalidierung der Bibliothek. Keine Gemini- oder Supabase-E2E-Prüfung.
+- Browserprüfung offen: `sites-preview start` scheitert an bereits belegtem Preview-Dienst; laufende andere Vorschau nicht beendet.
+- Push automatisch abgelehnt: Umsetzungsfreigabe vom Reviewer nicht als ausdrückliche GitHub-Schreibfreigabe gewertet. Nur lokale Commits vorhanden; Teststand lokal vorbereitet, noch NICHT veröffentlicht. Nächster Schritt nach ausdrücklicher Freigabe: Entwicklungsbranch und Test-main pushen, GitHub Pages prüfen. Produktiv-main weiterhin ausgeschlossen.
+- Chatüberlauf: Kein Nachweis, dass WASM-Ausführung selbst die Ursache ist. Nicht erneut allgemeine Ursachenrecherche oder Neubuild starten.
 
 ---
 

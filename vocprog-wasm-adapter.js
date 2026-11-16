@@ -1,7 +1,6 @@
 /*
  * VOC morphology-only adapter for locally compiled ablaut 0.11.0 WASM.
- * Development module: intentionally NOT loaded by index.html until the
- * verified WASM artifact and the remaining language adapters are available.
+ * Browser adapter; morphology is display-only until translations are available.
  *
  * This module NEVER supplies a German translation, never invokes the
  * network, and never treats missing tenses as verified.
@@ -11,10 +10,11 @@
 
   const CODE = Object.freeze({
     "fr-FR": "fra", "en-US": "eng", "es-ES": "spa",
-    "pt-PT": "por", "nl-NL": "nld"
+    "pt-PT": "por", "nl-NL": "nld", "de-DE": "deu"
   });
 
   const PERSONS = Object.freeze({
+    "de-DE": ["ich", "du", "er/sie/es", "wir", "ihr", "sie/Sie"],
     "fr-FR": ["je", "tu", "il/elle/on", "nous", "vous", "ils/elles"],
     "en-US": ["I", "you", "he/she/it", "we", "you", "they"],
     "es-ES": ["yo", "tú", "él/ella/usted", "nosotros", "vosotros", "ellos/ellas/ustedes"],
@@ -23,41 +23,46 @@
   });
 
   const SIX_MAP = Object.freeze({
+    "de-DE": {
+      "präsens": "present", "präteritum": "preterite", "perfekt": "perfect",
+      "plusquamperfekt": "pluperfect", "futur i": "future1",
+      "konjunktiv i": "konjunktiv1", "konjunktiv ii": "konjunktiv2", "würde-form": "wuerde"
+    },
     "fr-FR": {
       "présent": "present", "imparfait": "imperfect",
-      "passé composé": "passe_compose",
-      "plus-que-parfait": "plus_que_parfait",
+      "passé composé": "passeCompose",
+      "plus-que-parfait": "plusQueParfait",
       "futur simple": "future",
       "conditionnel présent": "conditional",
-      "subjonctif présent": "subjunctive_present"
+      "subjonctif présent": "subjunctivePresent"
     },
     "es-ES": {
       "presente": "present",
-      "pretérito perfecto compuesto": "perfecto_compuesto",
+      "pretérito perfecto compuesto": "perfectoCompuesto",
       "pretérito indefinido": "preterite",
       "pretérito imperfecto": "imperfect",
       "pluscuamperfecto": "pluscuamperfecto",
       "futuro simple": "future",
       "condicional simple": "conditional",
-      "presente de subjuntivo": "subjunctive_present"
+      "presente de subjuntivo": "subjunctivePresent"
     },
     "pt-PT": {
       "presente": "present",
       "pretérito perfeito": "preterite",
       "pretérito imperfeito": "imperfect",
-      "mais-que-perfeito composto": "mais_que_perfeito_composto",
+      "mais-que-perfeito composto": "maisQuePerfeitoComposto",
       "futuro do presente": "future",
       "condicional": "conditional",
-      "presente do conjuntivo": "subjunctive_present"
+      "presente do conjuntivo": "subjunctivePresent"
     }
   });
 
   const ENGLISH_KEYS = Object.freeze({
-    "simple present": "present_row",
-    "simple past": "past_row",
-    "present perfect": "present_perfect_row",
-    "past perfect": "past_perfect_row",
-    "will future": "future_row"
+    "simple present": "presentRow",
+    "simple past": "pastRow",
+    "present perfect": "presentPerfectRow",
+    "past perfect": "pastPerfectRow",
+    "will future": "futureRow"
   });
 
   const EN_BE_NOW = ["am", "are", "is", "are", "are", "are"];
@@ -72,7 +77,7 @@
     for (const [name, key] of Object.entries(ENGLISH_KEYS)) {
       if (hasSix(table[key])) map[name] = table[key].map(norm);
     }
-    const participle = norm(table.present_participle);
+    const participle = norm(table.presentParticiple);
     const infinitive = norm(table.infinitive);
     if (participle) {
       map["present progressive"] = EN_BE_NOW.map(aux => aux + " " + participle);
@@ -120,7 +125,7 @@
         singular, singular, singular, plural, plural, plural
       ];
     }
-    const participle=norm(table.past_participle);
+    const participle=norm(table.pastParticiple);
     const reviewed=reviewedDutchAuxiliary(options);
     if(reviewed&&participle) {
       const auxiliary=DUTCH_AUXILIARIES[reviewed.auxiliary];
@@ -163,14 +168,14 @@
       persons: [...PERSONS[language]],
       missing: required.filter(key => !forms[key]),
       available: present,
-      participle: norm(table.past_participle),
-      presentParticiple: norm(table.present_participle || table.gerund),
+      participle: norm(table.pastParticiple),
+      presentParticiple: norm(table.presentParticiple || table.gerund),
       imperative: table.imperative ?? null,
       principalParts: language === "en-US" ?
-        [infinitive, norm(table.past), norm(table.past_participle)] :
+        [infinitive, norm(table.past), norm(table.pastParticiple)] :
         language === "nl-NL" ?
           [infinitive, Array.isArray(table.past) ? norm(table.past[0]) : "",
-            norm(table.past_participle)] : null,
+            norm(table.pastParticiple)] : null,
       auxiliary: language === "nl-NL"
         ? reviewedDutchAuxiliary(options)?.auxiliary||null
         : typeof table.auxiliary === "string" ? table.auxiliary : null,

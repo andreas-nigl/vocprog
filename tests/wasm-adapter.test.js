@@ -6,9 +6,9 @@ const adapter=globalThis.VOCWasmAdapter;
 const six=["a","b","c","d","e","f"];
 
 test("French maps the full seven school tenses",()=>{
-  const table={infinitive:"aller",past_participle:"allé",auxiliary:"être",
-    present:six,imperfect:six,passe_compose:six,plus_que_parfait:six,
-    future:six,conditional:six,subjunctive_present:six};
+  const table={infinitive:"aller",pastParticiple:"allé",auxiliary:"être",
+    present:six,imperfect:six,passeCompose:six,plusQueParfait:six,
+    future:six,conditional:six,subjunctivePresent:six};
   const result=adapter.adapt(table,"fr-FR");
   assert.equal(result.available.length,7);
   assert.deepEqual(result.missing,[]);
@@ -16,9 +16,9 @@ test("French maps the full seven school tenses",()=>{
 });
 
 test("English adds four analytical school constructions without Gemini",()=>{
-  const table={infinitive:"go",past:"went",past_participle:"gone",
-    present_participle:"going",present_row:six,past_row:six,
-    present_perfect_row:six,past_perfect_row:six,future_row:six};
+  const table={infinitive:"go",past:"went",pastParticiple:"gone",
+    presentParticiple:"going",presentRow:six,pastRow:six,
+    presentPerfectRow:six,pastPerfectRow:six,futureRow:six};
   const result=adapter.adapt(table,"en-US");
   assert.equal(result.available.length,9);
   assert.deepEqual(result.principalParts,["go","went","gone"]);
@@ -31,10 +31,10 @@ test("English adds four analytical school constructions without Gemini",()=>{
 });
 
 test("Spanish maps eight school tenses",()=>{
-  const table={infinitive:"hablar",past_participle:"hablado",gerund:"hablando",
-    present:six,imperfect:six,preterite:six,perfecto_compuesto:six,
+  const table={infinitive:"hablar",pastParticiple:"hablado",gerund:"hablando",
+    present:six,imperfect:six,preterite:six,perfectoCompuesto:six,
     pluscuamperfecto:six,future:six,conditional:six,
-    subjunctive_present:six};
+    subjunctivePresent:six};
   const result=adapter.adapt(table,"es-ES");
   assert.equal(result.available.length,8);
   assert.deepEqual(result.missing,[]);
@@ -42,10 +42,10 @@ test("Spanish maps eight school tenses",()=>{
 });
 
 test("Portuguese maps seven school tenses",()=>{
-  const table={infinitive:"falar",past_participle:"falado",gerund:"falando",
+  const table={infinitive:"falar",pastParticiple:"falado",gerund:"falando",
     present:six,imperfect:six,preterite:six,
-    mais_que_perfeito_composto:six,future:six,conditional:six,
-    subjunctive_present:six};
+    maisQuePerfeitoComposto:six,future:six,conditional:six,
+    subjunctivePresent:six};
   const result=adapter.adapt(table,"pt-PT");
   assert.equal(result.available.length,7);
   assert.deepEqual(result.missing,[]);
@@ -53,7 +53,7 @@ test("Portuguese maps seven school tenses",()=>{
 
 test("Dutch keeps past singular/plural and reports all missing tenses",()=>{
   const table={infinitive:"lopen",past:["liep","liepen"],
-    past_participle:"gelopen",present:six,imperative:"loop"};
+    pastParticiple:"gelopen",present:six,imperative:"loop"};
   const result=adapter.adapt(table,"nl-NL");
   assert.equal(result.available.length,3);
   assert.equal(result.missing.length,2);
@@ -89,7 +89,7 @@ test("The wrapper passes immutable locale codes to the WASM boundary",()=>{
 
 test("Dutch perfects remain blocked without reviewed sense-specific auxiliary",()=>{
   const table={infinitive:"lopen",present:six,past:["liep","liepen"],
-    past_participle:"gelopen"};
+    pastParticiple:"gelopen"};
   const noEvidence=adapter.adapt(table,"nl-NL");
   const unsupported=adapter.adapt(table,"nl-NL",{
     dutchAuxiliaryEvidence:{auxiliary:"zijn",context:"destination",reviewed:false,source:"manual"}
@@ -101,7 +101,7 @@ test("Dutch perfects remain blocked without reviewed sense-specific auxiliary",(
 
 test("Dutch perfects use verified hebben for a specified sense",()=>{
   const table={infinitive:"werken",present:six,past:["werkte","werkten"],
-    past_participle:"gewerkt"};
+    pastParticiple:"gewerkt"};
   const evidence={auxiliary:"hebben",reviewed:true,
     source:"reviewed dictionary",context:"ordinary activity"};
   const result=adapter.adapt(table,"nl-NL",{dutchAuxiliaryEvidence:evidence});
@@ -114,7 +114,7 @@ test("Dutch perfects use verified hebben for a specified sense",()=>{
 
 test("Dutch perfects use verified zijn for a movement-to-destination sense",()=>{
   const table={infinitive:"lopen",present:six,past:["liep","liepen"],
-    past_participle:"gelopen"};
+    pastParticiple:"gelopen"};
   const result=adapter.adapt(table,"nl-NL",{dutchAuxiliaryEvidence:{
     auxiliary:"zijn",reviewed:true,source:"reviewed lexicon",context:"movement to destination"
   }});
@@ -125,7 +125,7 @@ test("Dutch perfects use verified zijn for a movement-to-destination sense",()=>
 
 test("Dutch perfects reject empty sources and arbitrary auxiliary values",()=>{
   const table={infinitive:"lopen",present:six,past:["liep","liepen"],
-    past_participle:"gelopen"};
+    pastParticiple:"gelopen"};
   for(const auxiliary of ["beide","heeft",""]){
     const result=adapter.adapt(table,"nl-NL",{dutchAuxiliaryEvidence:{
       auxiliary,reviewed:true,source:"review",context:"movement"

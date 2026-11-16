@@ -14,7 +14,7 @@
     if(["être","avoir"].includes(base?.auxiliary))return base.auxiliary;
     const choices=new Set(entries.map(entry=>entry.auxiliary).filter(value=>["être","avoir"].includes(value)));
     for(const entry of entries){
-      if(entry.kind!=="conjugation"||!["passé composé","plus-que-parfait"].includes(normal(entry.tense)))continue;
+      if(!(entry.kind==="conjugation"||(entry.kind==="verb-form"&&entry.scanEvidence))||!["passé composé","plus-que-parfait"].includes(normal(entry.tense)))continue;
       const form=normal(entry.foreign).replace(/^(?:j['’]|je\s+|tu\s+|il\/elle\/on\s+|nous\s+|vous\s+|ils\/elles\s+)/,"");
       if(/^(?:suis|es|est|sommes|êtes|sont|étais|était|étions|étiez|étaient)\s/.test(form))choices.add("être");
       if(/^(?:ai|as|a|avons|avez|ont|avais|avait|avions|aviez|avaient)\s/.test(form))choices.add("avoir");

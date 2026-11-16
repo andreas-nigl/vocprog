@@ -92,3 +92,11 @@ test('Explicit rescans correct existing verb records in place and identical scan
  assert.equal(memory[0].updatedAt,timestamp);assert.equal(window.VOCScanCorrected,1);
  merge([{...base,german:'weggehen'}]);assert.equal(memory[0].german,'hinausgehen','No unrequested overwrite without new scan evidence');
 });
+
+test('A corrected printed conjugation updates a matching generated verb-form without a second vocabulary entry',()=>{
+ const begin=html.indexOf('  function mergeVocabularies('),end=html.indexOf('  function rebuildReferences()',begin);
+ const memory=[],window={};const merge=new Function('vocabList','window','rebuildReferences','document',html.slice(begin,end)+'return mergeVocabularies;')(memory,window,()=>{},{getElementById:()=>({value:'fr-FR'})});
+ const base={id:'same',bookId:'book',kind:'verb-form',infinitive:'sortir',person:'je',tense:'passé composé',foreign:"j'ai sorti",german:'ich bin hinausgegangen'};
+ merge([base]);merge([{...base,id:'incoming',kind:'conjugation',foreign:'je suis sorti',scanEvidence:{page:'154'}}]);
+ assert.equal(memory.length,1);assert.equal(memory[0].id,'same');assert.equal(memory[0].foreign,'je suis sorti');assert.ok(memory[0].scanCorrectedAt);
+});

@@ -708,6 +708,7 @@
     feedback.textContent=previous?(previous.correct?"Richtig":"Nicht richtig – zur Wiederholung angehängt"):"";
     if(previous)get("targetText").classList.remove("masked");
     const item=trainingItems[currentIndex];
+    input.placeholder=window.VOCVerbPresentation?.germanAnswerHint(item)||"Übersetzung eingeben …";
     if(!practiceSession.shown.has(currentIndex)){
       practiceSession.shown.add(currentIndex);lastShownEvent=logEvent("shown",item);
     }
@@ -730,7 +731,9 @@
     const given=input.value.trim();
     if(!given)return;
     const alternatives=String(item.target||"").split(/\s*(?:\/|;|\bor\b)\s*/i);
-    const correct=alternatives.some(s=>simplified(s)===simplified(given));
+    const correct=item.tLang==="de-DE"&&item.kind==="words"?
+      window.VOCVerbPresentation.matchesGermanAnswer(given,item,simplified):
+      alternatives.some(s=>simplified(s)===simplified(given));
     analyzedThisCard=true;
     input.className=correct?"answer-correct":"answer-wrong";
     get("answerFeedback").textContent=correct?"Richtig":"Nicht richtig – Lösung aufgedeckt";
@@ -1376,7 +1379,8 @@
     const normalizeGroup=value=>normalized(value)
       .replace(/\((?:tu|nous|vous)\)\s*/g,"")
       .replace(/\s*\/\s*/g,"/");
-    const correct=grouped?normalizeGroup(given)===normalizeGroup(expected):
+    const correct=item.tLang==="de-DE"?window.VOCVerbPresentation.matchesGermanAnswer(given,item,normalized):
+      grouped?normalizeGroup(given)===normalizeGroup(expected):
       (item.acceptedTargets||expected.split(/\s*(?:;|\bor\b)\s*/i))
         .some(candidate=>normalized(given)===normalized(candidate));
     analyzedThisCard=true;

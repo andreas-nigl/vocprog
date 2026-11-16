@@ -1,3 +1,9 @@
+## 2026-11-16 – Finaler Veröffentlichungsstand 0.5.18-2
+
+- Finaler App-Commit e9fec6e5c95ec36d0382baf701a930d4f342f1f9; Entwicklungscommit c176019711a1224b7e4c8fbe49f18af0ab0aaed2. Produktions-Pages 43918213814 completed/success, Entwicklungs-CI 43918224908 success, 124/124 Tests. Inhaltliche Liveabnahme der être-Abfrage mit 0.5.18 wie im folgenden Nachtrag; Zusatzfix zum bestehenden verb-form/Rescan-Merge automatisiert geprüft. Kein erneuter OCR-Live-Scan mangels Bildern/API-Key. Test-App unverändert pausiert.
+
+---
+
 ## 2026-11-16 – Abschluss der sortir-Korrektur und Scan-Aktualisierung 0.5.18
 
 - Initiale Appveröffentlichung 1ab2af559867504fed2e5ecea76806063665ef1d, Entwicklung 07ddac3f48c3d3b120436876391e5b5a057a23b6. Pages 43917601733 und Entwicklungs-CI 43917613072 erfolgreich. Ergänzender abschließender Scan-Merge-Fall mit Assetkennung 0.5.18-2: neue abgelesene Konjugation darf passenden älteren verb-form-Datensatz unter gleicher ID korrigieren, statt neben ihm als kind conjugation dupliziert zu werden. Kein Sprach-/Datenbankversionssprung; Test-App bleibt pausiert.

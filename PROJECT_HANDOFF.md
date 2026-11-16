@@ -1,3 +1,12 @@
+## 2026-11-16 – Abschluss Futur proche 0.5.19-2
+
+- Normale App live mit 0.5.19 / Assets 0.5.19-2. Finaler App-Commit 1d664ed35bcff468ea8af00015cc1f96446d13c4; Entwicklungscommit ec476441d86a69a2ac747ed63b60cf09d2c0f987. Pages 43930682527 und Entwicklungs-CI 43930695308 completed/success. 129/129 Node-Tests, Syntax und Diffprüfung erfolgreich. Testfassung unverändert pausiert; keine neue Standalone. Offlineassets gebaut/veröffentlicht, echter physischer Offline-Neustart weiterhin nicht geprüft.
+- Browserabnahme: Dropdown enthält Futur composé / Futur proche (nahe Zukunft) vor Futur simple. Bestehendes Verbenbuch, sortir ausgewählt -> 1 Verb / 6 abgeglichene Formen und Start aktiv. Tabelle zeigt je vais sortir, tu vas sortir, il/elle/on va sortir, nous allons sortir, vous allez sortir, ils/elles vont sortir mit korrekten deutschen Futures ich werde hinausgehen usw. Beide Abfragerichtungen live geprüft, keine Antworten bewertet/kein KI-Aufruf/kein Scan erforderlich.
+- Gezielter Server-Readback des existierenden Kontextrecords sortir: sechs futur-proche-Karten vorhanden, je vais sortir / ich werde hinausgehen; bisheriges Passé composé weiterhin je suis sorti. Damit Speicherung/Synchronisierung der Erweiterung bestätigt, ursprüngliche sieben Zeiten bleiben erhalten. Grammatikregel/OQLF-Quellenlink auch unter Tabelle enthalten.
+- Nutzerabnahme 0.5.19 steht aus. App online neu laden, neue Zeitform unter Zeitform auswählen. Nächste Arbeit nur in normaler App; frühere reale OCR-/Offline-/Mehrgeräte-Konfliktprüflücken unverändert.
+
+---
+
 ## 2026-11-16 – Futur proche: Browserbefund und deutsche Zukunftsform korrigiert
 
 - Erste Livefassung 0.5.19 zeigte Auswahl/Abfrage/Tabelle aller sechs korrekten französischen Formen, aber die unabhängige deutsche future1-Referenz führte als erste Alternative eine markierte verkürzte Form hinausgeh⁵n. Diese darf keine primäre Lernform werden.

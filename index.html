@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Vokabel-Scanner & Trainer</title>
+  <title>vocprog · Version 0.5.14</title>
+  <link rel="stylesheet" href="vocprog-enhancements.css?v=0.5.14-1">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEyOCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCBmaWxsPSIjZmZmIiBoZWlnaHQ9IjEyOCIgcng9IjIwIiB3aWR0aD0iMTI4Ii8+PHBhdGggZD0iTTMwIDkyIDIyIDEwNmwzLTIwYy04LTgtMTItMTgtMTItMzAgMC0yNCAyMC0zOCA1Mi0zOCAzMiAwIDUwIDE2IDUwIDQwIDAgMjUtMjEgNDEtNTQgNDEtMTEgMC0yMS0yLTMxLTdaIiBmaWxsPSIjZmZmIiBzdHJva2U9IiMwNjQ3ZjQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS13aWR0aD0iOC41Ii8+PHRleHQgZmlsbD0iIzA2NDdmNCIgZm9udC1mYW1pbHk9IkFyaWFsLEhlbHZldGljYSxzYW5zLXNlcmlmIiBmb250LXNpemU9IjM4IiBmb250LXdlaWdodD0iOTAwIiBsZXR0ZXItc3BhY2luZz0iLTIuMiIgc3Ryb2tlPSIjMDY0N2Y0IiBzdHJva2Utd2lkdGg9IjEuNCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgeD0iNjQiIHk9IjY5Ij5WT0M8L3RleHQ+PC9zdmc+">
   
   <!-- PWA & iOS Meta Tags -->
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEyOCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCBmaWxsPSIjZmZmIiBoZWlnaHQ9IjEyOCIgcng9IjIwIiB3aWR0aD0iMTI4Ii8+PHBhdGggZD0iTTMwIDkyIDIyIDEwNmwzLTIwYy04LTgtMTItMTgtMTItMzAgMC0yNCAyMC0zOCA1Mi0zOCAzMiAwIDUwIDE2IDUwIDQwIDAgMjUtMjEgNDEtNTQgNDEtMTEgMC0yMS0yLTMxLTdaIiBmaWxsPSIjZmZmIiBzdHJva2U9IiMwNjQ3ZjQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS13aWR0aD0iOC41Ii8+PHRleHQgZmlsbD0iIzA2NDdmNCIgZm9udC1mYW1pbHk9IkFyaWFsLEhlbHZldGljYSxzYW5zLXNlcmlmIiBmb250LXNpemU9IjM4IiBmb250LXdlaWdodD0iOTAwIiBsZXR0ZXItc3BhY2luZz0iLTIuMiIgc3Ryb2tlPSIjMDY0N2Y0IiBzdHJva2Utd2lkdGg9IjEuNCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgeD0iNjQiIHk9IjY5Ij5WT0M8L3RleHQ+PC9zdmc+">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Vokabeln">
@@ -116,15 +117,13 @@
 
 <div class="container">
   <div class="card" id="configCard">
-    <h2>1. API & Sprache</h2>
+    <h2>1. API</h2>
     <label>Dein API Key (wird lokal gespeichert)</label>
     <input type="password" id="apiKey" placeholder="AIzaSy...">
-    <label>Fremdsprache</label>
-    <select id="targetLang" onchange="onLanguageChange()">
+    <select id="targetLang" hidden aria-label="Aktuelle Fremdsprache">
       <option value="en-US">Englisch</option>
       <option value="fr-FR">Französisch</option>
       <option value="es-ES">Spanisch</option>
-      <option value="la-LA">Lateinisch</option>
       <option value="pt-PT">Portugiesisch</option>
       <option value="nl-NL">Niederländisch</option>
     </select>
@@ -133,20 +132,24 @@
   <div class="card" id="scanCard">
     <h2>2. Datenverwaltung</h2>
     
+    <label for="bookSelect">Buch</label>
+    <div class="book-manager"><select id="bookSelect" onchange="pickLearningBook()"></select><button type="button" id="renameBookBtn" title="Buch umbenennen" aria-label="Buch umbenennen" onclick="renameSelectedBook()"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 16-1 5 5-1L20 8l-4-4L4 16Z"/><path d="m14 6 4 4M4 16l4 4"/></svg></button><button type="button" id="mergeBookBtn" title="Zwei Bücher zusammenführen" aria-label="Bücher zusammenführen" onclick="openMergeBooks()"><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h4c3 0 4 5 8 7M3 19h4c3 0 4-5 8-7M14 12h7m-4-4 4 4-4 4"/></svg></button><button type="button" class="book-delete" id="deleteBookBtn" title="Buch löschen" aria-label="Buch löschen" onclick="confirmSelectedBookDeletion()"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
     <div class="status-badge" id="scannedPagesBadge">
       📖 Vorhandene Seiten: Keinen Speicherstand gefunden
     </div>
 
+    <hr style="border:none;border-top:1px solid var(--border);margin:12px 0;">
+    <p class="data-section-label">Datenerfassung</p>
     <div class="gallery" id="imageGallery"></div>
     
     <div class="btn-group" style="margin-bottom: 12px;">
       <div class="file-btn-wrapper">
-        <button type="button">📸 Kamera</button>
-        <input type="file" id="cameraInput" accept="image/*" capture="environment">
+        <button type="button" id="cameraPickerBtn" onclick="openBookPicker('camera')">📸 Kamera</button>
+        <input type="file" hidden id="cameraInput" accept="image/*" capture="environment">
       </div>
       <div class="file-btn-wrapper">
-        <button type="button">📂 Galerie</button>
-        <input type="file" id="galleryInput" accept="image/*" multiple>
+        <button type="button" id="galleryPickerBtn" onclick="openBookPicker('gallery')">📂 Galerie</button>
+        <input type="file" hidden id="galleryInput" accept="image/*" multiple>
       </div>
     </div>
 
@@ -167,21 +170,25 @@
       </div>
     </div>
     
+    
+
     <hr style="border: none; border-top: 1px solid var(--border); margin: 12px 0;">
 
-    <button class="danger" style="margin-bottom: 0; font-size: 0.85rem; padding: 10px;" onclick="clearCurrentLangData()">🗑️ Speicher für aktuelle Sprache löschen</button>
+
   </div>
 
   <div class="card hidden" id="rangeCard">
     <h2>3. Lernbereich</h2>
     
-    <label>Verfügbare Seiten</label>
-    <input type="text" id="pageRangeInput" placeholder="z.B. 190-193" oninput="filterVocabByPages()">
+    <label for="pageRangeInput">Seiten</label>
+    <input type="text" id="pageRangeInput" placeholder="z. B. 154-156, 178, 190-193" aria-describedby="pageRangeHelp pageRangeError" oninput="applyLearningPages()" onchange="applyLearningPages(true)">
+    <p id="pageRangeHelp" class="page-range-help">Einzelne Seiten oder Bereiche, mit Komma getrennt.</p>
+    <p id="pageRangeError" class="page-range-error" role="alert" hidden></p>
     
     <label>Erste Vokabel (Start)</label>
-    <select id="startVocab"></select>
+    <select id="startVocab" onchange="updateVerbReadiness()"></select>
     <label>Letzte Vokabel (Stopp)</label>
-    <select id="endVocab"></select>
+    <select id="endVocab" onchange="updateVerbReadiness()"></select>
     
     <label>Abfragerichtung</label>
     <select id="direction">
@@ -189,41 +196,61 @@
       <option value="foreign_to_de">Fremdsprache ➔ Deutsch</option>
     </select>
     
-    <label>Lernmodus</label>
+    <div id="studyModeWrap"><label>Lernmodus</label>
     <select id="studyMode">
       <option value="words">Einzelne Vokabeln</option>
       <option value="book_sentences">Beispielsätze aus dem Buch</option>
       <option value="ai_combined">Kombinierte Sätze (Vollständiger KI-Mix)</option>
-    </select>
+    </select></div>
+    <div id="tenseModeWrap" hidden><label for="tenseSelect">Zeitform</label><select id="tenseSelect" onchange="refreshVerbSelection()"></select></div>
     
+    <p class="settings-heading">Einstellungen</p>
     <label><input type="checkbox" id="randomize" style="width: auto; margin-right: 6px;" checked> Zufällige Reihenfolge</label>
-    <button onclick="startTraining()">▶ Abfrage starten</button>
+    <button id="startTrainingBtn" onclick="startTraining(event)">▶ Abfrage starten</button>
+    <p id="verbPreparationStatus" role="status" hidden></p>
   </div>
 
   <div class="trainer-card hidden" id="trainerCard">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-      <span id="counter" style="font-size: 0.85rem; color: var(--text-muted);">1 / 10</span>
+    <div class="trainer-top-row">
+      <span id="counter" style="font-size: 0.85rem; color: var(--text-muted);">1 / 10</span><button id="newSentencesBtn" class="icon-btn" onclick="newCombinedSentences()" hidden>Neue Sätze</button>
+      <button type="button" id="verbTableToggle" class="icon-btn" hidden onclick="toggleVerbTable()" aria-expanded="false" aria-controls="verbTablePanel">Tabelle</button>
       <button class="icon-btn" style="font-size: 0.9rem;" onclick="exitTrainer()">✕</button>
     </div>
     <div class="item-row">
       <div class="item-text" id="promptText">Frage...</div>
       <button class="icon-btn" title="Vorlesen" onclick="playAudio('prompt')">🔊</button>
     </div>
+    <div class="answer-entry"><input id="answerInput" autocomplete="off" placeholder="Übersetzung eingeben …" onkeydown="checkTypedAnswer(event)"><button type="button" class="icon-btn" title="Spracheingabe" onclick="startSpeechRecognition()">🎤</button></div>
+    <div id="answerFeedback" aria-live="polite"></div>
     <div class="target-box">
       <button class="icon-btn" id="toggleEyeBtn" title="Aufdecken/Verstecken" onclick="toggleMask()">👁️</button>
       <div class="item-text masked" id="targetText" style="padding: 0 10px;">Antwort...</div>
       <div style="display: flex; gap: 4px;">
         <button class="icon-btn" title="Vorlesen" onclick="playAudio('target')">🔊</button>
-        <button class="icon-btn" title="Spracheingabe" onclick="startSpeechRecognition()">🎤</button>
+
       </div>
     </div>
     <div id="refText"></div>
     <div class="nav-controls">
       <button class="secondary" onclick="prevCard()">Zurück</button>
-      <button onclick="nextCard()">Weiter</button>
+      <button onclick="advanceOrGrade()">Weiter</button>
     </div>
   </div>
+  <section id="verbTablePanel" class="verb-table-panel" hidden aria-label="Konjugationstabelle"></section>
 </div>
+
+
+<dialog id="practiceResultDialog" aria-labelledby="practiceResultTitle">
+  <h2 id="practiceResultTitle"></h2>
+  <p id="practiceResultPercent" class="practice-result-percent"></p>
+  <p id="practiceResultDetail"></p>
+  <div class="practice-result-chart" aria-label="Abgefragt, richtig beantwortet, Vorlesen">
+    <div class="practice-result-column"><div class="practice-result-track"><div id="practiceResultAskedBar" class="voc-analysis-bar asked"><span id="practiceResultAskedValue"></span></div></div><span>Abgefragt</span></div>
+    <div class="practice-result-column"><div class="practice-result-track"><div id="practiceResultCorrectBar" class="voc-analysis-bar correct"><span id="practiceResultCorrectValue"></span></div></div><span>Richtig</span></div>
+    <div class="practice-result-column"><div class="practice-result-track"><div id="practiceResultSpokenBar" class="voc-analysis-bar spoken"><span id="practiceResultSpokenValue"></span></div></div><span>Vorlesen</span></div>
+  </div>
+  <button onclick="document.getElementById('practiceResultDialog').close()">Fertig</button>
+</dialog>
 
 <script>
   let rawImages = [];
@@ -346,7 +373,7 @@
         {
           text: `Analysiere die Vokabelseiten Zeile für Zeile (horizontal).
           WICHTIG ZUR SPRACHE:
-          Ermittle automatisch die auf den Buchseiten abgedruckte Fremdsprache (z.B. Englisch, Französisch, Spanisch, Latein).
+          Ermittle automatisch die auf den Buchseiten abgedruckte Fremdsprache (z.B. Englisch, Französisch, Spanisch, Portugiesisch, Niederländisch).
           
           SEHR WICHTIG ZUM BILDMATERIAL & PLATZHALTER/TILDEN:
           Falls in Beispielsätzen Platzhalter, Wellenlinien (~) oder Abkürzungen vorkommen (z.B. '~ sth.', 'to ~'), ERSETZE DIE WELLE BZW. DEN PLATZHALTER VOLLSTÄNDIG durch das konkrete fremdsprachige Wort bzw. die vollständige grammatikalische Form!
@@ -360,14 +387,49 @@
           -> JA: Übernimm diese exakt so aus dem Buch. 
           -> NEIN: Übersetze den Satz SELBST korrekt ins Deutsche! Nimm als Satzübersetzung NIEMALS einfach nur das einzelne deutsche Vokabel-Wort aus Spalte 2!
 
+          ZUSÄTZLICH: Prüfe, ob auf den abgebildeten Seiten gedruckte Verbkonjugationen/
+          Konjugationstabellen stehen. Erfasse dann neben normalen Vokabeln sämtliche
+          TATSÄCHLICH erkennbaren Personalformen, mit Infinitiv, Tempus, Seite, Personengruppe,
+          vollständiger konjugierter französischer Form und sinnvoller deutscher Übersetzung.
+          Keine fehlenden Zeiten oder Formen aus Sprachwissen ergänzen; nur abgedruckte
+          Formen übernehmen. Bei mehreren Zeitformen getrennte Einträge erzeugen.
+          Für Französisch zusammenfassen: je/j', tu, il/elle/on, nous, vous,
+          ils/elles. Gruppierte Varianten in einem Feld mit Schrägstrich:
+          z.B. "il/elle/on va" und "er/sie/man geht" sowie
+          "ils/elles vont" und "sie gehen".
+          "vous" umfasst je nach Kontext "ihr/Sie", nicht frei erfinden.
+          Unklare, unleserliche Verbformen weglassen; normale Vokabeln trotzdem erfassen.
+          Schreibe erkannte Konjugationen ausschließlich in "conjugations", nie doppelt
+          in "items", falls die Form sonst separat als Vokabel erscheinen würde.
+
+          Prüfe AUCH bei einzelnen Vokabeln, ob sie Verben im Infinitiv sind.
+          Liste jedes auf der Seite wirklich erkennbare Verb in "verbs" mit Infinitiv,
+          deutscher Grundbedeutung und Seitenzahl auf, selbst wenn keine Konjugation
+          abgedruckt ist. Andere Wortarten niemals in "verbs" aufnehmen.
+          Keine Infinitive erfinden, die aus dem Bild nicht ableitbar sind.
+          Erkenne und trenne Vokabelwörter von Verbformen. Die Buchart (Vokabeln
+          oder Verben) wird vom Benutzer ausgewählt, nicht von der KI.
           Antworte AUSSCHLIESSLICH im gültigen JSON-Format als Objekt mit folgender Struktur:
           {
             "detected_language_code": "en-US", 
             "items": [
               { "page": "190", "foreign": "Fremdwort", "german": "deutsche Übersetzung", "sentence_foreign": "Vollständiger Beispielsatz ohne Welle", "sentence_german": "Satzübersetzung" }
+            ],
+            "verbs": [{ "page": "190", "infinitive": "aller", "german": "gehen" }],
+            "conjugations": [
+              { "page": "190", "infinitive": "aller", "tense": "présent",
+                "forms": [
+                  { "person": "je", "foreign": "je vais", "german": "ich gehe" },
+                  { "person": "tu", "foreign": "tu vas", "german": "du gehst" },
+                  { "person": "il/elle/on", "foreign": "il/elle/on va", "german": "er/sie/man geht" },
+                  { "person": "nous", "foreign": "nous allons", "german": "wir gehen" },
+                  { "person": "vous", "foreign": "vous allez", "german": "ihr geht/Sie gehen" },
+                  { "person": "ils/elles", "foreign": "ils/elles vont", "german": "sie gehen" }
+                ]
+              }
             ]
           }
-          Mögliche Werte für 'detected_language_code': 'en-US', 'fr-FR', 'es-ES', 'la-LA', 'pt-PT', 'nl-NL'.`
+          Mögliche Werte für 'detected_language_code': 'en-US', 'fr-FR', 'es-ES', 'pt-PT', 'nl-NL'.`
         },
         ...rawImages.map(imgData => ({
           inline_data: {
@@ -406,19 +468,25 @@
       let newVocabs = parsedResponse.items || parsedResponse;
       if (!Array.isArray(newVocabs) && parsedResponse.items) newVocabs = parsedResponse.items;
 
-      if (parsedResponse.detected_language_code) {
-        document.getElementById('targetLang').value = parsedResponse.detected_language_code;
-        localStorage.setItem('vocab_trainer_current_lang', parsedResponse.detected_language_code);
-        loadFromLocalStorage(); 
+      if (!parsedResponse.detected_language_code) {
+        throw new Error("Die Fremdsprache konnte nicht sicher erkannt werden. Scanbilder bleiben erhalten.");
       }
+      if(parsedResponse.detected_language_code==="la-LA"){
+        throw new Error("Latein ist aus VOC entfernt. Es wurden keine lateinischen Daten übernommen.");
+      }
+      acceptScannedLanguage(parsedResponse.detected_language_code);
 
-      let addedCount = mergeVocabularies(newVocabs);
-
+      window.VOCGeneratedFrenchForms=0;
+      window.VOCScanVerificationWarnings=0;
+      const verbBookSelected=isSelectedVerbBook();
+      let addedCount=verbBookSelected?0:mergeVocabularies(newVocabs);
       saveToLocalStorage();
+      const baseVerbs=await ingestVerbInfinitives(parsedResponse.verbs||[],parsedResponse.detected_language_code);
+      const countConjugations=ingestConjugations(parsedResponse.conjugations||[], parsedResponse.detected_language_code);
       updateScannedPagesUI();
       initPageInputAndSelectors();
       document.getElementById('rangeCard').classList.remove('hidden');
-      status.innerText = `${addedCount} neue Vokabeln erfolgreich erkannt & gespeichert!`;
+      status.innerText = window.describeVOCScan({words:addedCount, infinitives:baseVerbs, conjugations:countConjugations, language:parsedResponse.detected_language_code});
       rawImages = [];
       renderGallery();
     } catch (err) {
@@ -438,15 +506,40 @@
 
       if (!foreignStr && !germanStr) return;
 
-      const isDuplicate = vocabList.some(v => 
-        String(v.page).trim() === pageStr &&
-        String(v.foreign).trim().toLowerCase() === foreignStr.toLowerCase() &&
-        String(v.german).trim().toLowerCase() === germanStr.toLowerCase()
-      );
+      const normalized = value => String(value || "").trim().normalize("NFKC").toLocaleLowerCase();
+      const kind = item.kind || "words";
+      const verbKinds = new Set(["verb-infinitive", "verb-participle",
+        "verb-imperative", "verb-form", "verb-principal", "verb-ing",
+        "verb-gerund", "conjugation"]);
+      const isDuplicate = vocabList.some(v => {
+        if (v.bookId !== item.bookId || (v.kind || "words") !== kind) return false;
+        if (verbKinds.has(kind)) {
+          if (normalized(v.infinitive || v.lemma) !== normalized(item.infinitive || item.lemma))
+            return false;
+          return normalized(v.tense) === normalized(item.tense) &&
+            normalized(v.person) === normalized(item.person);
+        }
+        return String(v.page).trim() === pageStr &&
+          normalized(v.foreign) === normalized(foreignStr) &&
+          normalized(v.german) === normalized(germanStr);
+      });
 
       if (!isDuplicate) {
         vocabList.push({
           page: pageStr,
+          id: item.id,
+          bookId: item.bookId,
+          updatedAt: item.updatedAt,
+          kind: item.kind || "words",
+          tense: item.tense || "",
+          infinitive: item.infinitive || "",
+          person: item.person || "",
+          verbId: String(item.verbId || ""),
+          lemma: String(item.lemma || ""),
+          regularity: String(item.regularity || ""),
+          verification: String(item.verification || ""),
+          translationVerification: String(item.translationVerification || ""),
+          lang: item.lang || document.getElementById("targetLang").value,
           foreign: foreignStr,
           german: germanStr,
           sentence_foreign: item.sentence_foreign || "",
@@ -582,7 +675,8 @@
     startSelect.innerHTML = '';
     endSelect.innerHTML = '';
     
-    const targetList = filteredVocabList.length > 0 ? filteredVocabList : vocabList;
+    if(window.VOCVerbPresentation)filteredVocabList=[...filteredVocabList].sort(window.VOCVerbPresentation.compareVocabulary);
+    const targetList = filteredVocabList;
     
     targetList.forEach((item, index) => {
       const optText = `[${item.refVocab || 'S?'}] ${item.foreign} – ${item.german}`;
@@ -644,7 +738,7 @@
     }
   }
 
-  async function startTraining() {
+  async function startTraining(event) {
     const start = parseInt(document.getElementById('startVocab').value);
     const end = parseInt(document.getElementById('endVocab').value);
     const mode = document.getElementById('studyMode').value;
@@ -653,7 +747,7 @@
     if (isNaN(start) || isNaN(end)) return alert('Bitte wähle gültige Start- und Stopp-Vokabeln aus.');
     if (start > end) return alert('Die Start-Vokabel muss vor der Stopp-Vokabel liegen.');
     
-    const activeList = filteredVocabList.length > 0 ? filteredVocabList : vocabList;
+    const activeList = filteredVocabList;
     const selectedSlice = activeList.slice(start, end + 1);
 
     if (mode === 'words') {
@@ -662,7 +756,7 @@
           target: v.foreign, 
           pLang: 'de-DE', 
           tLang: document.getElementById('targetLang').value,
-          ref: v.refVocab
+          ref: v.refVocab, sourceId: v.id, bookId: v.bookId, page: v.page, kind: "words"
       }));
     } else if (mode === 'book_sentences') {
       trainingItems = selectedSlice.filter(v => v.sentence_foreign && v.sentence_foreign.length > 2).map(v => ({
@@ -670,7 +764,7 @@
         target: v.sentence_foreign,
         pLang: 'de-DE',
         tLang: document.getElementById('targetLang').value,
-        ref: v.refSentence
+        ref: v.refSentence, sourceId: v.id, bookId: v.bookId, page: v.page, kind: "sentences"
       }));
     } else if (mode === 'ai_combined') {
       const btn = event.target;
@@ -695,7 +789,7 @@
             target: item.prompt,
             pLang: item.tLang,
             tLang: item.pLang,
-            ref: item.ref
+            ref: item.ref, sourceId: item.sourceId, bookId: item.bookId, page: item.page, kind: item.kind
           }));
         }
         if (isRandom) {
@@ -753,6 +847,13 @@
         pLang: 'de-DE',
         tLang: document.getElementById('targetLang').value,
         ref: c.ref,
+        bookId: document.getElementById('bookSelect').value,
+        page: String(vocabSlice[0]?.page || "?"),
+        pages: [...new Set((String(c.ref||"").match(/S\d+/g)||[]).map(s=>s.slice(1)))].length ?
+          [...new Set((String(c.ref||"").match(/S\d+/g)||[]).map(s=>s.slice(1)))] :
+          [String(vocabSlice[0]?.page || "?")],
+        sourceId: c.ref,
+        kind: "special",
         isHtmlTarget: true
       };
       if (document.getElementById('direction').value === 'foreign_to_de') {
@@ -762,6 +863,7 @@
           pLang: obj.tLang,
           tLang: obj.pLang,
           ref: obj.ref,
+          bookId: obj.bookId, page: obj.page, pages: obj.pages, sourceId: obj.sourceId, kind: obj.kind,
           isHtmlPrompt: true
         };
       }
@@ -786,15 +888,6 @@
     document.getElementById('rangeCard').classList.add('hidden');
     document.getElementById('trainerCard').classList.remove('hidden');
     showCard();
-  }
-
-  function safeUnderline(value) {
-    return String(value || "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/&lt;u&gt;/gi, "<u>")
-      .replace(/&lt;\/u&gt;/gi, "</u>");
   }
 
   function showCard() {
@@ -851,8 +944,8 @@
     const item = trainingItems[currentIndex];
     let rawText = type === 'prompt' ? item.prompt : item.target;
     let tempDiv = document.createElement('div');
-    tempDiv.innerHTML = safeUnderline(rawText);
-    let cleanText = tempDiv.textContent || tempDiv.innerText || "";
+    tempDiv.innerHTML = rawText;
+    let cleanText = cleanSpokenText(tempDiv.textContent || tempDiv.innerText || "");
 
     let lang = type === 'prompt' ? item.pLang : item.tLang;
     window.speechSynthesis.cancel();
@@ -880,5 +973,25 @@
     };
   }
 </script>
+
+<dialog id="bookPicker" class="voc-dialog"><h3>Buch für neue Seiten auswählen</h3>
+<label for="pickerBook">Vorhandenes oder neues Buch</label><select id="pickerBook"></select>
+<div id="pickerNewFields" hidden><label for="pickerNewName">Neuer Buchname</label><input id="pickerNewName" value="Muster" placeholder="Muster"><small>Die Sprache wird beim ersten erfolgreichen Scan automatisch erkannt.</small></div>
+<div class="dialog-buttons"><button type="button" onclick="commitBookPicker()">Weiter</button><button type="button" onclick="document.getElementById('bookPicker').close()">Abbrechen</button></div></dialog>
+<dialog id="mergeBooksDialog" class="voc-dialog"><h3>Bücher zusammenführen</h3><label for="mergeSource">Erstes Buch (Ziel)</label><select id="mergeSource" onchange="refreshMergePreview()"></select><label for="mergeTarget">Zweites Buch</label><select id="mergeTarget" onchange="refreshMergePreview()"></select><label for="mergeName">Name des zusammengeführten Buchs</label><input id="mergeName"><p id="mergeWarning" role="status"></p><div class="dialog-buttons"><button type="button" id="mergeConfirm" onclick="confirmMergeBooks()">Zusammenführen</button><button type="button" onclick="document.getElementById('mergeBooksDialog').close()">Abbrechen</button></div></dialog>
+<dialog id="analysisDialog" class="voc-dialog wide"><div class="dialog-head"><h2>LERNANALYSE</h2><button type="button" onclick="document.getElementById('analysisDialog').close()">Schließen</button></div><label for="analysisBookSelect">Buch</label><select id="analysisBookSelect" onchange="renderSelectedBookAnalysis()"></select><div id="analysisContent"></div></dialog>
+<div class="voc-footer"><span id="connectionStatus">Online · Sync –</span><small>Version 0.5.14 · 16.11.26</small></div>
+<div class="analysis-float-zone" role="group" aria-label="Auswertung"><button type="button" id="analysisOpenBtn" class="analysis-open" onclick="showLearningAnalysis()" title="Lernanalyse öffnen" aria-label="Lernanalyse öffnen"><svg viewBox="0 0 24 24" width="23" height="23" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V11M10 20V5M16 20v-8M22 20H2"/></svg></button></div>
+<script src="vocprog-fr-reference.js?v=0.5.14-1"></script>
+<script src="vocprog-wasm-adapter.js?v=0.5.14-1"></script>
+<script src="vocprog-morphology.js?v=0.5.14-1"></script>
+<script src="vocprog-independent-reference.js?v=0.5.14-1"></script>
+<script src="vocprog-german-forms.js?v=0.5.14-1"></script>
+<script src="vocprog-verb-database.js?v=0.5.14-1"></script>
+<script src="vocprog-sentences.js?v=0.5.14-1"></script>
+<script src="vocprog-verb-presentation.js?v=0.5.14-1"></script>
+<script src="vocprog-practice.js?v=0.5.14-1"></script>
+<script src="vocprog-page-selection.js?v=0.5.14-1"></script>
+<script src="vocprog-enhancements.js?v=0.5.14-1"></script>
 </body>
 </html>

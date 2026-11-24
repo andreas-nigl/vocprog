@@ -152,10 +152,11 @@ test('A failed later page neither merges a partial server snapshot nor writes lo
  const fresh=syncClient(remote);fresh.state.failOffset=500;
  assert.equal(await fresh.sync(),false);assert.equal(fresh.entries().length,0);assert.equal(fresh.state.posts,0);
 });
-test('Failed server inventory never starts a paid AI generation',async()=>{
- const h=harness();h.state.syncFailure=true;
+test('Failed server inventory permits generation and retains new sentences locally',async()=>{
+ const h=harness({fetcher:async()=>({ok:true,json:async()=>({candidates:[{content:{parts:[{text:JSON.stringify([sentence])}]}}]})})});h.state.syncFailure=true;
  await h.run(words,h.get('startTrainingBtn'),false);
- assert.equal(h.state.requests,undefined);assert.match(h.state.alerts[0],/Keine neue Generierung gestartet/);
+ assert.equal(h.state.requests,1);assert.equal(h.state.specials.length,1);
+ assert.match(h.state.alerts[0],/lokal gespeichert/);
 });
 
 test('Full generation-to-server flow appends 25 partially covering sentences to 25 legacy sentences',async()=>{

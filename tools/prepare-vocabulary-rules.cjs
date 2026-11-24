@@ -28,6 +28,14 @@ async function snapshot(){
  throw Error("Inventory page limit exceeded; no writes started");
 }
 const shards=new Map();
+let morphology=null;
+async function initializeMorphology(){
+ const source=fs.readFileSync(path.join(__dirname,"../vendor/ablaut/ablaut.js"),"utf8");
+ const module=await import("data:text/javascript;base64,"+Buffer.from(source).toString("base64"));
+ await module.default({module_or_path:fs.readFileSync(path.join(__dirname,"../vendor/ablaut/ablaut_bg.wasm"))});
+ require("../vocprog-wasm-adapter.js");
+ morphology=globalThis.VOCWasmAdapter.create(module.conjugate);
+}
 function lookup(lemma){
  const code=lemma.codePointAt(0)?.toString(16);
  if(!code)return null;
@@ -35,7 +43,15 @@ function lookup(lemma){
   const file=path.join(__dirname,"../reference/eng",code+".json");
   shards.set(code,fs.existsSync(file)?JSON.parse(fs.readFileSync(file,"utf8")):{});
  }
- return shards.get(code)[lemma]||null;
+ const reference=shards.get(code)[lemma]||null;
+ if(morphology&&(!reference?.forms?.["simple past"]?.length||!reference?.participle?.length)){
+  const generated=morphology.conjugate(lemma,"en-US");
+  if(generated.forms?.["simple past"]?.length&&generated.participle){
+   const enriched={...reference,forms:{...reference?.forms,"simple past":generated.forms["simple past"].map(value=>[value])},participle:[generated.participle]};
+   shards.get(code)[lemma]=enriched;return enriched;
+  }
+ }
+ return reference;
 }
 const lexical=new Set(["words","verb-principal","verb-imperative","verb-participle","verb-ing","verb-gerund"]);
 function eligible(row,books){
@@ -45,6 +61,7 @@ function eligible(row,books){
  return !row.payload.kind||lexical.has(row.payload.kind);
 }
 async function main(){
+ await initializeMorphology();
  const rows=await snapshot();
  fs.writeFileSync(path.join(output,"before.json"),JSON.stringify(rows,null,2));
  const books=new Map(rows.filter(row=>row.record_type==="book"&&!row.payload.deleted).map(row=>[row.payload.id,row.payload]));

@@ -1,0 +1,23 @@
+name: Answer regression review
+on:
+  push:
+    branches: [develop/offline-supabase-20261105]
+permissions:
+  contents: read
+jobs:
+  review:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Tests and syntax
+        run: |
+          node --test tests/*.test.js tests/*.test.cjs
+          node --check vocprog-answer-rules.js
+          node --check vocprog-enhancements.js
+          git diff --check
+      - name: Browser setup
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Actual answer flows
+        run: node tests/answer-regressions.browser.cjs

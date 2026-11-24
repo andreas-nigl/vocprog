@@ -159,3 +159,13 @@ body:has(#trainerCard:not(.hidden)) #rangeCard{display:none!important}
 #imageGallery:empty{display:none}
 
 #answerInput::placeholder{color:var(--text-muted);font-size:.85rem;opacity:1}
+
+.vocab-native-select{display:none!important}
+.vocab-choice-trigger{display:block;width:100%;min-width:0;max-width:100%;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#fff;color:var(--text);border:1px solid var(--border);border-radius:8px;padding:10px 28px 10px 12px;margin-bottom:12px;position:relative;font:inherit}
+.vocab-choice-trigger::after{content:"▾";position:absolute;right:10px}
+.vocab-choice-panel{position:fixed;z-index:10000;box-sizing:border-box;overflow:auto;background:#fff;color:var(--text);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px #0003;overscroll-behavior:contain}
+.vocab-choice-panel[hidden]{display:none!important}
+.vocab-choice-option{width:max-content;min-width:100%;box-sizing:border-box;white-space:nowrap;padding:8px 12px;cursor:pointer}
+.vocab-choice-option[aria-selected=true]{font-weight:600}
+.vocab-choice-option[aria-disabled=true]{opacity:.5;cursor:default}
+.vocab-choice-active{background:#dbeafe}

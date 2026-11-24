@@ -553,7 +553,11 @@
   };
   const oldMerge=mergeVocabularies;
   mergeVocabularies=function(incoming){
-    const tagged=incoming.map(v=>({...v,bookId:v.bookId||chosenBook,id:v.id||id(),updatedAt:v.updatedAt||new Date().toISOString()}));
+    const tagged=incoming.map(v=>{
+      const value={...v,lang:v.lang||get("targetLang").value,bookId:v.bookId||chosenBook,id:v.id||id(),updatedAt:v.updatedAt||new Date().toISOString()};
+      if(window.VOCAnswerRules&&(!value.kind||["words","verb-infinitive","verb-principal","verb-imperative","verb-participle","verb-ing","verb-gerund"].includes(value.kind)))value.answerRules=window.VOCAnswerRules.prepare(value);
+      return value;
+    });
     
     // The original merger now deduplicates by semantic verb identity
     // (lemma, kind, tense, person), retaining distinct tense cards.
@@ -723,8 +727,9 @@
     if(window.matchMedia("(min-width: 641px) and (pointer: fine)").matches)setTimeout(()=>input.focus(),0);
   };
   function simplified(text){
-    return cleanSpokenText(text).normalize("NFKC").toLocaleLowerCase()
-      .replace(/[.!?,;:]/g,"").replace(/\s+/g," ").trim();
+    const value=cleanSpokenText(text);
+    return window.VOCAnswerRules?window.VOCAnswerRules.normalizeWord(value):
+      value.normalize("NFKC").toLocaleLowerCase().replace(/[.!?,;:]/g,"").replace(/\s+/g," ").trim();
   }
   window.checkTypedAnswer=function(e){
     if(e.key!=="Enter"||e.isComposing)return;
@@ -738,9 +743,13 @@
     const given=input.value.trim();
     if(!given)return;
     const alternatives=String(item.target||"").split(/\s*(?:\/|;|\bor\b)\s*/i);
-    const correct=item.tLang==="de-DE"&&item.kind==="words"?
-      window.VOCVerbPresentation.matchesGermanAnswer(given,item,simplified):
-      alternatives.some(s=>simplified(s)===simplified(given));
+    const modern=item.kind==="words"?window.VOCAnswerRules?.matchWord(item,given):null;
+    const correct=typeof modern==="boolean"?modern:
+      ["sentences","special"].includes(item.kind)&&window.VOCAnswerRules?
+        window.VOCAnswerRules.layout(item.target)===window.VOCAnswerRules.layout(given):
+      item.tLang==="de-DE"&&item.kind==="words"?
+        window.VOCVerbPresentation.matchesGermanAnswer(given,item,simplified):
+        alternatives.some(s=>simplified(s)===simplified(given));
     analyzedThisCard=true;
     input.className=correct?"answer-correct":"answer-wrong";
     get("answerFeedback").textContent=correct?"Richtig":"Nicht richtig – Lösung aufgedeckt";
@@ -817,12 +826,16 @@
     const timeout=setTimeout(()=>controller.abort(),90000);
     try{
       if(navigator.onLine){
-        await initialSyncReady;
-        if(typeof syncNow==="function"){
-          if(syncing)throw Error("Serverabgleich läuft noch. Bitte kurz warten und erneut starten.");
-          const ready=await syncNow();
-          if(ready!==true)throw Error("Satzbestand konnte nicht vollständig vom Server geladen werden. Keine neue Generierung gestartet.");
-        }
+        const bounded=promise=>new Promise(resolve=>{
+          let timer;const finish=value=>{clearTimeout(timer);controller.signal.removeEventListener("abort",aborted);resolve(value);};
+          const aborted=()=>finish(false);
+          timer=setTimeout(()=>finish(false),8000);
+          controller.signal.addEventListener("abort",aborted,{once:true});
+          Promise.resolve(promise).then(finish,()=>finish(false));
+          if(controller.signal.aborted)finish(false);
+        });
+        await bounded(initialSyncReady);
+        if(!controller.signal.aborted&&typeof syncNow==="function"&&!syncing)await bounded(syncNow());
       }
       if(controller.signal.aborted)return;
       const cached=window.VOCSentences.eligible(specials,job.bookId,slice);
@@ -856,7 +869,7 @@
       lastSentenceAddition={bookId:job.bookId,count:added.length};
       updateVerbReadiness();
       if(typeof syncNow==="function"){
-        const synced=await syncNow();
+        let synced=false;try{synced=await syncNow();}catch{/* local sentences remain usable */}
         lastSentenceAddition.serverConfirmed=synced===true;
         if(synced!==true)alert(added.length+" neue Sätze sind lokal gespeichert. Die Serverübertragung ist noch nicht bestätigt; sie wird beim nächsten Abgleich erneut versucht.");
       }
@@ -1387,7 +1400,11 @@
     const normalizeGroup=value=>normalized(value)
       .replace(/\((?:tu|nous|vous)\)\s*/g,"")
       .replace(/\s*\/\s*/g,"/");
-    const correct=item.tLang==="de-DE"?window.VOCVerbPresentation.matchesGermanAnswer(given,item,normalized):
+    const lexical=item.verbTense==="infinitiv"?window.VOCAnswerRules?.matchWord(item,given):null;
+    const explicit=item.tLang!=="de-DE"&&!grouped&&window.VOCAnswerRules?
+      window.VOCAnswerRules.matchExplicit(given,item.acceptedTargets||[expected],item.tLang):null;
+    const correct=typeof lexical==="boolean"?lexical:typeof explicit==="boolean"?explicit:
+      item.tLang==="de-DE"?window.VOCVerbPresentation.matchesGermanAnswer(given,item,normalized):
       grouped?normalizeGroup(given)===normalizeGroup(expected):
       (item.acceptedTargets||expected.split(/\s*(?:;|\bor\b)\s*/i))
         .some(candidate=>normalized(given)===normalized(candidate));

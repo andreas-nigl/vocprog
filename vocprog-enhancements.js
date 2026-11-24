@@ -719,7 +719,7 @@
     feedback.textContent=previous?(previous.correct?"Richtig":"Nicht richtig – zur Wiederholung angehängt"):"";
     if(previous)get("targetText").classList.remove("masked");
     const item=trainingItems[currentIndex];
-    input.placeholder=window.VOCVerbPresentation?.germanAnswerHint(item)||"Übersetzung eingeben …";
+    input.placeholder=window.VOCAnswerRules?.answerHint(item)||window.VOCVerbPresentation?.germanAnswerHint(item)||"Übersetzung eingeben …";
     if(!practiceSession.shown.has(currentIndex)){
       practiceSession.shown.add(currentIndex);lastShownEvent=logEvent("shown",item);
     }

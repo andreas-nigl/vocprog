@@ -71,12 +71,18 @@ function normalizeWord(value,language=""){
  return clean(literal).toLocaleLowerCase().replace(/[.,;:!?]/g," ").replace(/\s+/g," ").trim();
 }
 function variants(text,language){
+ const open=String(text).split(/\s*\/\s*/);
+ if(open.length>1&&/(?:\.{3}|…)/.test(open.at(-1))){
+  const last=open.at(-1).match(/^(?:\.{3}|…)\s*(.*)$/);
+  if(!last||open.slice(0,-1).some(part=>/(?:\.{3}|…)/.test(part)))throw Error("Unvollständige Beispielreihe");
+  if(last[1])return [...new Set(open.slice(0,-1).flatMap(part=>variants(part+" "+last[1],language)))];
+  text=open.slice(0,-1).join("/");
+ }
  return [...new Set(parens(clean(text),language).flatMap(part=>slashVariants(part,language)).flatMap(part=>placeholders(part,language)).map(part=>normalizeWord(part,language)).filter(Boolean))];
 }
 function compileSide(text,language,lookup){
  try{
   let input=String(text||"");
-  if(/\/\s*\.{2,}/.test(input))throw Error("Offene Beispielsammlung bleibt unverändert");
   const pronunciation=input.match(/\s+\[([^\]]+)\]\s*$/);
   if(pronunciation)input=input.slice(0,pronunciation.index);
   const plural=language.startsWith("en")?input.match(/,\s*pl\.?\s+([^,;]+)$/i):null;
@@ -85,6 +91,12 @@ function compileSide(text,language,lookup){
   if(grammar)input=input.slice(0,grammar.index);
   const parts=delimit(input);if(!parts.length)throw Error("Leeres Feld");
   let suffixes=[...(grammar?[normalizeWord(grammar[1],language)]:[]),...(plural?["pl",normalizeWord(plural[1],language)]:[]),...(pronunciation?[normalizeWord(pronunciation[1],language)]:[])],cores=parts;
+  if(language==="de-DE"&&/\/(?:\s*)(?:\.{3}|…)\s+\S/.test(parts[0])){
+   const predicate=parts[0].match(/\/(?:\s*)(?:\.{3}|…)\s+(.+)$/)[1];
+   if(parts.slice(1).some(part=>!/^\p{L}+$/u.test(part)))throw Error("Unvollständige gemeinsame Ergänzung");
+   const examples=variants(parts[0],language);
+   cores=examples.flatMap(example=>[example,...parts.slice(1).map(verb=>example.slice(0,-normalizeWord(predicate,language).length)+verb)]);
+  }
   if(language.startsWith("en")&&parts.length>1){
    const first=variants(parts[0],language).find(value=>!value.startsWith("to "))||"";
    const lemma=first.split(/\s+/)[0],ref=lookup?.(lemma);
@@ -111,21 +123,47 @@ function validateScanSide(parts,text,language){
    if(!core.length||suffixes.length>8||suffixes.some(value=>typeof value!=="string"||!clean(value)))return null;
    const normalized=suffixes.map(value=>normalizeWord(value,language));
    if(!core.every(value=>visible.includes(value)||visible.includes(clean(value+" "+normalized.join(" ")))))return null;
-   if(normalized.length&&!visible.some(full=>core.some(value=>full===clean(value+" "+normalized.join(" ")))))return null;
+   const printed=delimit(text);
+   const listedSuffixes=normalized.length&&printed.length===normalized.length+1&&
+     printed.slice(1).every((value,index)=>normalizeWord(value,language)===normalized[index])&&
+     core.every(value=>variants(printed[0],language).includes(value));
+   if(normalized.length&&!listedSuffixes&&!visible.some(full=>core.some(value=>full===clean(value+" "+normalized.join(" ")))))return null;
    groups.push({cores:core,suffixes:normalized});
   }
   return {mode:"variants",groups};
  }catch{return null;}
 }
+function genderPair(text,language){
+ const input=clean(text);let male,female,match;
+ if(language==="fr-FR"){
+  match=input.match(/^(le|un)\s+([^/]+)\s*\/\s*(la|une)\s+([^/]+)$/i);
+  if(match){male=match[1]+" "+match[2];female=match[3]+" "+match[4];}
+  else if((match=input.match(/^(le|un)\s*\/\s*(la|une)\s+([^/]+)$/i))){male=match[1]+" "+match[3];female=match[2]+" "+match[3];}
+ }else if(language==="de-DE"){
+  match=input.match(/^der\s*\/\s*die\s+(.+?)(?:\s*\/\s*(in))?$/i);
+  if(match&&!match[1].includes("/")){male="der "+match[1];female="die "+match[1]+(match[2]||"");}
+  else if((match=input.match(/^(der\s+[^/]+)\s*\/\s*(die\s+[^/]+)$/i))){male=match[1];female=match[2];}
+ }
+ if(!male||!female)return null;
+ return {mode:"required-groups",groups:[male,female].map(value=>({cores:variants(value,language),suffixes:[]})),
+  compact:parens(input,language).map(value=>normalizeWord(value,language).replace(/\s*\/\s*/g,"/"))};
+}
 function prepare(record,{lookup}={}){
  const key=contentKey(record);
- if(record.answerRules?.version===VERSION&&record.answerRules.contentKey===key)return record.answerRules;
+ const pairedGerman=record.lang==="fr-FR"?genderPair(record.german,"de-DE"):null;
+ const pair=pairedGerman?genderPair(record.foreign,record.lang):null;
+ const openExamples=/\/(?:\s*)(?:\.{3}|…)/.test(record.foreign||"")||/\/(?:\s*)(?:\.{3}|…)/.test(record.german||"");
+ const englishInfinitive=record.kind==="verb-infinitive"&&/^en-/.test(record.lang||"");
+ const features={...(pair?{pairedGender:1}:{}),...(openExamples?{openExamples:1}:{}),...(englishInfinitive?{englishInfinitiveTo:1}:{})};
+ const current=record.answerRules;
+ if(current?.version===VERSION&&current.contentKey===key&&Object.entries(features).every(([name,version])=>current.features?.[name]===version))return current;
  const scanned=record.answerParts;
  const foreign=validateScanSide(scanned?.foreign,record.foreign,record.lang||"");
  const german=validateScanSide(scanned?.german,record.german,"de-DE");
- return {version:VERSION,contentKey:key,source:foreign&&german?"scan":"local",
-   foreign:foreign||compileSide(record.foreign,record.lang||"",lookup),
-   german:german||compileSide(record.german,"de-DE")};
+ const infinitiveText=englishInfinitive&&!/^\s*\(?to\)?\s/i.test(record.foreign)?"(to) "+record.foreign:record.foreign;
+ return {version:VERSION,contentKey:key,source:foreign&&german?"scan":"local",...(Object.keys(features).length?{features}:{}),
+   foreign:pair||foreign||compileSide(infinitiveText,record.lang||"",lookup),
+   german:(pair&&pairedGerman)||german||compileSide(record.german,"de-DE")};
 }
 function patterns(group){
  let suffixes=[[]];
@@ -133,8 +171,20 @@ function patterns(group){
  return group.cores.flatMap(core=>suffixes.map(suffix=>[...core.split(" "),...suffix]));
 }
 function matchSide(input,side,language){
- if(side?.mode!=="variants")return null;
+ if(!["variants","required-groups"].includes(side?.mode))return null;
  let normalized;try{normalized=normalizeWord(input,language);}catch{return false;}
+ if(side.mode==="required-groups"){
+  if(side.compact?.includes(normalized.replace(/\s*\/\s*/g,"/")))return true;
+  const tokens=normalized.replace(/\s*\/\s*/g," ").split(/\s+/),required=(1<<side.groups.length)-1;
+  if(!normalized||tokens.length>256||side.groups.length>8)return false;
+  const reachable=Array.from({length:tokens.length+1},()=>new Set());reachable[0].add(0);
+  for(let offset=0;offset<tokens.length;offset++)for(const mask of reachable[offset]){
+   side.groups.forEach((group,index)=>{for(const sequence of patterns(group)){
+    if(sequence.length&&sequence.every((word,at)=>tokens[offset+at]===word))reachable[offset+sequence.length].add(mask|(1<<index));
+   }});
+  }
+  return reachable[tokens.length].has(required);
+ }
  const tokens=normalized.split(" ");if(!normalized||tokens.length>256)return false;
  const sequences=side.groups.flatMap(patterns),reachable=new Set([0]);
  for(let offset=0;offset<tokens.length;offset++){
@@ -148,6 +198,11 @@ function matchWord(item,input){
  const rules=prepare(item.record),language=item.tLang||item.record.lang||"";
  return matchSide(input,language==="de-DE"?rules.german:rules.foreign,language);
 }
+function answerHint(item){
+ if(item?.kind!=="words"||!item.record)return "";
+ const rules=prepare(item.record),side=item.tLang==="de-DE"?rules.german:rules.foreign;
+ return side.mode==="required-groups"?"Männliche und weibliche Form eingeben":"";
+}
 function matchExplicit(input,accepted,language){
  let normalized;try{normalized=normalizeWord(input,language);}catch{return false;}
  return accepted.some(value=>variants(value,language).includes(normalized));
@@ -157,6 +212,6 @@ function matchGrouped(input,expected,language){
  const given=String(input||"").split(/\s*\/\s*/);
  return given.length===required.length&&required.every((part,index)=>matchExplicit(given[index],[part],language));
 }
-const api={VERSION,contentKey,layout,normalizeWord,variants,prepare,matchSide,matchWord,matchExplicit,matchGrouped};
+const api={VERSION,contentKey,layout,normalizeWord,variants,prepare,matchSide,matchWord,answerHint,matchExplicit,matchGrouped};
 root.VOCAnswerRules=api;if(typeof module!=="undefined")module.exports=api;
 })(typeof globalThis!=="undefined"?globalThis:this);

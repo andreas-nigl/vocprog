@@ -32,8 +32,8 @@ test("Suffix brackets, synonyms and literal pronunciations never permit arbitrar
  assert.equal(api.matchSide("reiner s",r.german,"de-DE"),false);
  assert.equal(api.matchSide("dur",r.foreign,"fr-FR"),true);
  assert.equal(api.matchSide("dure",r.foreign,"fr-FR"),true);
- assert.equal(compile("le/la jeune","der/die Jugendliche","fr-FR").foreign.mode,"variants");
- assert.equal(compile("le voisin/la voisine","der/die Nachbar/in","fr-FR").german.mode,"legacy");
+ assert.equal(compile("le/la jeune","der/die Jugendliche","fr-FR").foreign.mode,"required-groups");
+ assert.equal(compile("le voisin/la voisine","der/die Nachbar/in","fr-FR").german.mode,"required-groups");
  const p=side("pure [pjʊə]");
  assert.equal(api.matchSide("pure",p,"en-US"),true);
  assert.equal(api.matchSide("pure pyure",p,"en-US"),false);
@@ -132,4 +132,50 @@ test("Actual explicit verb grading preserves optional labels and German synonym 
 
 test("Grouped records never use the relaxed single-core word matcher",()=>{
  assert.equal(api.matchWord({record:{kind:"verb-principal",foreign:"go / went / gone",german:"gehen / gehend / gegangen",lang:"en-US"},tLang:"en-US"},"go"),null);
+});
+
+test('Paired noun genders require both forms; optional brackets and compact slash spelling remain valid',()=>{
+ const record={foreign:'le voisin/la voisine',german:'der/die (Sitz-)Nachbar/in',lang:'fr-FR'};
+ const rules=api.prepare(record);
+ for(const input of ['le voisin/la voisine','le voisin, la voisine','la voisine le voisin'])assert.equal(api.matchSide(input,rules.foreign,'fr-FR'),true,input);
+ for(const input of ['le voisin','la voisine','le voisin la voisne','levoisin la voisine'])assert.equal(api.matchSide(input,rules.foreign,'fr-FR'),false,input);
+ for(const input of ['der/die Nachbar/in','der/die Sitznachbar/in','der Nachbar / die Nachbarin','die Nachbarin der Sitznachbar'])assert.equal(api.matchSide(input,rules.german,'de-DE'),true,input);
+ for(const input of ['der Nachbar','die Nachbarin','der Nachbar die Nachbarinn','der/die Nachber/in'])assert.equal(api.matchSide(input,rules.german,'de-DE'),false,input);
+ assert.match(api.answerHint({kind:'words',record,tLang:'fr-FR'}),/Männliche und weibliche/);
+ assert.equal(api.answerHint({kind:'sentences',record,tLang:'fr-FR'}),'');
+ const ordinary=compile('le/la même','der-/die-/dasselbe, der/die/das Gleiche','fr-FR');
+ assert.equal(ordinary.foreign.mode,'variants');
+});
+test('Targeted repairs preserve all unrelated prepared metadata and do not repeatedly invoke the lookup',()=>{
+ const record={foreign:'le voisin/la voisine',german:'der/die (Sitz-)Nachbar/in',lang:'fr-FR'};
+ record.answerRules={version:1,contentKey:api.contentKey(record),foreign:{mode:'variants',groups:[{cores:['le voisin','la voisine'],suffixes:[]}]},german:{mode:'legacy'}};
+ const repaired=api.prepare(record);assert.equal(repaired.features.pairedGender,1);
+ record.answerRules=repaired;assert.strictEqual(api.prepare(record),repaired);
+ const other={foreign:'(to) refuse',german:'ablehnen',lang:'en-US'};other.answerRules=api.prepare(other);
+ assert.strictEqual(api.prepare(other),other.answerRules);
+});
+test('Open example rows accept complete printed examples, not fragments or incorrect extra principal parts',()=>{
+ const reference={forms:{'simple past':[['ran']]},participle:['run']};
+ const record={foreign:'(to) run a school/company/restaurant/..., ran, run',german:'eine Schule / eine Firma / ein Restaurant / ... leiten, führen',lang:'en-US'};
+ const r=api.prepare(record,{lookup:lemma=>lemma==='run'?reference:null});
+ for(const input of ['run a school','to run a company','run a restaurant ran run'])assert.equal(api.matchSide(input,r.foreign,'en-US'),true,input);
+ for(const input of ['run','run a','ran','run a hospital','run a school ranned run'])assert.equal(api.matchSide(input,r.foreign,'en-US'),false,input);
+ for(const input of ['eine Schule leiten','eine Firma führen','ein Restaurant leiten'])assert.equal(api.matchSide(input,r.german,'de-DE'),true,input);
+ for(const input of ['eine Schule','leiten','eine Firma führren'])assert.equal(api.matchSide(input,r.german,'de-DE'),false,input);
+ const scanned=api.prepare({...record,answerParts:{foreign:[{core:'(to) run a school/company/restaurant',optionalSuffixes:['ran','run']}],german:[]}});
+ assert.equal(api.matchSide('run a school',scanned.foreign,'en-US'),true);
+});
+test('Lower real printed spelling, missing legacy kind, stored metadata and English verb infinitive all accept bare or to form',()=>{
+ for(const text of ["(to) lower ['ləʊə]",'(to) lower']){
+  const record={foreign:text,german:'senken, verschlechtern',lang:'en-US'};
+  record.answerRules=JSON.parse(JSON.stringify(api.prepare(record)));
+  for(const input of ['lower','to lower'])assert.equal(api.matchWord({kind:'words',record,tLang:'en-US'},input),true,input);
+  for(const input of ['senken','verschlechtern'])assert.equal(api.matchWord({record,tLang:'de-DE'},input),true);
+  for(const input of ['tolower','to lowwer'])assert.equal(api.matchWord({record,tLang:'en-US'},input),false);
+ }
+ const record={foreign:'lower',german:'senken, verschlechtern',lang:'en-US',kind:'verb-infinitive'};
+ const r=api.prepare(record);assert.equal(r.features.englishInfinitiveTo,1);
+ record.answerRules=r;
+ for(const input of ['lower','to lower'])assert.equal(api.matchWord({record,tLang:'en-US'},input),true);
+ assert.equal(api.matchExplicit('to lower',['lowered'],'en-US'),false,'tense cards are not infinitive cards');
 });

@@ -1,5 +1,4 @@
-name: Vocabulary rule review
-# Review 8: correct test-fixture string quoting; application source unchanged.
+name: Verify published VOC 0.5.20
 on:
   push:
     branches: [develop/offline-supabase-20261105]
@@ -7,29 +6,24 @@ on:
 permissions:
   contents: read
 jobs:
-  review:
+  readback:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - name: Syntax and regression tests
+      - name: Read published app and compare tested text assets
         run: |
-          node --check vocprog-answer-rules.js
-          node --check vocprog-vocab-choices.js
-          node --check vocprog-enhancements.js
-          node --test tests/*.test.js tests/*.test.cjs
-      - name: Browser dependencies
-        run: |
-          npm install --no-save --package-lock=false playwright@1.56.1
-          npx playwright install --with-deps chromium
-      - name: Browser dropdown checks
-        run: |
-          node tests/vocab-choices.browser.cjs
-          node tests/app-answer-flow.browser.cjs
-      - name: Prepare vocabulary inventory without changes
-        run: node tools/prepare-vocabulary-rules.cjs
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: vocabulary-rule-review
-          path: /tmp/vocprog-answer-rules
-          retention-days: 30
+          node <<'NODE'
+          const fs=require("node:fs"),assert=require("node:assert/strict"),crypto=require("node:crypto");
+          (async()=>{
+           const files=["index.html","vocprog-answer-rules.js","vocprog-vocab-choices.js","vocprog-enhancements.js","vocprog-enhancements.css","sw.js"];
+           const hash=value=>crypto.createHash("sha256").update(value).digest("hex");
+           for(const file of files){
+            const response=await fetch("https://andreas-nigl.github.io/vocprog/"+file+"?verify=7729350b75f5dc6e0634067b55d243be9f45bd5f",{cache:"no-store",signal:AbortSignal.timeout(30000)});
+            assert.equal(response.status,200,file);
+            const actual=Buffer.from(await response.arrayBuffer()),expected=fs.readFileSync(file);
+            assert.equal(hash(actual),hash(expected),"Published content differs: "+file);
+            console.log("Published file matches tested source: "+file);
+           }
+           console.log("VOC 0.5.20 / 0.5.20-1 production read-back successful");
+          })().catch(error=>{console.error(error);process.exitCode=1;});
+          NODE

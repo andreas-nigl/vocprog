@@ -95,3 +95,13 @@ test("Metadata content key survives database object-key ordering",()=>{
  const b={...a,answerParts:{german:[{optionalSuffixes:[],core:"ablehnen"}],foreign:[{optionalSuffixes:[],core:"refuse"}]}};
  assert.equal(api.contentKey(a),api.contentKey(b));
 });
+
+test("Trailing pronunciation and marked plural remain optional without inventing ellipsis answers",()=>{
+ const ref={forms:{"simple past":[["sprang"]]},participle:["sprung"]};
+ const r=compile("(to) spring up, sprang, sprung [,sprɪŋ 'ʌp]","aus dem Boden schießen","en-US",lemma=>lemma==="spring"?ref:null).foreign;
+ assert.equal(r.mode,"variants");
+ for(const v of ["spring up","to spring up sprang sprung"])assert.equal(api.matchSide(v,r,"en-US"),true);
+ assert.equal(api.matchSide("inch",side("inch, pl inches"),"en-US"),true);
+ assert.equal(api.matchSide("inch inches",side("inch, pl inches"),"en-US"),true);
+ assert.equal(compile("(to) run a school/company/restaurant/..., ran, run").foreign.mode,"legacy");
+});

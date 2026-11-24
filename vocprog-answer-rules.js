@@ -76,10 +76,15 @@ function variants(text,language){
 function compileSide(text,language,lookup){
  try{
   let input=String(text||"");
+  if(/\/\s*\.{2,}/.test(input))throw Error("Offene Beispielsammlung bleibt unverändert");
+  const pronunciation=input.match(/\s+\[([^\]]+)\]\s*$/);
+  if(pronunciation)input=input.slice(0,pronunciation.index);
+  const plural=language.startsWith("en")?input.match(/,\s*pl\.?\s+([^,;]+)$/i):null;
+  if(plural)input=input.slice(0,plural.index);
   const grammar=input.match(/\s+((?:(?:m|f|pl|sing|sg)\.\s*)+)$/i);
   if(grammar)input=input.slice(0,grammar.index);
   const parts=delimit(input);if(!parts.length)throw Error("Leeres Feld");
-  let suffixes=grammar?[normalizeWord(grammar[1],language)]:[],cores=parts;
+  let suffixes=[...(grammar?[normalizeWord(grammar[1],language)]:[]),...(plural?["pl",normalizeWord(plural[1],language)]:[]),...(pronunciation?[normalizeWord(pronunciation[1],language)]:[])],cores=parts;
   if(language.startsWith("en")&&parts.length>1){
    const first=variants(parts[0],language).find(value=>!value.startsWith("to "))||"";
    const lemma=first.split(/\s+/)[0],ref=lookup?.(lemma);

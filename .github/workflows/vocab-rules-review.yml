@@ -1,5 +1,5 @@
 name: Vocabulary rule review
-# Review 3: deterministic metadata serialization and supported browser runner.
+# Review 4: complete browser flow and conservative inventory edge cases.
 on:
   push:
     branches: [develop/offline-supabase-20261105]
@@ -22,7 +22,9 @@ jobs:
           npm install --no-save --package-lock=false playwright@1.56.1
           npx playwright install --with-deps chromium
       - name: Browser dropdown checks
-        run: node tests/vocab-choices.browser.cjs
+        run: |
+          node tests/vocab-choices.browser.cjs
+          node tests/app-answer-flow.browser.cjs
       - name: Prepare vocabulary inventory without changes
         run: node tools/prepare-vocabulary-rules.cjs
       - uses: actions/upload-artifact@v4

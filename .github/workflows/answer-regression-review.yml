@@ -1,23 +1,35 @@
-name: Answer regression review
+name: Verify paired-answer release and lower baseline
 on:
   push:
     branches: [develop/offline-supabase-20261105]
+    paths: [.github/workflows/answer-regression-review.yml]
 permissions:
   contents: read
 jobs:
-  review:
+  verify:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - name: Tests and syntax
+      - name: Verify published files
         run: |
-          node --test tests/*.test.js tests/*.test.cjs
-          node --check vocprog-answer-rules.js
-          node --check vocprog-enhancements.js
-          git diff --check
+          node <<'NODE'
+          const fs=require('node:fs'),crypto=require('node:crypto'),assert=require('node:assert/strict');
+          (async()=>{
+           const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
+           for(const file of ['index.html','vocprog-answer-rules.js','vocprog-enhancements.js','sw.js']){
+            const response=await fetch('https://andreas-nigl.github.io/vocprog/'+file+'?verify=85efc7e5d88a02c0762205f842f728a3dbf98714',{cache:'no-store',signal:AbortSignal.timeout(30000)});
+            assert.equal(response.status,200,file);assert.equal(hash(Buffer.from(await response.arrayBuffer())),hash(fs.readFileSync(file)),file);
+            console.log('Published source matches: '+file);
+           }
+          })().catch(error=>{console.error(error);process.exitCode=1;});
+          NODE
       - name: Browser setup
         run: |
           npm install --no-save --package-lock=false playwright@1.56.1
           npx playwright install --with-deps chromium
-      - name: Actual answer flows
-        run: node tests/answer-regressions.browser.cjs
+      - name: Reproduce lower against unchanged original 0.5.20 release
+        run: |
+          git fetch origin eb2a1655a81673e7a65e59ae009c691a170f2852
+          git worktree add --detach /tmp/vocprog-lower-baseline eb2a1655a81673e7a65e59ae009c691a170f2852
+          cp tests/answer-regressions.browser.cjs /tmp/vocprog-lower-baseline/tests/
+          NODE_PATH="$GITHUB_WORKSPACE/node_modules" VOC_CASE_FILTER=lower node /tmp/vocprog-lower-baseline/tests/answer-regressions.browser.cjs

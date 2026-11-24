@@ -18,7 +18,7 @@ const cases=[
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const browser=await chromium.launch({headless:true});
  try{
-  for(const scenario of cases){
+  for(const scenario of cases.filter(item=>!process.env.VOC_CASE_FILTER||item.foreign.includes(process.env.VOC_CASE_FILTER))){
    for(const [answer,correct] of [...scenario.inputs.map(value=>[value,true]),...scenario.bad.map(value=>[value,false])]){
     const record={id:'fixture',bookId:'book',page:'300',refVocab:'S300 V11',...scenario};
     record.answerRules=JSON.parse(JSON.stringify(api.prepare(record,{lookup:lemma=>lemma==='run'?{forms:{'simple past':[['ran']]},participle:['run']}:null})));

@@ -1394,14 +1394,15 @@
     if(analyzedThisCard)return;
     const input=get("answerInput"),given=input.value.trim();
     if(!given)return;
-    const normalized=value=>simplified(value).replace(/\s*\/\s*/g,"/").replace(/\s*\(\s*/g,"(").replace(/\s*\)\s*/g,")");
+    const normalized=value=>cleanSpokenText(value).normalize("NFKC").toLocaleLowerCase().replace(/[.!?,;:]/g," ").replace(/\s+/g," ").trim().replace(/\s*\/\s*/g,"/").replace(/\s*\(\s*/g,"(").replace(/\s*\)\s*/g,")");
     const expected=String(item.target||"");
     const grouped=item.record?.kind==="verb-principal"||item.record?.kind==="verb-imperative";
     const normalizeGroup=value=>normalized(value)
       .replace(/\((?:tu|nous|vous)\)\s*/g,"")
       .replace(/\s*\/\s*/g,"/");
     const lexical=item.verbTense==="infinitiv"?window.VOCAnswerRules?.matchWord(item,given):null;
-    const explicit=item.tLang!=="de-DE"&&!grouped&&window.VOCAnswerRules?
+    const explicit=item.tLang!=="de-DE"&&window.VOCAnswerRules?
+      grouped?window.VOCAnswerRules.matchGrouped(given,expected,item.tLang):
       window.VOCAnswerRules.matchExplicit(given,item.acceptedTargets||[expected],item.tLang):null;
     const correct=typeof lexical==="boolean"?lexical:typeof explicit==="boolean"?explicit:
       item.tLang==="de-DE"?window.VOCVerbPresentation.matchesGermanAnswer(given,item,normalized):

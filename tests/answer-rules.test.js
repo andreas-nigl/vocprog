@@ -105,3 +105,27 @@ test("Trailing pronunciation and marked plural remain optional without inventing
  assert.equal(api.matchSide("inch inches",side("inch, pl inches"),"en-US"),true);
  assert.equal(compile("(to) run a school/company/restaurant/..., ran, run").foreign.mode,"legacy");
 });
+
+test("Grouped imperative and principal parts retain every required form while brackets stay optional",()=>{
+ const expected="(tu) mets / (nous) mettons / (vous) mettez";
+ assert.equal(api.matchGrouped("mets / mettons / mettez",expected,"fr-FR"),true);
+ assert.equal(api.matchGrouped("tu mets / nous mettons / vous mettez",expected,"fr-FR"),true);
+ assert.equal(api.matchGrouped("mets",expected,"fr-FR"),false);
+ assert.equal(api.matchGrouped("mets / mettons / metez",expected,"fr-FR"),false);
+ assert.equal(api.matchGrouped("go / went / gone","(to) go / went / gone","en-US"),true);
+});
+test("Actual explicit verb grading preserves optional labels and German synonym behavior with the new module",()=>{
+ const source=fs.readFileSync(require.resolve("../vocprog-enhancements.js"),"utf8");
+ const start=source.indexOf("  window.gradeCurrentAnswer=function(){",source.indexOf("  const oldGrade=window.gradeCurrentAnswer;"));
+ const end=source.indexOf("\n\n\n  function resetRecord",start);
+ const presentation=require("../vocprog-verb-presentation.js");
+ const run=new Function("api","presentation","item","value",[
+ "let analyzedThisCard=false,currentIndex=0;const trainingItems=[item],nodes={answerInput:{value},answerFeedback:{},targetText:{classList:{remove(){}}}};",
+ "let result;const window={VOCAnswerRules:api,VOCVerbPresentation:presentation},get=id=>nodes[id],cleanSpokenText=x=>x,logEvent=(action,item,data)=>result=data.correct;",
+ source.slice(start,end),"window.gradeCurrentAnswer();return result;"
+ ].join("\n"));
+ const item={kind:"verbs",record:{kind:"verb-imperative"},target:"(tu) mets / (nous) mettons / (vous) mettez",tLang:"fr-FR"};
+ assert.equal(run(api,presentation,item,"mets / mettons / mettez"),true);
+ assert.equal(run(api,presentation,item,"mets"),false);
+ assert.equal(run(api,presentation,{kind:"verbs",record:{kind:"verb-form"},target:"ich setze/stelle/lege",tLang:"de-DE"},"ich stelle"),true);
+});

@@ -152,6 +152,11 @@ function matchExplicit(input,accepted,language){
  let normalized;try{normalized=normalizeWord(input,language);}catch{return false;}
  return accepted.some(value=>variants(value,language).includes(normalized));
 }
-const api={VERSION,contentKey,layout,normalizeWord,variants,prepare,matchSide,matchWord,matchExplicit};
+function matchGrouped(input,expected,language){
+ const required=String(expected||"").split(/\s*\/\s*/);
+ const given=String(input||"").split(/\s*\/\s*/);
+ return given.length===required.length&&required.every((part,index)=>matchExplicit(given[index],[part],language));
+}
+const api={VERSION,contentKey,layout,normalizeWord,variants,prepare,matchSide,matchWord,matchExplicit,matchGrouped};
 root.VOCAnswerRules=api;if(typeof module!=="undefined")module.exports=api;
 })(typeof globalThis!=="undefined"?globalThis:this);

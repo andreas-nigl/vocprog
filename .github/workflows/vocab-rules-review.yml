@@ -1,5 +1,5 @@
 name: Vocabulary rule review
-# Review 5: generation remains usable even when the server upload hangs.
+# Review 6: preserve grouped imperative labels and explicit German synonym grading.
 on:
   push:
     branches: [develop/offline-supabase-20261105]

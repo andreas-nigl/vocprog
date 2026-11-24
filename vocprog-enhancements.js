@@ -825,8 +825,7 @@
     button.textContent="Generierung abbrechen";
     const timeout=setTimeout(()=>controller.abort(),90000);
     try{
-      if(navigator.onLine){
-        const bounded=promise=>new Promise(resolve=>{
+      const bounded=promise=>new Promise(resolve=>{
           let timer;const finish=value=>{clearTimeout(timer);controller.signal.removeEventListener("abort",aborted);resolve(value);};
           const aborted=()=>finish(false);
           timer=setTimeout(()=>finish(false),8000);
@@ -834,6 +833,7 @@
           Promise.resolve(promise).then(finish,()=>finish(false));
           if(controller.signal.aborted)finish(false);
         });
+      if(navigator.onLine){
         await bounded(initialSyncReady);
         if(!controller.signal.aborted&&typeof syncNow==="function"&&!syncing)await bounded(syncNow());
       }
@@ -869,7 +869,7 @@
       lastSentenceAddition={bookId:job.bookId,count:added.length};
       updateVerbReadiness();
       if(typeof syncNow==="function"){
-        let synced=false;try{synced=await syncNow();}catch{/* local sentences remain usable */}
+        let synced=false;try{synced=await bounded(syncNow());}catch{/* local sentences remain usable */}
         lastSentenceAddition.serverConfirmed=synced===true;
         if(synced!==true)alert(added.length+" neue Sätze sind lokal gespeichert. Die Serverübertragung ist noch nicht bestätigt; sie wird beim nächsten Abgleich erneut versucht.");
       }

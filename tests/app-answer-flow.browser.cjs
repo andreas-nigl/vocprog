@@ -14,11 +14,12 @@ const server=http.createServer((req,res)=>{
  const browser=await chromium.launch({headless:true});
  try{
   const context=await browser.newContext({viewport:{width:640,height:900},serviceWorkers:"block"});
-  let generated=0;
+  let generated=0,holdUploads=false;
   await context.route("https://**/*",route=>{
+   if(route.request().url().includes(".supabase.co/")&&holdUploads)return new Promise(()=>{});
    if(route.request().url().includes(".supabase.co/"))return route.fulfill({status:503,contentType:"application/json",body:'{}'});
    if(route.request().url().includes("generativelanguage.googleapis.com")){
-    generated++;return route.fulfill({contentType:"application/json",body:JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify([{foreign:"I refuse.",german:"Ich lehne ab.",vocabIds:["a"]}])}]}}]})});
+    generated++;holdUploads=true;return route.fulfill({contentType:"application/json",body:JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify([{foreign:"I refuse.",german:"Ich lehne ab.",vocabIds:["a"]}])}]}}]})});
    }
    return route.abort();
   });

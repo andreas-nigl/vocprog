@@ -121,11 +121,15 @@ test("Actual explicit verb grading preserves optional labels and German synonym 
  const presentation=require("../vocprog-verb-presentation.js");
  const run=new Function("api","presentation","item","value",[
  "let analyzedThisCard=false,currentIndex=0;const trainingItems=[item],nodes={answerInput:{value},answerFeedback:{},targetText:{classList:{remove(){}}}};",
- "let result;const window={VOCAnswerRules:api,VOCVerbPresentation:presentation},get=id=>nodes[id],cleanSpokenText=x=>x,logEvent=(action,item,data)=>result=data.correct;",
+ "let result;const window={VOCAnswerRules:api,VOCVerbPresentation:presentation},get=id=>nodes[id],simplified=x=>x.toLowerCase().replace(/[.!?,;:]/g," ").replace(/\\s+/g," ").trim(),logEvent=(action,item,data)=>result=data.correct;",
  source.slice(start,end),"window.gradeCurrentAnswer();return result;"
  ].join("\n"));
  const item={kind:"verbs",record:{kind:"verb-imperative"},target:"(tu) mets / (nous) mettons / (vous) mettez",tLang:"fr-FR"};
  assert.equal(run(api,presentation,item,"mets / mettons / mettez"),true);
  assert.equal(run(api,presentation,item,"mets"),false);
  assert.equal(run(api,presentation,{kind:"verbs",record:{kind:"verb-form"},target:"ich setze/stelle/lege",tLang:"de-DE"},"ich stelle"),true);
+});
+
+test("Grouped records never use the relaxed single-core word matcher",()=>{
+ assert.equal(api.matchWord({record:{kind:"verb-principal",foreign:"go / went / gone",german:"gehen / gehend / gegangen",lang:"en-US"},tLang:"en-US"},"go"),null);
 });

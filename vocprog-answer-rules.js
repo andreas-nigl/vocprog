@@ -144,7 +144,7 @@ function matchSide(input,side,language){
  return reachable.has(tokens.length);
 }
 function matchWord(item,input){
- if(!item.record)return null;
+ if(!item.record||["verb-principal","verb-imperative"].includes(item.record.kind))return null;
  const rules=prepare(item.record),language=item.tLang||item.record.lang||"";
  return matchSide(input,language==="de-DE"?rules.german:rules.foreign,language);
 }

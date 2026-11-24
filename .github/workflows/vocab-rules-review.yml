@@ -1,5 +1,5 @@
 name: Vocabulary rule review
-# Review 6: preserve grouped imperative labels and explicit German synonym grading.
+# Review 7: regression harness compatibility and unchanged grouped-card requirements.
 on:
   push:
     branches: [develop/offline-supabase-20261105]

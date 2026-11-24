@@ -728,8 +728,7 @@
   };
   function simplified(text){
     const value=cleanSpokenText(text);
-    return window.VOCAnswerRules?window.VOCAnswerRules.normalizeWord(value):
-      value.normalize("NFKC").toLocaleLowerCase().replace(/[.!?,;:]/g,"").replace(/\s+/g," ").trim();
+    return value.normalize("NFKC").toLocaleLowerCase().replace(/[.!?,;:]/g," ").replace(/\s+/g," ").trim();
   }
   window.checkTypedAnswer=function(e){
     if(e.key!=="Enter"||e.isComposing)return;
@@ -743,7 +742,10 @@
     const given=input.value.trim();
     if(!given)return;
     const alternatives=String(item.target||"").split(/\s*(?:\/|;|\bor\b)\s*/i);
-    const modern=item.kind==="words"?window.VOCAnswerRules?.matchWord(item,given):null;
+    const grouped=["verb-principal","verb-imperative"].includes(item.record?.kind);
+    const modern=item.kind==="words"&&grouped&&item.tLang!=="de-DE"&&window.VOCAnswerRules?
+      window.VOCAnswerRules.matchGrouped(given,item.target,item.tLang):
+      item.kind==="words"?window.VOCAnswerRules?.matchWord(item,given):null;
     const correct=typeof modern==="boolean"?modern:
       ["sentences","special"].includes(item.kind)&&window.VOCAnswerRules?
         window.VOCAnswerRules.layout(item.target)===window.VOCAnswerRules.layout(given):
@@ -1394,7 +1396,7 @@
     if(analyzedThisCard)return;
     const input=get("answerInput"),given=input.value.trim();
     if(!given)return;
-    const normalized=value=>cleanSpokenText(value).normalize("NFKC").toLocaleLowerCase().replace(/[.!?,;:]/g," ").replace(/\s+/g," ").trim().replace(/\s*\/\s*/g,"/").replace(/\s*\(\s*/g,"(").replace(/\s*\)\s*/g,")");
+    const normalized=value=>simplified(value).replace(/\s*\/\s*/g,"/").replace(/\s*\(\s*/g,"(").replace(/\s*\)\s*/g,")");
     const expected=String(item.target||"");
     const grouped=item.record?.kind==="verb-principal"||item.record?.kind==="verb-imperative";
     const normalizeGroup=value=>normalized(value)

@@ -1,0 +1,38 @@
+name: Review vocabulary stock
+on:
+  push:
+    branches: [develop/offline-supabase-20261105]
+    paths: [.github/workflows/vocab-rules-review.yml]
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Audit vocabulary without changing data
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const source=fs.readFileSync('vocprog-enhancements.js','utf8');
+          const endpoint=source.match(/const DB_URL = "([^"]+)"/)[1]+'/rest/v1/vocprog_public_records';
+          const key=source.match(/const PUB_KEY = "([^"]+)"/)[1];
+          const rows=[];
+          for(let offset=0;;offset+=500){
+            const response=await fetch(endpoint+'?select=record_id,record_type,payload,updated_at&order=record_id.asc&limit=500&offset='+offset,{headers:{apikey:key},signal:AbortSignal.timeout(30000)});
+            if(!response.ok)throw Error('Read failed: '+response.status);
+            const part=await response.json();if(!part.length)break;rows.push(...part);
+          }
+          fs.writeFileSync('/tmp/vocprog-stock-before.json',JSON.stringify(rows));
+          const books=new Map(rows.filter(x=>x.record_type==='book'&&!x.payload.deleted).map(x=>[x.payload.id,x.payload]));
+          const words=rows.filter(x=>x.record_type==='vocab'&&!x.payload.deleted&&books.get(x.payload.bookId)?.kind!=='verbs');
+          const special=words.filter(x=>/[()[\];/–—]|\s-\s|,/.test(x.payload.foreign));
+          console.log(JSON.stringify({totalRows:rows.length,wordRows:words.length,books:[...books.values()].map(x=>({id:x.id,name:x.name,kind:x.kind,lang:x.lang}))}));
+          for(const row of special.slice(0,100))console.log(JSON.stringify({id:row.payload.id,lang:row.payload.lang,kind:row.payload.kind,foreign:row.payload.foreign,german:row.payload.german}));
+          JS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vocabulary-stock-before
+          path: /tmp/vocprog-stock-before.json
+          retention-days: 30

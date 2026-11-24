@@ -57,6 +57,7 @@ test('speech text uses the same safe HTML conversion', () => {
       },
     },
     window: { speechSynthesis: { cancel() {}, speak(value) { spoken = value; } } },
+    cleanSpokenText: text => text,
     SpeechSynthesisUtterance: function (text) { this.text = text; },
   };
   vm.runInNewContext(`${functionSource('safeUnderline')}\n${functionSource('playAudio')}\nplayAudio('target')`, context);

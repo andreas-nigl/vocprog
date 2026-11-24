@@ -931,6 +931,12 @@
     showCard();
   }
 
+  function safeUnderline(value) {
+    return String(value ?? "").replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/&lt;u&gt;/gi, "<u>").replace(/&lt;\/u&gt;/gi, "</u>");
+  }
+
   function showCard() {
     if (trainingItems.length === 0) return;
     const current = trainingItems[currentIndex];
@@ -985,7 +991,7 @@
     const item = trainingItems[currentIndex];
     let rawText = type === 'prompt' ? item.prompt : item.target;
     let tempDiv = document.createElement('div');
-    tempDiv.innerHTML = rawText;
+    tempDiv.innerHTML = safeUnderline(rawText);
     let cleanText = cleanSpokenText(tempDiv.textContent || tempDiv.innerText || "");
 
     let lang = type === 'prompt' ? item.pLang : item.tLang;

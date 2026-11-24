@@ -1,4 +1,5 @@
 name: Vocabulary rule review
+# Review 2: include previously unexecuted security regression tests.
 on:
   push:
     branches: [develop/offline-supabase-20261105]

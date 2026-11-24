@@ -2,6 +2,7 @@
 /** One-off local-rule migration. No AI requests. Dry run unless --apply is explicit. */
 const fs=require("node:fs"),path=require("node:path");
 const rules=require("../vocprog-answer-rules.js");
+const {isDeepStrictEqual:equal}=require("node:util");
 const source=fs.readFileSync(path.join(__dirname,"../vocprog-enhancements.js"),"utf8");
 const base=source.match(/const DB_URL = "([^"]+)"/)[1];
 const publicKey=source.match(/const PUB_KEY = "([^"]+)"/)[1];
@@ -59,7 +60,7 @@ async function main(){
   if(!byBook.has(key))byBook.set(key,{id:key,name:books.get(key).name,total:0,legacy:0});
   byBook.get(key).total++;if(legacy.length)byBook.get(key).legacy++;
   if(legacy.length)report.examples.push({id:record.id,book:books.get(key).name,foreign:record.foreign,german:record.german,legacy,reason:legacy.map(side=>prepared[side].reason)});
-  if(JSON.stringify(row.payload.answerRules)!==JSON.stringify(prepared)||row.payload.lang!==record.lang){
+  if(!equal(row.payload.answerRules,prepared)||row.payload.lang!==record.lang){
    report.changed++;pending.push({row,record,prepared});
   }
  }
@@ -71,7 +72,7 @@ async function main(){
    const query=new URLSearchParams({record_id:"eq."+row.record_id,updated_at:"eq."+row.updated_at,select:"record_id,payload"});
    const updated=await request(query,{method:"PATCH",headers:{Prefer:"return=representation"},body:JSON.stringify({payload,updated_at:now})});
    if(updated.length!==1){report.concurrentSkipped.push(row.record_id);continue;}
-   if(updated[0].record_id!==row.record_id||JSON.stringify(updated[0].payload.answerRules)!==JSON.stringify(prepared))throw Error("Write confirmation mismatch: "+row.record_id);
+   if(updated[0].record_id!==row.record_id||!equal(updated[0].payload.answerRules,prepared))throw Error("Write confirmation mismatch: "+row.record_id);
    report.written++;
   }
   const after=await snapshot(),byId=new Map(after.map(row=>[row.record_id,row]));
@@ -79,15 +80,15 @@ async function main(){
   for(const row of after){
    if(!eligible(row,books))continue;
    const record={...row.payload,lang:row.payload.lang||books.get(row.payload.bookId).lang};
-   if(JSON.stringify(record.answerRules)!==JSON.stringify(rules.prepare(record,{lookup})))pendingAgain++;
+   if(!equal(record.answerRules,rules.prepare(record,{lookup})))pendingAgain++;
   }
   for(const {row,prepared} of pending){
    if(report.concurrentSkipped.includes(row.record_id))continue;
    const actual=byId.get(row.record_id)?.payload;
-   if(JSON.stringify(actual?.answerRules)!==JSON.stringify(prepared))throw Error("Read-back mismatch: "+row.record_id);
+   if(!equal(actual?.answerRules,prepared))throw Error("Read-back mismatch: "+row.record_id);
    const unchanged={...actual};delete unchanged.answerRules;delete unchanged.updatedAt;
    const expected={...row.payload,lang:row.payload.lang||books.get(row.payload.bookId).lang};delete expected.answerRules;delete expected.updatedAt;
-   if(JSON.stringify(unchanged)!==JSON.stringify(expected))throw Error("Unexpected source change: "+row.record_id);
+   if(!equal(unchanged,expected))throw Error("Unexpected source change: "+row.record_id);
   }
   report.pendingOnSecondPass=pendingAgain;
   fs.writeFileSync(path.join(output,"after.json"),JSON.stringify(after,null,2));

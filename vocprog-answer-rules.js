@@ -3,7 +3,7 @@
 "use strict";
 const VERSION=1,MAX_VARIANTS=128;
 const clean=value=>String(value||"").normalize("NFKC").replace(/[’‘]/g,"'").replace(/\s+/g," ").trim();
-const contentKey=record=>JSON.stringify([record.lang||"",record.kind||"words",record.foreign||"",record.german||"",record.answerParts||null]);
+const contentKey=record=>JSON.stringify([record.lang||"",record.kind||"words",record.foreign||"",record.german||"",record.answerParts||null],(_key,value)=>value&&typeof value==="object"&&!Array.isArray(value)?Object.fromEntries(Object.keys(value).sort().map(key=>[key,value[key]])):value);
 const stripTags=value=>String(value||"").replace(/<[^>]*>/g,"");
 function layout(value){
  return clean(stripTags(value)).toLocaleLowerCase().replace(/\s*([,;:.!?()[\]])\s*/g,"$1");

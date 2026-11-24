@@ -74,3 +74,24 @@ test("Browser module has no fetch, timers or AI call during matching or legacy f
  record.answerRules=context.VOCAnswerRules.prepare(record);
  for(let i=0;i<3;i++)assert.equal(context.VOCAnswerRules.matchWord({record,tLang:"en-US"},"dig"),null);
 });
+
+test("Actual normal grading handler uses stored direct translations and preserves sentence commas",()=>{
+ const source=fs.readFileSync(require.resolve("../vocprog-enhancements.js"),"utf8");
+ const start=source.indexOf("  window.gradeCurrentAnswer=function(){"),end=source.indexOf("  window.advanceOrGrade=",start);
+ const run=new Function("api","item","value",[
+ "let analyzedThisCard=false,currentIndex=0;const trainingItems=[item],nodes={answerInput:{value},answerFeedback:{},targetText:{classList:{remove(){}}}};",
+ "let result;const window={VOCAnswerRules:api},get=id=>nodes[id],simplified=api.normalizeWord,logEvent=(action,item,data)=>result=data.correct;",
+ source.slice(start,end),"window.gradeCurrentAnswer();return result;"
+ ].join("\n"));
+ const record={foreign:"(to) refuse",german:"ablehnen; sich weigern",lang:"en-US"};
+ assert.equal(run(api,{kind:"words",record,target:record.foreign,tLang:"en-US"},"refuse"),true);
+ assert.equal(run(api,{kind:"words",record,target:record.german,tLang:"de-DE"},"ablehnen"),true);
+ assert.equal(run(api,{kind:"words",record,target:record.german,tLang:"de-DE"},"ablehnen, falsches"),false);
+ assert.equal(run(api,{kind:"sentences",target:"Hello, world!",tLang:"en-US"},"Hello ,world!"),true);
+ assert.equal(run(api,{kind:"sentences",target:"Hello, world!",tLang:"en-US"},"Hello world!"),false);
+});
+test("Metadata content key survives database object-key ordering",()=>{
+ const a={foreign:"refuse",german:"ablehnen",lang:"en-US",answerParts:{foreign:[{core:"refuse",optionalSuffixes:[]}],german:[{core:"ablehnen",optionalSuffixes:[]}]}};
+ const b={...a,answerParts:{german:[{optionalSuffixes:[],core:"ablehnen"}],foreign:[{optionalSuffixes:[],core:"refuse"}]}};
+ assert.equal(api.contentKey(a),api.contentKey(b));
+});

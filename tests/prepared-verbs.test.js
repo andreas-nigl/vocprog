@@ -86,11 +86,12 @@ test("French accepted answers resolve grouped subjects and agreement without acc
 test("Infinitive selection is separate from six-card expansion and blocks incomplete ranges", () => {
   const source = fs.readFileSync(path.join(root, "vocprog-enhancements.js"), "utf8");
   const ready = source.slice(source.indexOf("  function updateVerbReadiness"), source.indexOf("  function scheduleVerbPreparation"));
-  const elements = {startTrainingBtn: {}, verbPreparationStatus: {}, tenseSelect: {value: "présent"},
+  const elements = {direction:{},startTrainingBtn: {}, verbPreparationStatus: {}, tenseSelect: {value: "présent"},
     rangeCard: {classList: {toggle() {}}}, trainerCard: {classList: {contains: () => true}}};
   const state = {pending: true, error: "", cards: null};
   const run = new Function("state", "elements", ready + `
     const get=id=>elements[id], isVerbBook=()=>true, chosenBook="fr";
+    const chosenTenses=()=>[elements.tenseSelect.value], activeBook=()=>({lang:"fr-FR"});
     const normalizeTense=x=>x, selectedVerbRange=()=>[{verbId:"rendre",foreign:"rendre"}];
     const filteredVocabList=selectedVerbRange();
     const verbDatabase={get:()=>({verbs:{rendre:{cards:{présent:state.cards}}}})};

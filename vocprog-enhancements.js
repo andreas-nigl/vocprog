@@ -948,12 +948,15 @@
   // Only printed / individually validated forms are trainable. Do not invent inflections.
   const TENSES={
     "fr-FR":[["présent","Présent (Gegenwart)"],["imparfait","Imparfait (unvollendete Vergangenheit)"],["passé composé","Passé composé (zusammengesetzte Vergangenheit)"],["plus-que-parfait","Plus-que-parfait (Vorvergangenheit)"],["futur proche","Futur composé / Futur proche (nahe Zukunft)"],["futur simple","Futur simple (Zukunft)"],["conditionnel présent","Conditionnel présent (würde-Form)"],["subjonctif présent","Subjonctif présent (Subjonctif Gegenwart)"],["impératif","Impératif (Befehlsform)"]],
-    "en-US":[["simple present","Simple Present (Gegenwart)"],["present progressive","Present Progressive (Verlaufsform Gegenwart)"],["simple past","Simple Past (Vergangenheit)"],["past progressive","Past Progressive (Verlaufsform Vergangenheit)"],["present perfect","Present Perfect (vollendete Gegenwart)"],["past perfect","Past Perfect (Vorvergangenheit)"],["will future","Will-Future (Zukunft)"],["going to future","Going-to-Future (geplante Zukunft)"],["conditional","Conditional (würde-Form)"]],
+    "en-US":[["simple present","Simple Present (Gegenwart)"],["present progressive","Present Progressive (Verlaufsform Gegenwart)"],["simple past","Simple Past (Vergangenheit)"],["past progressive","Past Progressive (Verlaufsform Vergangenheit)"],["present perfect","Present Perfect Simple (vollendete Gegenwart)"],["present perfect progressive","Present Perfect Progressive (vollendete Verlaufsform)"],["past perfect","Past Perfect (Vorvergangenheit)"],["will future","Will-Future (Zukunft)"],["going to future","Going-to-Future (geplante Zukunft)"],["conditional","Conditional (würde-Form)"]],
     "es-ES":[["presente","Presente (Gegenwart)"],["pretérito perfecto compuesto","Pretérito perfecto compuesto (zusammengesetzte Vergangenheit)"],["pretérito indefinido","Pretérito indefinido (abgeschlossene Vergangenheit)"],["pretérito imperfecto","Pretérito imperfecto (unvollendete Vergangenheit)"],["pluscuamperfecto","Pluscuamperfecto (Vorvergangenheit)"],["futuro simple","Futuro simple (Zukunft)"],["condicional simple","Condicional simple (würde-Form)"],["presente de subjuntivo","Presente de subjuntivo (Subjunktiv Gegenwart)"]],
     "pt-PT":[["presente","Presente (Gegenwart)"],["pretérito perfeito","Pretérito perfeito (abgeschlossene Vergangenheit)"],["pretérito imperfeito","Pretérito imperfeito (unvollendete Vergangenheit)"],["mais-que-perfeito composto","Mais-que-perfeito composto (Vorvergangenheit)"],["futuro do presente","Futuro do presente (Zukunft)"],["condicional","Condicional (würde-Form)"],["presente do conjuntivo","Presente do conjuntivo (Konjunktiv Gegenwart)"]],
     "nl-NL":[["onvoltooid tegenwoordige tijd","Onvoltooid tegenwoordige tijd (Gegenwart)"],["onvoltooid verleden tijd","Onvoltooid verleden tijd (Vergangenheit)"],["voltooid tegenwoordige tijd","Voltooid tegenwoordige tijd (Perfekt)"],["voltooid verleden tijd","Voltooid verleden tijd (Plusquamperfekt)"],["onvoltooid toekomende tijd","Onvoltooid toekomende tijd (Zukunft)"]],
   };
   for(const catalog of Object.values(TENSES))catalog.unshift(["infinitiv","Infinitive (Grundformen)"]);
+  TENSES["en-US"].splice(1,0,["principal parts","Stammformen (Grundform, Vergangenheit, Partizip)"]);
+  let tensePicker=null;
+  const chosenTenses=()=>tensePicker?.values()||[normalizeTense(get("tenseSelect")?.value)];
   const baseVerbKinds=new Set(["verb-infinitive","verb-participle","verb-imperative","verb-principal","verb-ing","verb-gerund"]);
   function activeBook(){return books.find(b=>b.id===chosenBook);}
   function isVerbBook(){return bookKind(activeBook()||{})==="verbs";}
@@ -968,6 +971,9 @@
     select.replaceChildren(...catalog.map(([value,label])=>new Option(label,value)));
     select.value=catalog.some(([value])=>value===old)?old:(catalog[0]?.[0]||"");
     localStorage.setItem(STORE+"_tense_"+lang,select.value);
+    if(!tensePicker)tensePicker=window.VOCTenseChoices.create(select,values=>{localStorage.setItem(STORE+"_tenses_"+activeBook().lang,JSON.stringify(values));window.refreshVerbSelection();});
+    let saved;try{saved=JSON.parse(localStorage.getItem(STORE+"_tenses_"+lang)||"null");}catch{}
+    tensePicker.refresh(Array.isArray(saved)?saved:[select.value]);
   }
   window.refreshVerbSelection=function(){
     const first=filteredVocabList[Number(get("startVocab").value)]?.id;
@@ -993,8 +999,10 @@
       const values=JSON.parse(text),now=new Date().toISOString();
       const others=specials.filter(item=>item.kind!=="prepared-verb");
       const prepared=Object.values(values).map(record=>({
-        id:"prepared-verb:"+encodeURIComponent(record.key),kind:"prepared-verb",bookId:record.bookId,
+        id:window.VOCVerbDatabase.recordId(record.key),kind:"prepared-verb",bookId:record.bookId,
         record,updatedAt:record.checkedAt||now}));
+      const identifiers=new Map();
+      for(const item of prepared){if(identifiers.has(item.id)&&identifiers.get(item.id)!==item.record.key)throw Error("Konjugationsdaten: ID-Konflikt");identifiers.set(item.id,item.record.key);}
       const next=[...others,...prepared];
       const legacyKey="vocprog_v2_prepared_verbs_v1",legacy=localStorage.getItem(legacyKey);
       try{save(STORE+"_special",next);}
@@ -1011,7 +1019,7 @@
   const verbDatabase=window.VOCVerbDatabase.create(preparedStorage,
     (lemma,lang)=>window.VOCMorphology?.conjugate(lemma,lang),
     lemma=>window.VOCFrenchReference?.conjugate(lemma),
-    (verb,language,morphology)=>window.VOCGermanForms.enrich(verb,language,morphology));
+    (verb,language,morphology)=>language==="en-US"?window.VOCEnglishVerbs.enrich(verb,morphology,window.VOCIndependentReference.lookup):window.VOCGermanForms.enrich(verb,language,morphology));
   let preparationRevision=0,preparingVerbData=false,preparationError="";
   function selectedVerbEntries(){
     const book=activeBook();
@@ -1063,6 +1071,7 @@
     const button=get("startTrainingBtn"),status=get("verbPreparationStatus");
     if(!button||!status)return;
     if(!isVerbBook()){
+      get("direction").disabled=false;
       const book=activeBook();button.disabled=!filteredVocabList.length||get("pageRangeInput")?.getAttribute?.("aria-invalid")==="true";status.hidden=!book;
       button.textContent=sentenceJob?"Generierung abbrechen":"▶ Abfrage starten";
       status.textContent=book?vocabularyBookSummary(allVocab().filter(entry=>entry.bookId===book.id),
@@ -1072,6 +1081,22 @@
       return;
     }
     status.hidden=false;
+    const choices=chosenTenses(),primary=choices[0];
+    get("direction").disabled=primary==="principal parts"||choices.length>1||(activeBook()?.lang==="en-US"&&primary!=="infinitiv");
+    if(get("direction").disabled)get("direction").value="de_to_foreign";
+    if(primary==="principal parts"||choices.length>1||activeBook()?.lang==="en-US"){
+      const selected=selectedVerbRange(),snapshot=verbDatabase.get(chosenBook);
+      const missing=selected.filter(base=>{const verb=snapshot?.verbs[base.verbId];
+        if(!verb)return true;
+        if(primary==="principal parts")return !verb.principalVariants?.length||!verb.baseGerman;
+        return choices.some(tense=>tense!=="infinitiv"&&(!verb.cards[tense]?.length||verb.missing.includes(tense)));
+      });
+      const usable=primary==="infinitiv"||primary==="principal parts"||selected.some(base=>choices.some(tense=>!snapshot?.verbs[base.verbId]?.excludedTenses?.includes(tense)));
+      button.disabled=!usable||preparingVerbData||analyzingVerbInput||!!preparationError||!selected.length||!!missing.length||get("pageRangeInput")?.getAttribute?.("aria-invalid")==="true";
+      status.textContent=!usable?"Für diese Auswahl sind keine geeigneten Verlaufsformen vorhanden.":preparingVerbData?"Konjugationen werden vorbereitet …":preparationError?"Vorbereitung fehlgeschlagen: "+preparationError:missing.length?"Formen noch nicht vollständig vorbereitet: "+missing.map(v=>v.foreign).join(", "):selected.length+" Verben · Formen gespeichert und vorbereitet.";
+      get("rangeCard").classList.toggle("hidden",analyzingVerbInput||!filteredVocabList.length||!get("trainerCard").classList.contains("hidden"));
+      return;
+    }
     const conjugations=normalizeTense(get("tenseSelect")?.value)!=="infinitiv";
     if(get("tenseSelect"))get("tenseSelect").disabled=false;
     if(!conjugations){
@@ -1108,7 +1133,7 @@
       for(const book of books.filter(b=>bookKind(b)==="verbs")){
         await verbDatabase.prepare(book,entries.filter(v=>v.bookId===book.id),
           specials.filter(v=>v.bookId===book.id&&v.kind==="verb-paradigm"),
-          (TENSES[book.lang]||[]).map(([tense])=>tense).filter(tense=>tense!=="impératif"&&tense!=="infinitiv"));
+          (TENSES[book.lang]||[]).map(([tense])=>tense).filter(tense=>!["impératif","infinitiv","principal parts"].includes(tense)));
       }
     }).catch(error=>{
       if(revision===preparationRevision)preparationError=String(error.message||error);
@@ -1119,6 +1144,32 @@
     return ready;
   }
   window.updateVerbReadiness=updateVerbReadiness;
+  function makeSelectedVerbTasks(selected,tenses){
+    const snapshot=verbDatabase.get(chosenBook),english=activeBook().lang==="en-US",seen=new Set(),tasks=[];
+    for(const base of selected){
+      const verb=snapshot.verbs[base.verbId];
+      const common={kind:"verbs",bookId:base.bookId,sourceId:base.id,page:base.page,ref:base.refVocab,verbId:base.verbId,verbLemma:base.foreign,pLang:"de-DE",tLang:activeBook().lang};
+      if(tenses[0]==="principal parts"){
+        const key=verb.principalParts[0];if(seen.has(key))continue;seen.add(key);
+        tasks.push({...common,prompt:verb.baseGerman,target:verb.principalParts.join(", "),verbTense:"principal parts",principalVerb:verb,record:{...base,kind:"verb-principal"}});continue;
+      }
+      for(const tense of tenses){
+        if(verb.excludedTenses?.includes(tense))continue;
+        const cards=tense==="impératif"?window.VOCVerbPresentation.imperativeCards(verb):verb.cards[tense]||[];
+        const indices=tenses.length>1?[Math.floor(Math.random()*cards.length)]:cards.map((_,index)=>index);
+        for(const index of indices){
+          const card=cards[index];if(!card)continue;
+          const labels=["ich","du","er/sie/es","wir","ihr","sie, Pl."];
+          const title=(TENSES[activeBook().lang]||[]).find(([value])=>value===tense)?.[1].replace(/\s*\([^)]*\)$/,'')||tense;
+          const nativePeople={je:"ich",tu:"du",nous:"wir",vous:"ihr / Sie",yo:"ich",tú:"du",nosotros:"wir",vosotros:"ihr",eu:"ich",nós:"wir",vós:"ihr",ik:"ich",jij:"du",wij:"wir",jullie:"ihr"};
+          const person=nativePeople[card.person]||labels[index];
+          const task=english?window.VOCEnglishVerbs.personPrompt(verb,tense,index):{prompt:title+": "+base.german+" ("+person+")",target:card.foreign,acceptedTargets:card.acceptedForeign};
+          tasks.push({...common,...task,verbTense:tense,record:{...base,...card,kind:"verb-form",infinitive:base.foreign}});
+        }
+      }
+    }
+    return tasks;
+  }
   const oldStartTraining=startTraining;
   startTraining=async function(event){
     if(!isVerbBook())return oldStartTraining(event);
@@ -1127,6 +1178,11 @@
     const selected=selectedVerbRange();
     const tense=normalizeTense(get("tenseSelect").value);
     const reverse=get("direction").value==="foreign_to_de";
+    if(tense==="principal parts"||chosenTenses().length>1||(activeBook().lang==="en-US"&&tense!=="infinitiv")){
+      trainingItems=makeSelectedVerbTasks(selected,chosenTenses());
+      if(get("randomize").checked)trainingItems.sort(()=>Math.random()-0.5);
+      enterTraining();return;
+    }
     if(tense==="infinitiv"){
       trainingItems=selected.map(base=>({
         prompt:reverse?base.foreign:base.german,target:reverse?base.german:base.foreign,
@@ -1186,7 +1242,7 @@
     }
     const lemma=String(item.verbId||item.verbLemma||"").trim().toLocaleLowerCase();
     const entries=allVocab().filter(v=>v.bookId===item.bookId&&
-      String(v.verbId||v.infinitive||v.lemma||"").trim().toLocaleLowerCase()===lemma);
+      window.VOCVerbDatabase.lemmaOf(v)===lemma);
     const prepared=verbDatabase.get(item.bookId)?.verbs[lemma];
     if(!prepared)return;
     const paradigm=null;
@@ -1255,15 +1311,19 @@
     }
     const requestedTense=normalizeTense(item.verbTense);
     const present={"fr-FR":"présent","en-US":"simple present","es-ES":"presente","pt-PT":"presente","nl-NL":"onvoltooid tegenwoordige tijd"};
-    const tense=requestedTense==="infinitiv"?present[activeBook()?.lang]:requestedTense;
+    const tense=["infinitiv","principal parts"].includes(requestedTense)?present[activeBook()?.lang]:requestedTense;
     const catalog=TENSES[activeBook()?.lang]||[];
     const title=catalog.find(([name])=>name===tense)?.[1]||tense;
     const match=title.match(/^(.+?)\s*\(([^)]+)\)$/);
-    row(match?.[1]||title,match?.[2]||"Zeitform",true);
-    const cards=tense==="impératif"?(window.VOCVerbPresentation?.imperativeCards(prepared)||[]):prepared.cards[tense]||[];
-    for(const card of cards)row(card.foreign,card.german||
-      "Konjugationsaufgabe: "+card.grammaticalPrompt);
-    if(!cards.length)row("Keine vorbereiteten Formen",missing);
+    const tableTenses=activeBook()?.lang==="en-US"?Object.keys(prepared.cards):[tense];
+    for(const tableTense of tableTenses){
+      const tableTitle=catalog.find(([name])=>name===tableTense)?.[1]||tableTense;
+      if(activeBook()?.lang==="en-US")row(tableTitle.replace(/\s*\([^)]*\)$/,''),"Zeitform",true);
+      else row(match?.[1]||title,match?.[2]||"Zeitform",true);
+      const cards=tableTense==="impératif"?(window.VOCVerbPresentation?.imperativeCards(prepared)||[]):prepared.cards[tableTense]||[];
+      for(const card of cards)row(card.foreign,card.german||"Konjugationsaufgabe: "+card.grammaticalPrompt);
+      if(!cards.length)row("Keine vorbereiteten Formen",missing);
+    }
     table.append(tbody);
     const note=document.createElement("p");
     note.className="verb-reference-note";
@@ -1285,18 +1345,6 @@
     if(!first.lang||!second.lang||first.lang!==second.lang)return "Die Bücher haben unterschiedliche oder ungeklärte Sprachen.";
     if(first.lang==="la-LA")return "Latein wurde aus VOC entfernt.";
     if(bookKind(first)!==bookKind(second))return "Vokabel- und Verbenbücher dürfen nicht vermischt werden.";
-    const left=allVocab().filter(v=>v.bookId===first.id);
-    const right=allVocab().filter(v=>v.bookId===second.id);
-    const pageSet=list=>new Map([...new Set(list.map(v=>String(v.page||"?")))].map(page=>[
-      page,new Set(list.filter(v=>String(v.page||"?")===page).map(v=>[
-        v.kind||"words",v.foreign||"",v.german||"",v.tense||"",v.infinitive||"",v.person||""
-      ].map(x=>String(x).trim().normalize("NFKC").toLowerCase()).join("|")))]));
-    const l=pageSet(left),rr=pageSet(right);
-    for(const [page,values] of rr)if(l.has(page)){
-      const other=l.get(page);
-      if(values.size!==other.size||[...values].some(v=>!other.has(v)))
-        return "Seite "+page+" überschneidet sich, enthält aber unterschiedliche Einträge. Zusammenführen gesperrt.";
-    }
     return "";
   }
   function mergePairs(){
@@ -1317,28 +1365,22 @@
     const [first,second]=mergePairs(),message=validMerge(first,second);
     const name=get("mergeName");
     if(first)name.value=first.name;
-    get("mergeWarning").textContent=message||"Die Einträge werden mit ihren Lernstatistiken übernommen. Vorher wird ein Backup heruntergeladen.";
+    get("mergeWarning").textContent=message||"Alle Seiten und Einträge werden vereinigt. Fehlende Vokabeln werden ergänzt; Lernstatistiken bleiben erhalten.";
     get("mergeConfirm").disabled=!!message;
   };
-  function exportPreMergeBackup(){
-    const data={schemaVersion:4,books,vocabulary:allVocab(),specialSentences:specials,practiceEvents:history,deletedRecords:tombstones,createdAt:new Date().toISOString()};
-    const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
-    const url=URL.createObjectURL(blob),link=document.createElement("a");
-    link.href=url;link.download="vocprog-vor-buchzusammenfuehrung-"+new Date().toISOString().slice(0,10)+".json";
-    document.body.append(link);link.click();link.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),2000);
-  }
   window.confirmMergeBooks=function(){
     const [target,source]=mergePairs(),error=validMerge(target,source);
     if(error){get("mergeWarning").textContent=error;return;}
     const newName=get("mergeName").value.trim();
     if(!newName)return alert("Bitte einen Buchnamen angeben.");
     if(!confirm("„"+bookTitle(source)+"“ in „"+bookTitle(target)+"“ übernehmen? Die Änderung wird auf andere Geräte synchronisiert."))return;
-    try{exportPreMergeBackup();}catch(e){alert("Backup fehlgeschlagen: "+e.message);return;}
     const now=new Date().toISOString();
     const key="vocab_trainer_data_"+source.lang,all=read(key,[]);
     const destinationVocab=all.filter(v=>v.bookId===target.id);
-    const identity=v=>[String(v.page||"?"),v.kind||"words",v.foreign||"",v.german||"",v.tense||"",v.infinitive||"",v.person||""].join("\u0001").toLocaleLowerCase();
+    const normalizeMerge=value=>String(value||"").normalize("NFKC").replace(/\[[^\]]*\]/g,"")
+      .replace(/\((?:AE|BE|AmE|BrE|pl|sg|infml|fml|formal|informal|nicht zählbar)(?:[^()]*)\)/gi,"")
+      .replace(/^\s*\(to\)\s*/i,"to ").replace(/^\s*to\s+/i,"").replace(/\s+/g," ").trim().replace(/[,;]\s*$/, "").trim().toLocaleLowerCase();
+    const identity=v=>[String(v.page||"?"),v.kind||"words",normalizeMerge(v.foreign),normalizeMerge(v.german),v.tense||"",v.infinitive||"",v.person||""].join("\u0001").toLocaleLowerCase();
     const known=new Map(destinationVocab.map(v=>[identity(v),v.id]));
     const remappedIds=new Map();
     const next=[];
@@ -1346,7 +1388,14 @@
       if(v.bookId!==source.id){next.push(v);continue;}
       const code=identity(v);
       if(known.has(code)){
-        remappedIds.set(v.id,known.get(code));
+        const targetId=known.get(code);
+        remappedIds.set(v.id,targetId);
+        const kept=next.find(entry=>entry.id===targetId)||all.find(entry=>entry.id===targetId);
+        if(kept){
+          const annotated=value=>(String(value||"").match(/\[[^\]]*\]|\([^)]*\)/g)||[]).join("").length;
+          const previous={...kept,mergedSources:undefined};
+          for(const field of ["foreign","german"])if(annotated(v[field])>annotated(kept[field])){kept[field]=v[field];delete kept.answerRules;}
+          kept.mergedSources=[...(kept.mergedSources||[]),...(v.mergedSources||[]),previous,{...v,mergedSources:undefined}];kept.updatedAt=now;}
         markDeleted("vocab",v,now);continue;
       }
       known.set(code,v.id);next.push({...v,bookId:target.id,updatedAt:now});
@@ -1368,7 +1417,8 @@
       const items=(record.items||[]).map(item=>({
         ...item,
         sourceId:remappedIds.get(item.sourceId)||item.sourceId,
-        vocabId:remappedIds.get(item.vocabId)||item.vocabId
+        vocabId:remappedIds.get(item.vocabId)||item.vocabId,
+        ...(Array.isArray(item.vocabIds)?{vocabIds:[...new Set(item.vocabIds.map(value=>remappedIds.get(value)||value))]}:{})
       }));
       let key=record.key;
       try{
@@ -1376,6 +1426,8 @@
         if(Array.isArray(ids))key=JSON.stringify(ids.map(x=>remappedIds.get(x)||x));
       }catch{/* keep legacy key */}
       specials.push({...record,id:id(),bookId:target.id,items,key,
+        ...(record.record?{record:{...record.record,bookId:target.id}}:{}),
+        ...(Array.isArray(record.vocabIds)?{vocabIds:[...new Set(record.vocabIds.map(value=>remappedIds.get(value)||value))]}:{}),
         sourceRefs:Array.isArray(record.sourceRefs)?record.sourceRefs.map(x=>remappedIds.get(x)||x):record.sourceRefs,
         updatedAt:now});
     }
@@ -1383,6 +1435,7 @@
     save(key,next);
     target.name=newName;target.updatedAt=now;
     markDeleted("book",source,now);books=books.filter(x=>x.id!==source.id);
+    for(const book of books)if(book.sourceBookId===source.id){book.sourceBookId=target.id;book.updatedAt=now;}
     chosenBook=target.id;persistMetadata();chooseBook(target.id);
     get("mergeBooksDialog").close();
     alert("Bücher lokal zusammengeführt. Der geräteübergreifende Stand folgt mit erfolgreicher Synchronisation.");
@@ -1406,7 +1459,7 @@
     const explicit=item.tLang!=="de-DE"&&window.VOCAnswerRules?
       grouped?window.VOCAnswerRules.matchGrouped(given,expected,item.tLang):
       window.VOCAnswerRules.matchExplicit(given,item.acceptedTargets||[expected],item.tLang):null;
-    const correct=typeof lexical==="boolean"?lexical:typeof explicit==="boolean"?explicit:
+    const correct=item.verbTense==="principal parts"?window.VOCEnglishVerbs.principalMatches(given,item.principalVerb):typeof lexical==="boolean"?lexical:typeof explicit==="boolean"?explicit:
       item.tLang==="de-DE"?window.VOCVerbPresentation.matchesGermanAnswer(given,item,normalized):
       grouped?normalizeGroup(given)===normalizeGroup(expected):
       (item.acceptedTargets||expected.split(/\s*(?:;|\bor\b)\s*/i))

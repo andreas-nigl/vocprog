@@ -5,10 +5,18 @@
   const KEY = "vocprog_v2_verb_records_v2";
   const normal = value => String(value || "").trim().normalize("NFC").toLocaleLowerCase();
   const lemmaOf = entry => normal(entry.infinitive || entry.lemma || entry.verbId ||
-    (entry.kind === "verb-infinitive" ? entry.foreign : ""));
+    (entry.kind === "verb-infinitive" ? entry.foreign : "")).replace(/^(?:\(to\)|to)\s+/, "");
   const six = row => Array.isArray(row) && row.length === 6 &&
     row.every(value => typeof value === "string" && value.trim());
 
+  function recordId(key){
+    const full="prepared-verb:"+encodeURIComponent(key);
+    if(("special:"+full).length<=160)return full;
+    // Four independent 32-bit lanes keep deterministic derived IDs within the server limit.
+    const lanes=[2166136261,2246822519,3266489917,668265263];
+    for(const char of String(key))for(let i=0;i<lanes.length;i++)lanes[i]=Math.imul(lanes[i]^char.codePointAt(0),16777619+i*2)>>>0;
+    return "prepared-verb:long:"+lanes.map(value=>value.toString(16).padStart(8,"0")).join("");
+  }
   function auxiliaryOf(entries){
     const base=entries.find(entry=>entry.kind==="verb-infinitive");
     if(["être","avoir"].includes(base?.auxiliary))return base.auxiliary;
@@ -72,7 +80,8 @@
       const source = entries.filter(entry => lemmaOf(entry) === lemma);
       const base = source.find(entry => entry.kind === "verb-infinitive");
       const stored = paradigms.find(entry => normal(entry.lemma) === lemma);
-      const motor = morphology(lemma, book.lang);
+      const motor = book.lang === "en-US" && root.VOCEnglishVerbs ?
+        root.VOCEnglishVerbs.morphology(lemma,morphology) : morphology(lemma, book.lang);
       const curated = book.lang === "fr-FR" ? reference?.(lemma) : null;
       const persons = motor?.persons || curated?.persons || stored?.persons || [];
       const auxiliary = auxiliaryOf(source) || curated?.auxiliary || motor?.auxiliary;
@@ -160,7 +169,8 @@
           const extend=record&&book.lang==="fr-FR"&&tenses.includes("futur proche")&&
             ((!record.verb.cards["futur proche"]&&!record.verb.extensionAttempts?.includes("futur proche"))||
               record.verb.cards["futur proche"]?.some(card=>/[⁰¹²³⁴⁵⁶⁷⁸⁹]/.test(card.german)));
-          if (!record||extend) {
+          const repairEnglish=book.lang==="en-US"&&root.VOCEnglishVerbs&&record?.verb.englishPreparedVersion!==root.VOCEnglishVerbs.VERSION;
+          if (!record||extend||repairEnglish) {
             const result = build(book, source, paradigms, extend?["futur proche"]:tenses, morphology, reference);
             let verb = result.verbs[lemma];
             if (enrich){
@@ -177,7 +187,7 @@
             verb.missing = tenses.filter(tense => (!Array.isArray(verb.cards[tense]) || verb.cards[tense].length !== 6) ||
               (enrich && verb.cards[tense].some(card => !card.german ||
                 card.foreignVerification?.status !== "reference-matched" ||
-                card.germanVerification?.status !== "reference-matched")));
+                (book.lang!=="en-US"&&card.germanVerification?.status !== "reference-matched"))));
             record = {version: VERSION, key, ...(context?{context}:{}), bookId: book.id, language: book.lang, lemma, german,
               verb, ready: verb.missing.length === 0, checkedAt: new Date().toISOString()};
             // A failed fetch is not a completed check. Reopening can retry it;
@@ -208,5 +218,5 @@
       get(bookId) { return snapshots.get(bookId) || null; }
     });
   }
-  root.VOCVerbDatabase = Object.freeze({create, lemmaOf, frenchSurface, acceptedFrench,auxiliaryOf,primaryFrench});
+  root.VOCVerbDatabase = Object.freeze({create, recordId, lemmaOf, frenchSurface, acceptedFrench,auxiliaryOf,primaryFrench});
 })(typeof window === "undefined" ? globalThis : window);

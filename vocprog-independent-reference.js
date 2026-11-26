@@ -19,7 +19,8 @@
     const shard=lemma.codePointAt(0).toString(16);
     if(!manifest.languages[language]?.shards.includes(shard))return null;
     const entries=await json('./reference/'+code+'/'+shard+'.json?v='+VERSION);
-    const entry=Object.prototype.hasOwnProperty.call(entries,lemma)?entries[lemma]:null;
+    let entry=Object.prototype.hasOwnProperty.call(entries,lemma)?entries[lemma]:null;
+    if(language==='en-US'){const extra=(await json('./reference/english-supplement.json?v=1'))[lemma];if(extra)entry={...entry,...extra,forms:{...entry?.forms,...extra.forms},sources:[...(entry?.sources||[manifest.sources[entry?.sourceKey]].filter(Boolean)),...(extra.sources||[])]};}
     if(!entry||!entry.forms)return null;
     return {...entry,sources:entry.sources||[manifest.sources[entry.sourceKey]]};
   }

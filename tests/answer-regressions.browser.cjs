@@ -7,6 +7,7 @@ const server=http.createServer((req,res)=>{
  fs.readFile(file,(error,body)=>{if(error){res.writeHead(404).end();return;}res.setHeader('Content-Type',file.endsWith('.js')?'application/javascript':file.endsWith('.html')?'text/html':file.endsWith('.css')?'text/css':'application/json');res.end(body);});
 });
 const cases=[
+ {foreign:"(to) remove sb./sth.",german:"jn./etwas entfernen",lang:"en-US",inputs:["to remove sb./sth.","remove sb/sth","remove sb sth","remove somebody","to remove something"],bad:["to remove sb/sthh","remove sb/garbage","removesb./sth."]},
  {foreign:"(to) lower ['ləʊə]",german:'senken, verschlechtern',lang:'en-US',inputs:['lower','to lower'],bad:['tolower','lowwer']},
  {foreign:'(to) lower',german:'senken, verschlechtern',lang:'en-US',inputs:['lower','to lower'],bad:[]},
  {foreign:'le voisin/la voisine',german:'der/die (Sitz-)Nachbar/in',lang:'fr-FR',inputs:['le voisin / la voisine'],bad:['le voisin'],hint:true},

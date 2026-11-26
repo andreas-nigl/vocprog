@@ -179,3 +179,21 @@ test('Lower real printed spelling, missing legacy kind, stored metadata and Engl
  for(const input of ['lower','to lower'])assert.equal(api.matchWord({record,tLang:'en-US'},input),true);
  assert.equal(api.matchExplicit('to lower',['lowered'],'en-US'),false,'tense cards are not infinitive cards');
 });
+
+test('Screenshot regression: original slash placeholders and their expanded alternatives are accepted symmetrically',()=>{
+ const record={foreign:'(to) remove sb./sth.',german:'jn./etwas entfernen',lang:'en-US'};
+ record.answerRules=JSON.parse(JSON.stringify(api.prepare(record)));
+ const before=JSON.stringify(record.answerRules);
+ for(const input of ['to remove sb./sth.','remove sb./sth.','to remove sb/sth','remove sb. / sth.','remove sb sth','to remove sb., sth.','remove somebody','to remove something','remove someone/something'])assert.equal(api.matchWord({record,tLang:'en-US'},input),true,input);
+ for(const input of ['remove','to','to remove sb./sthh.','to remove sb/garbage','removesb./sth.','remove sb somethingg','remove somebody/somthing'])assert.equal(api.matchWord({record,tLang:'en-US'},input),false,input);
+ for(const input of ['jn./etwas entfernen','jemanden entfernen','etwas entfernen'])assert.equal(api.matchWord({record,tLang:'de-DE'},input),true,input);
+ assert.equal(JSON.stringify(record.answerRules),before,'matching never rewrites stored metadata');
+});
+test('Slash expansion does not weaken required gender pairs, sentences or grouped verb forms',()=>{
+ const record={foreign:'le voisin/la voisine',german:'der/die (Sitz-)Nachbar/in',lang:'fr-FR'};
+ assert.equal(api.matchWord({record,tLang:'fr-FR'},'le voisin'),false);
+ assert.equal(api.matchWord({record,tLang:'de-DE'},'der/die Nachbar/in'),true);
+ assert.equal(api.matchWord({record,tLang:'de-DE'},'der/die Nachbar/inn'),false);
+ assert.equal(api.matchExplicit('tu viens/venez',['tu viens'],'fr-FR'),false);
+ assert.notEqual(api.layout('Hello, world!'),api.layout('Hello world!'));
+});

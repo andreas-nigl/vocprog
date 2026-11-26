@@ -227,3 +227,8 @@ test('Corrected persisted metadata retains the string suffix contract for older 
   assert.ok(legacyPatterns.length>0);
  }}
 });
+test('Compact placeholder choices preserve the shared ending of a complete phrase',()=>{
+ const record={foreign:'be in awe',german:'vor jm./etwas voller Ehrfurcht sein',lang:'en-US'};
+ for(const input of ['vor jm etwas voller Ehrfurcht sein','vor jemandem, etwas voller Ehrfurcht sein'])assert.equal(api.matchWord({record,tLang:'de-DE'},input),true,input);
+ for(const input of ['vor jm etwas','vor jemandem','vor jm etwas voller Erfurcht sein'])assert.equal(api.matchWord({record,tLang:'de-DE'},input),false,input);
+});

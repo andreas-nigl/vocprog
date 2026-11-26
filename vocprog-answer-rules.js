@@ -268,19 +268,21 @@ function matchSide(input,side,language){
  for(const group of side.groups){
   const prefixes=new Map();
   for(const core of group.cores){
-   const words=core.split(" "),last=words.at(-1);
-   if(words.length<2||!placeholderWords.has(last))continue;
-   const prefix=words.slice(0,-1).join(" ");
-   if(!prefixes.has(prefix))prefixes.set(prefix,new Set());prefixes.get(prefix).add(last);
+   const words=core.split(" ");
+   for(let at=1;at<words.length;at++){
+    const word=words[at];if(!placeholderWords.has(word))continue;
+    const key=JSON.stringify([words.slice(0,at),words.slice(at+1)]);
+    if(!prefixes.has(key))prefixes.set(key,new Set());prefixes.get(key).add(word);
+   }
   }
-  for(const [prefix,choices]of prefixes)if(choices.size>1)slots.push({prefix:prefix.split(" "),choices});
+  for(const [key,choices]of prefixes)if(choices.size>1){const [prefix,suffix]=JSON.parse(key);slots.push({prefix,suffix,choices});}
  }
  for(let offset=0;offset<tokens.length;offset++){
   if(!reachable.has(offset))continue;
   for(const sequence of sequences)if(sequence.length&&sequence.every((word,index)=>tokens[offset+index]===word))reachable.add(offset+sequence.length);
   // In vocabulary notation, `remove sb., sth.` shares its verb across objects.
-  for(const {prefix,choices}of slots)if(prefix.every((word,index)=>tokens[offset+index]===word)){
-   for(let end=offset+prefix.length;end<tokens.length&&choices.has(tokens[end]);end++)reachable.add(end+1);
+  for(const {prefix,suffix,choices}of slots)if(prefix.every((word,index)=>tokens[offset+index]===word)){
+   for(let end=offset+prefix.length;end<tokens.length&&choices.has(tokens[end]);end++)if(suffix.every((word,index)=>tokens[end+1+index]===word))reachable.add(end+1+suffix.length);
   }
  }
  return reachable.has(tokens.length);

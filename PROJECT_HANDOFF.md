@@ -1,3 +1,12 @@
+## 2026-11-26 – VOC 0.5.22-2: Zeitformauswahl, Darstellungsregression
+
+- Nutzerfreigabe: Zeitform-Dropdown wieder neutral weiß wie die übrigen Dropdowns, normale Schrift, alle Einträge linksbündig. Im Mehrfachmodus stehen die Checkboxen auf derselben linken Flucht wie Infinitiv/Stammformen; Zeitformbezeichnung unmittelbar rechts daneben. Keine permanente blaue Auswahlfläche; Hover und sichtbarer Tastaturfokus bleiben.
+- Ursache: neuer Button übernahm globale primäre Button-Farbe, Fettschrift und Flex-Zentrierung; Panel war absolut ohne richtungsabhängige Positionierung. Spezifische CSS-Regeln und viewport-begrenzte Positionierung wählen die Seite mit mehr Platz (oben bei größerem Raum), inklusive Resize/Scroll. Keine Änderung an Auswahl-/Bewertungslogik, Datensätzen oder Testumgebung.
+- Gezielte lokale Chromium-Prüfung mit isoliertem Selector und ursprünglichen globalen Button-Stilen: vier Kombinationen aus Desktop-/Touch-Viewport und oberer/unterer Öffnungsrichtung bestanden; Hintergrund, Schrift, Einrückung, Mehrfachauswahl, Escape, Stammformen geprüft. Node-Syntaxprüfung des Selectors erfolgreich. Vollständigen englischen Browser-Regressionstest um Layout-Assertions ergänzt; nicht lokal als Gesamtanwendung ausgeführt, da Repository-Klon im aktuellen Kontext nicht möglich. Deployment/CI noch zu verifizieren.
+- App-/Assetversion 0.5.22-2; nur Produktivrepository vocprog. Keine Datenmigration und keine Änderung auf GPT-Site separat vorgenommen.
+
+---
+
 ## 2026-11-26 – VOC 0.5.22: englische Stammformen, Zeitformen-Mehrfachauswahl und Seitenvereinigung
 
 - Freigegeben nur für vocprog; vocprog-test bleibt deaktiviert. Zeitformmenü mit Header MEHRFACHAUSWAHL / ÜBERNEHMEN, Trennlinie, Checkboxen erst im Mehrfachmodus. Strg-/Meta-Klick aktiviert denselben Modus. Normalklick wählt einzeln; Enter übernimmt, Escape/außerhalb verwirft Entwurf. Infinitive und englische Stammformen exklusiv ohne Checkboxen. Keine dauerhafte blaue Auswahlfläche; Hover bleibt erhalten. Kompakte mehrzeilige Auswahl ohne deutsche Titelübersetzungen, Speicherung der Zeiten je Sprache. Desktop- und Touch-Browserpfade geprüft.

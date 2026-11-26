@@ -1,4 +1,5 @@
 name: Verify complete dictionary notation
+# Include compatibility of saved rules with previously opened app versions.
 on:
   push:
     branches: [develop/offline-supabase-20261105]

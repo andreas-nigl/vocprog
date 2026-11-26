@@ -220,3 +220,10 @@ test('Existing verified principal parts survive a notation repair without a new 
  record.answerRules={version:1,contentKey:api.contentKey(record),features:{openExamples:1},foreign:{mode:'variants',groups:[{cores:['run a school'],suffixes:['ran','run']}]},german:{mode:'legacy'}};
  const r=api.prepare(record);assert.equal(api.matchSide('to run a company ran run',r.foreign,'en-US'),true);assert.equal(api.matchSide('ranned',r.foreign,'en-US'),false);
 });
+test('Corrected persisted metadata retains the string suffix contract for older open clients',()=>{
+ for(const record of notationCases){const prepared=api.prepare(record,{lookup:printedRun});for(const side of ['foreign','german'])for(const group of prepared[side].groups||[]){
+  assert.ok(group.suffixes.every(suffix=>typeof suffix==='string'),record.foreign);
+  const legacyPatterns=group.suffixes.reduce((lists,suffix)=>lists.flatMap(prior=>[prior,[...prior,...suffix.split(' ')]]),[[]]);
+  assert.ok(legacyPatterns.length>0);
+ }}
+});

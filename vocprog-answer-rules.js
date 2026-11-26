@@ -117,6 +117,16 @@ function annotationSuffixes(notes,language){
  return notes.map(note=>{const regional=note.match(/^(AE|BE|AmE|BrE|UK|US)\s*:/i);
   const options=[...new Set([...(regional?[normalizeWord(regional[1],language)]:[]),...variants(note,language)])];return options.length===1?options[0]:options;});
 }
+function suffixGroups(cores,suffixes){
+ // Keep persisted suffixes as strings so already-open older app tabs can read them.
+ let combinations=[[]];
+ for(const suffix of suffixes){
+  const choices=Array.isArray(suffix)?suffix:[suffix];
+  combinations=combinations.flatMap(prior=>choices.map(choice=>[...prior,choice]));
+  if(combinations.length>MAX_VARIANTS)throw Error("Zu viele Zusatzvarianten");
+ }
+ return combinations.map(list=>({cores,suffixes:list}));
+}
 function compileSide(text,language,lookup,prior){
  try{
   const marked=annotations(text);
@@ -139,12 +149,12 @@ function compileSide(text,language,lookup,prior){
    const tails=parts.slice(1).map(value=>normalizeWord(value,language));
    const past=ref?.forms?.["simple past"]?.flat()||[],participle=ref?.participle||[];
    if(tails.length===2&&((past.includes(tails[0])&&participle.includes(tails[1]))||
-    (prior?.mode==="variants"&&prior.groups?.length===1&&tails.every((tail,index)=>prior.groups[0].suffixes?.[index]===tail)))){cores=[parts[0]];suffixes=[...tails,...suffixes];}
+    (prior?.mode==="variants"&&prior.groups?.length&&prior.groups.every(group=>tails.every((tail,index)=>group.suffixes?.[index]===tail))))){cores=[parts[0]];suffixes=[...tails,...suffixes];}
    else if((/^\s*\(to\)/i.test(parts[0])||ref)&&!tails.every(value=>lookup?.(value)?.forms)){
     throw Error("Verbzusätze nicht sicher getrennt");
    }
   }
-  const groups=[...cores,...marked.alternatives].map(core=>({cores:variants(core,language),suffixes}));
+  const groups=[...cores,...marked.alternatives].flatMap(core=>suffixGroups(variants(core,language),suffixes));
   if(groups.some(group=>!group.cores.length))throw Error("Keine sichere Grundantwort");
   return {mode:"variants",groups};
  }catch(error){return {mode:"legacy",reason:String(error.message||error)};}
@@ -166,7 +176,7 @@ function validateScanSide(parts,text,language){
      printed.slice(1).every((value,index)=>normalizeWord(value,language)===normalized[index])&&
      core.every(value=>variants(printed[0],language).includes(value));
    if(normalized.length&&!listedSuffixes&&!visible.some(full=>core.some(value=>full===clean(value+" "+normalized.join(" ")))))return null;
-   groups.push({cores:core,suffixes:[...normalized,...annotationSuffixes(marked.notes,language)]});
+   groups.push(...suffixGroups(core,[...normalized,...annotationSuffixes(marked.notes,language)]));
   }
   return {mode:"variants",groups};
  }catch{return null;}

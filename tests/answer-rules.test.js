@@ -197,3 +197,26 @@ test('Slash expansion does not weaken required gender pairs, sentences or groupe
  assert.equal(api.matchExplicit('tu viens/venez',['tu viens'],'fr-FR'),false);
  assert.notEqual(api.layout('Hello, world!'),api.layout('Hello world!'));
 });
+
+const notationCases=require('./fixtures/answer-notation.json');
+const printedRun=lemma=>lemma==='run'?{forms:{'simple past':[['ran']]},participle:['run']}:null;
+for(const fixture of notationCases)test('Complete notation and invalid fragments: '+fixture.foreign,()=>{
+ const record={...fixture};
+ record.answerRules={version:1,contentKey:api.contentKey(record),foreign:{mode:'variants',groups:[{cores:['ae','infml','become fast'],suffixes:fixture.foreign.includes('run a school')?['ran','run']:[]}]},german:{mode:'variants',groups:[{cores:['vor jemandem','der-'],suffixes:[]}]}};
+ const prepared=api.prepare(record,{lookup:printedRun});record.answerRules=JSON.parse(JSON.stringify(prepared));
+ for(const [side,expected]of Object.entries(fixture.expected))for(const [verdict,inputs]of Object.entries(expected))for(const input of inputs){
+  assert.equal(api.matchWord({record,tLang:side==='german'?'de-DE':record.lang},input),verdict==='accept',side+': '+input);
+ }
+ assert.strictEqual(api.prepare(record,{lookup:()=>{throw Error('second preparation');}}),record.answerRules);
+});
+test('Annotation-only scan cores and truncated slash fragments cannot become direct translations',()=>{
+ const record={foreign:"borough ['bʌrə], (AE ['bɜ:roʊ])",german:'der Stadtbezirk',lang:'en-US',answerParts:{foreign:[{core:'AE',optionalSuffixes:[]}],german:[{core:'der Stadtbezirk',optionalSuffixes:[]}]}};
+ const r=api.prepare(record);assert.equal(api.matchSide('AE',r.foreign,'en-US'),false);assert.equal(api.matchSide('borough',r.foreign,'en-US'),true);
+ const phrase={foreign:'be in awe',german:'vor jm./etwas voller Ehrfurcht sein',lang:'en-US',answerParts:{german:[{core:'vor jm.',optionalSuffixes:[]}]}};
+ const p=api.prepare(phrase);assert.equal(api.matchSide('vor jm',p.german,'de-DE'),false);assert.equal(api.matchSide('vor jemandem voller Ehrfurcht sein',p.german,'de-DE'),true);
+});
+test('Existing verified principal parts survive a notation repair without a new dictionary call',()=>{
+ const record={foreign:'(to) run a school/company/restaurant/..., ran, run',german:'eine Schule / eine Firma / ein Restaurant / ... leiten, führen',lang:'en-US'};
+ record.answerRules={version:1,contentKey:api.contentKey(record),features:{openExamples:1},foreign:{mode:'variants',groups:[{cores:['run a school'],suffixes:['ran','run']}]},german:{mode:'legacy'}};
+ const r=api.prepare(record);assert.equal(api.matchSide('to run a company ran run',r.foreign,'en-US'),true);assert.equal(api.matchSide('ranned',r.foreign,'en-US'),false);
+});

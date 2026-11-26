@@ -1,0 +1,23 @@
+name: Verify complete dictionary notation
+on:
+  push:
+    branches: [develop/offline-supabase-20261105]
+    paths: [.github/workflows/notation-review.yml]
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Regression tests and syntax
+        run: |
+          node --test tests/*.test.js tests/*.test.cjs
+          node --check vocprog-answer-rules.js
+          node --check tools/audit-vocabulary-answers.cjs
+      - name: Browser setup
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Actual quiz flows with stale cached rules and invalid fragments
+        run: node tests/answer-regressions.browser.cjs

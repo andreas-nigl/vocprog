@@ -6,6 +6,7 @@ const server=http.createServer((req,res)=>{
  if(!file.startsWith(root+path.sep)){res.writeHead(403).end();return;}
  fs.readFile(file,(error,body)=>{if(error){res.writeHead(404).end();return;}res.setHeader('Content-Type',file.endsWith('.js')?'application/javascript':file.endsWith('.html')?'text/html':file.endsWith('.css')?'text/css':'application/json');res.end(body);});
 });
+const notationCases=require('./fixtures/answer-notation.json');
 const cases=[
  {foreign:"(to) remove sb./sth.",german:"jn./etwas entfernen",lang:"en-US",inputs:["to remove sb./sth.","remove sb/sth","remove sb sth","remove somebody","to remove something"],bad:["to remove sb/sthh","remove sb/garbage","removesb./sth."]},
  {foreign:"(to) lower ['ləʊə]",german:'senken, verschlechtern',lang:'en-US',inputs:['lower','to lower'],bad:['tolower','lowwer']},
@@ -15,6 +16,7 @@ const cases=[
  {foreign:'(to) run a school/company/restaurant/..., ran, run',german:'eine Schule / eine Firma / ein Restaurant / ... leiten, führen',lang:'en-US',inputs:['run a school','to run a company','run a restaurant ran run'],bad:['run','run a school ranned run']},
  {foreign:'(to) run a school/company/restaurant/..., ran, run',german:'eine Schule / eine Firma / ein Restaurant / ... leiten, führen',lang:'en-US',reverse:true,inputs:['eine Schule leiten','eine Firma führen'],bad:['eine Schule']}
 ];
+for(const fixture of notationCases)for(const [side,expected]of Object.entries(fixture.expected))cases.push({...fixture,reverse:side==='german',inputs:expected.accept,bad:expected.reject,legacyRules:true});
 (async()=>{
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const browser=await chromium.launch({headless:true});
@@ -23,6 +25,7 @@ const cases=[
    for(const [answer,correct] of [...scenario.inputs.map(value=>[value,true]),...scenario.bad.map(value=>[value,false])]){
     const record={id:'fixture',bookId:'book',page:'300',refVocab:'S300 V11',...scenario};
     record.answerRules=JSON.parse(JSON.stringify(api.prepare(record,{lookup:lemma=>lemma==='run'?{forms:{'simple past':[['ran']]},participle:['run']}:null})));
+    if(scenario.legacyRules)record.answerRules={...record.answerRules,features:{},foreign:{mode:'variants',groups:[{cores:['ae','infml','become fast'],suffixes:scenario.foreign.includes('run a school')?['ran','run']:[]}]},german:{mode:'variants',groups:[{cores:['vor jemandem','der-'],suffixes:[]}]}};
     const context=await browser.newContext({serviceWorkers:'block'});
     await context.route('https://**/*',route=>route.fulfill({status:503,contentType:'application/json',body:'{}'}));
     await context.addInitScript(record=>{

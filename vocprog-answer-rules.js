@@ -185,11 +185,37 @@ function matchSide(input,side,language){
   }
   return reachable[tokens.length].has(required);
  }
+ // Expand the learner's dictionary notation as well as the printed solution.
+ // Every entered slash alternative must be correct; a typo is never discarded.
+ if(String(input).includes("/")){
+  try{
+   const literal=parens(clean(stripTags(input)),language,false)[0].replace(/\s*\/\s*/g,"/");
+   const alternatives=slashVariants(literal,language);
+   return alternatives.length>0&&alternatives.every(value=>
+    placeholders(value,language).some(expanded=>matchSide(expanded,side,language)===true));
+  }catch{return false;}
+ }
  const tokens=normalized.split(" ");if(!normalized||tokens.length>256)return false;
  const sequences=side.groups.flatMap(patterns),reachable=new Set([0]);
+ const placeholderWords=new Set(["sb","sth","somebody","someone","something","jn","jdn","jm","jdm","jemanden","jemandem","etwas"]);
+ const slots=[];
+ for(const group of side.groups){
+  const prefixes=new Map();
+  for(const core of group.cores){
+   const words=core.split(" "),last=words.at(-1);
+   if(words.length<2||!placeholderWords.has(last))continue;
+   const prefix=words.slice(0,-1).join(" ");
+   if(!prefixes.has(prefix))prefixes.set(prefix,new Set());prefixes.get(prefix).add(last);
+  }
+  for(const [prefix,choices]of prefixes)if(choices.size>1)slots.push({prefix:prefix.split(" "),choices});
+ }
  for(let offset=0;offset<tokens.length;offset++){
   if(!reachable.has(offset))continue;
   for(const sequence of sequences)if(sequence.length&&sequence.every((word,index)=>tokens[offset+index]===word))reachable.add(offset+sequence.length);
+  // In vocabulary notation, `remove sb., sth.` shares its verb across objects.
+  for(const {prefix,choices}of slots)if(prefix.every((word,index)=>tokens[offset+index]===word)){
+   for(let end=offset+prefix.length;end<tokens.length&&choices.has(tokens[end]);end++)reachable.add(end+1);
+  }
  }
  return reachable.has(tokens.length);
 }

@@ -1,0 +1,203 @@
+[
+  {
+    "foreign": "(to) be in awe (of sb./sth.) [ɔ:]",
+    "german": "vor jm./etwas voller Ehrfurcht sein, von jm./etwas stark beeindruckt sein",
+    "lang": "en-US",
+    "expected": {
+      "german": {
+        "accept": [
+          "vor jemandem voller Ehrfurcht sein",
+          "von etwas stark beeindruckt sein",
+          "vor jm./etwas voller Ehrfurcht sein, von jm./etwas stark beeindruckt sein",
+          "vor jm., etwas voller Ehrfurcht sein"
+        ],
+        "reject": [
+          "vor jemandem",
+          "vor jm",
+          "etwas voller Ehrfurcht sein",
+          "vor jemandem voller Erhfurcht sein"
+        ]
+      }
+    }
+  },
+  {
+    "foreign": "le/la même",
+    "german": "der-/die-/dasselbe, der/die/das Gleiche",
+    "lang": "fr-FR",
+    "expected": {
+      "german": {
+        "accept": [
+          "derselbe",
+          "dieselbe",
+          "dasselbe",
+          "der-/die-/dasselbe, der/die/das Gleiche"
+        ],
+        "reject": [
+          "der-",
+          "die-",
+          "dersellbe"
+        ]
+      }
+    }
+  },
+  {
+    "foreign": "narrator [nə'reɪtə]",
+    "german": "Erzähler/in; Sprecher/in",
+    "lang": "en-US",
+    "expected": {
+      "german": {
+        "accept": [
+          "Erzähler/in; Sprecher/in",
+          "Erzählerin",
+          "Sprecherin"
+        ],
+        "reject": [
+          "Erzähler/in; Sprechr/in",
+          "Erzähler/in; in"
+        ]
+      }
+    }
+  },
+  {
+    "foreign": "narrator",
+    "german": "Erzähler/in; Sprecher/in",
+    "lang": "en-US",
+    "expected": {
+      "german": {
+        "accept": [
+          "Erzähler/in; Sprecher/in",
+          "Erzähler Sprecherin"
+        ],
+        "reject": [
+          "Erzähler/in; xyz"
+        ]
+      }
+    }
+  },
+  {
+    "foreign": "(to) run a school/company/restaurant/..., ran, run",
+    "german": "eine Schule / eine Firma / ein Restaurant / ... leiten, führen",
+    "lang": "en-US",
+    "expected": {
+      "foreign": {
+        "accept": [
+          "run a school/company/restaurant/..., ran, run",
+          "to run a school",
+          "run a school/company/restaurant"
+        ],
+        "reject": [
+          "run a",
+          "ran",
+          "run a school/company/restarant/..., ran, run",
+          "run a school/company/restaurant/..., ranned, run"
+        ]
+      },
+      "german": {
+        "accept": [
+          "eine Schule / eine Firma / ein Restaurant / ... leiten, führen",
+          "eine Firma führen"
+        ],
+        "reject": [
+          "eine Schule / eine Firma / ein Restaurant / ... leitenn, führen",
+          "leiten"
+        ]
+      }
+    }
+  },
+  {
+    "foreign": "à la place de (qn/qc)",
+    "german": "anstelle von (jdm/etw.), statt",
+    "lang": "fr-FR",
+    "expected": {
+      "german": {
+        "accept": [
+          "anstelle von jdm/etw., statt",
+          "anstelle von jemandem",
+          "statt"
+        ],
+        "reject": [
+          "anstelle von jdm/etw., stattt"
+        ]
+      }
+    }
+  },
+  {
+    "foreign": "I've gotten fast. ['gɒtn] (AE; infml) (BE: I've got/become fast.)",
+    "german": "Ich bin schnell geworden.",
+    "lang": "en-US",
+    "expected": {
+      "foreign": {
+        "accept": [
+          "I've become fast.",
+          "I've got fast.",
+          "I've gotten fast.",
+          "I've gotten fast. ['gɒtn] (AE; infml) (BE: I've got/become fast.)"
+        ],
+        "reject": [
+          "become fast",
+          "AE",
+          "BE",
+          "I've become fasst."
+        ]
+      }
+    }
+  },
+  {
+    "foreign": "borough ['bʌrə], (AE ['bɜ:roʊ])",
+    "german": "der Stadtbezirk",
+    "lang": "en-US",
+    "expected": {
+      "foreign": {
+        "accept": [
+          "borough",
+          "borough AE",
+          "borough ['bʌrə], (AE ['bɜ:roʊ])"
+        ],
+        "reject": [
+          "AE",
+          "AE 'bɜ roʊ",
+          "borough AEE"
+        ]
+      }
+    }
+  },
+  {
+    "foreign": "Me neither. ['naɪðə], ['ni:ðə] (infml)",
+    "german": "Ich auch nicht.",
+    "lang": "en-US",
+    "expected": {
+      "foreign": {
+        "accept": [
+          "Me neither.",
+          "Me neither infml",
+          "Me neither. ['naɪðə], ['ni:ðə] (infml)"
+        ],
+        "reject": [
+          "infml",
+          "'ni ðə",
+          "Me neither infmll"
+        ]
+      }
+    }
+  },
+  {
+    "foreign": "folk(s) [fəʊks] (pl, infml, mit -s bes. AE)",
+    "german": "Leute (pl); die Familie",
+    "lang": "en-US",
+    "expected": {
+      "foreign": {
+        "accept": [
+          "folk",
+          "folks",
+          "folks pl",
+          "folk(s) [fəʊks] (pl, infml, mit -s bes. AE)"
+        ],
+        "reject": [
+          "pl",
+          "infml",
+          "folk infmll"
+        ]
+      }
+    }
+  }
+]

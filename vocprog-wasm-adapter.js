@@ -82,6 +82,7 @@
     if (participle) {
       map["present progressive"] = EN_BE_NOW.map(aux => aux + " " + participle);
       map["past progressive"] = EN_BE_PAST.map(aux => aux + " " + participle);
+      map["present perfect progressive"] = ["have","have","has","have","have","have"].map(aux => aux + " been " + participle);
     }
     if (infinitive) {
       map["going to future"] = EN_BE_NOW.map(aux => aux + " going to " + infinitive);
@@ -159,7 +160,7 @@
       "onvoltooid toekomende tijd"
     ] : language === "en-US" ? [
       "simple present", "present progressive", "simple past",
-      "past progressive", "present perfect", "past perfect",
+      "past progressive", "present perfect", "present perfect progressive", "past perfect",
       "will future", "going to future", "conditional"
     ] : Object.keys(SIX_MAP[language]);
     const present = Object.keys(forms);

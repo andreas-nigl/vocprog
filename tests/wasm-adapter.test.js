@@ -20,7 +20,7 @@ test("English adds four analytical school constructions without Gemini",()=>{
     presentParticiple:"going",presentRow:six,pastRow:six,
     presentPerfectRow:six,pastPerfectRow:six,futureRow:six};
   const result=adapter.adapt(table,"en-US");
-  assert.equal(result.available.length,9);
+  assert.equal(result.available.length,10);
   assert.deepEqual(result.principalParts,["go","went","gone"]);
   assert.deepEqual(result.missing,[]);
   assert.equal(result.forms["present progressive"][0],"am going");

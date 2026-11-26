@@ -1,0 +1,432 @@
+{
+  "exist": {
+    "forms": {
+      "simple present": [
+        [
+          "exist"
+        ],
+        [
+          "exist"
+        ],
+        [
+          "exists"
+        ],
+        [
+          "exist"
+        ],
+        [
+          "exist"
+        ],
+        [
+          "exist"
+        ]
+      ],
+      "simple past": [
+        [
+          "existed"
+        ],
+        [
+          "existed"
+        ],
+        [
+          "existed"
+        ],
+        [
+          "existed"
+        ],
+        [
+          "existed"
+        ],
+        [
+          "existed"
+        ]
+      ]
+    },
+    "participle": [
+      "existed"
+    ],
+    "presentParticiple": [
+      "existing"
+    ],
+    "sources": [
+      {
+        "name": "Cambridge: existed",
+        "url": "https://dictionary.cambridge.org/dictionary/english/existed"
+      },
+      {
+        "name": "Cambridge: verb forms",
+        "url": "https://dictionary.cambridge.org/grammar/british-grammar/verbs-basic-forms"
+      }
+    ]
+  },
+  "contact": {
+    "forms": {
+      "simple present": [
+        [
+          "contact"
+        ],
+        [
+          "contact"
+        ],
+        [
+          "contacts"
+        ],
+        [
+          "contact"
+        ],
+        [
+          "contact"
+        ],
+        [
+          "contact"
+        ]
+      ],
+      "simple past": [
+        [
+          "contacted"
+        ],
+        [
+          "contacted"
+        ],
+        [
+          "contacted"
+        ],
+        [
+          "contacted"
+        ],
+        [
+          "contacted"
+        ],
+        [
+          "contacted"
+        ]
+      ]
+    },
+    "participle": [
+      "contacted"
+    ],
+    "presentParticiple": [
+      "contacting"
+    ],
+    "sources": [
+      {
+        "name": "Cambridge: contacted",
+        "url": "https://dictionary.cambridge.org/dictionary/english/contacted"
+      },
+      {
+        "name": "Cambridge: verb forms",
+        "url": "https://dictionary.cambridge.org/grammar/british-grammar/verbs-basic-forms"
+      }
+    ]
+  },
+  "lower": {
+    "forms": {
+      "simple present": [
+        [
+          "lower"
+        ],
+        [
+          "lower"
+        ],
+        [
+          "lowers"
+        ],
+        [
+          "lower"
+        ],
+        [
+          "lower"
+        ],
+        [
+          "lower"
+        ]
+      ],
+      "simple past": [
+        [
+          "lowered"
+        ],
+        [
+          "lowered"
+        ],
+        [
+          "lowered"
+        ],
+        [
+          "lowered"
+        ],
+        [
+          "lowered"
+        ],
+        [
+          "lowered"
+        ]
+      ]
+    },
+    "participle": [
+      "lowered"
+    ],
+    "presentParticiple": [
+      "lowering"
+    ],
+    "sources": [
+      {
+        "name": "Cambridge: lowered",
+        "url": "https://dictionary.cambridge.org/dictionary/english/lowered"
+      },
+      {
+        "name": "Cambridge: verb forms",
+        "url": "https://dictionary.cambridge.org/grammar/british-grammar/verbs-basic-forms"
+      }
+    ]
+  },
+  "bump": {
+    "forms": {
+      "simple present": [
+        [
+          "bump"
+        ],
+        [
+          "bump"
+        ],
+        [
+          "bumps"
+        ],
+        [
+          "bump"
+        ],
+        [
+          "bump"
+        ],
+        [
+          "bump"
+        ]
+      ],
+      "simple past": [
+        [
+          "bumped"
+        ],
+        [
+          "bumped"
+        ],
+        [
+          "bumped"
+        ],
+        [
+          "bumped"
+        ],
+        [
+          "bumped"
+        ],
+        [
+          "bumped"
+        ]
+      ]
+    },
+    "participle": [
+      "bumped"
+    ],
+    "presentParticiple": [
+      "bumping"
+    ],
+    "sources": [
+      {
+        "name": "Cambridge: bumped",
+        "url": "https://dictionary.cambridge.org/dictionary/english/bumped"
+      },
+      {
+        "name": "Cambridge: verb forms",
+        "url": "https://dictionary.cambridge.org/grammar/british-grammar/verbs-basic-forms"
+      },
+      {
+        "name": "Wörterbuch: bump",
+        "url": "https://dictionary.cambridge.org/dictionary/english-german/bump"
+      }
+    ],
+    "baseGerman": "stoßen"
+  },
+  "arrest": {
+    "forms": {
+      "simple present": [
+        [
+          "arrest"
+        ],
+        [
+          "arrest"
+        ],
+        [
+          "arrests"
+        ],
+        [
+          "arrest"
+        ],
+        [
+          "arrest"
+        ],
+        [
+          "arrest"
+        ]
+      ],
+      "simple past": [
+        [
+          "arrested"
+        ],
+        [
+          "arrested"
+        ],
+        [
+          "arrested"
+        ],
+        [
+          "arrested"
+        ],
+        [
+          "arrested"
+        ],
+        [
+          "arrested"
+        ]
+      ]
+    },
+    "participle": [
+      "arrested"
+    ],
+    "presentParticiple": [
+      "arresting"
+    ],
+    "sources": [
+      {
+        "name": "Cambridge: arrested",
+        "url": "https://dictionary.cambridge.org/dictionary/english/arrested"
+      },
+      {
+        "name": "Cambridge: verb forms",
+        "url": "https://dictionary.cambridge.org/grammar/british-grammar/verbs-basic-forms"
+      }
+    ]
+  },
+  "take": {
+    "baseGerman": "nehmen",
+    "sources": [
+      {
+        "name": "Wörterbuch: take",
+        "url": "https://dictionary.cambridge.org/dictionary/english-german/take"
+      }
+    ]
+  },
+  "dig": {
+    "baseGerman": "graben",
+    "sources": [
+      {
+        "name": "Wörterbuch: dig",
+        "url": "https://dictionary.cambridge.org/dictionary/english-german/dig"
+      }
+    ]
+  },
+  "spring": {
+    "baseGerman": "springen",
+    "sources": [
+      {
+        "name": "Wörterbuch: spring",
+        "url": "https://dictionary.cambridge.org/dictionary/english-german/spring"
+      }
+    ]
+  },
+  "reveal": {
+    "baseGerman": "offenlegen",
+    "sources": [
+      {
+        "name": "Wörterbuch: reveal",
+        "url": "https://dictionary.cambridge.org/dictionary/english-german/reveal"
+      }
+    ]
+  },
+  "remove": {
+    "baseGerman": "entfernen",
+    "sources": [
+      {
+        "name": "Wörterbuch: remove",
+        "url": "https://dictionary.cambridge.org/dictionary/english-german/remove"
+      }
+    ]
+  },
+  "react": {
+    "baseGerman": "reagieren",
+    "sources": [
+      {
+        "name": "Wörterbuch: react",
+        "url": "https://dictionary.cambridge.org/dictionary/english-german/react"
+      }
+    ]
+  },
+  "know": {
+    "stative": true
+  },
+  "believe": {
+    "stative": true
+  },
+  "belong": {
+    "stative": true
+  },
+  "own": {
+    "stative": true
+  },
+  "understand": {
+    "stative": true
+  },
+  "be": {
+    "forms": {
+      "simple present": [
+        [
+          "am"
+        ],
+        [
+          "are"
+        ],
+        [
+          "is"
+        ],
+        [
+          "are"
+        ],
+        [
+          "are"
+        ],
+        [
+          "are"
+        ]
+      ],
+      "simple past": [
+        [
+          "was"
+        ],
+        [
+          "were"
+        ],
+        [
+          "was"
+        ],
+        [
+          "were"
+        ],
+        [
+          "were"
+        ],
+        [
+          "were"
+        ]
+      ]
+    },
+    "participle": [
+      "been"
+    ],
+    "presentParticiple": [
+      "being"
+    ],
+    "sources": [
+      {
+        "name": "Cambridge: Be",
+        "url": "https://dictionary.cambridge.org/grammar/british-grammar/be-"
+      }
+    ]
+  }
+}

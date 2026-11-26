@@ -14,7 +14,7 @@ const loaded = (async () => {
 })();
 for (const [word, language, count, tense, expected] of [
   ["venir", "fr-FR", 7, "subjonctif présent", "venions"],
-  ["go", "en-US", 9, "simple past", "went"],
+  ["go", "en-US", 10, "simple past", "went"],
   ["hablar", "es-ES", 8, "pretérito perfecto compuesto", "hemos hablado"],
   ["falar", "pt-PT", 7, "mais-que-perfeito composto", "tínhamos falado"],
   ["lopen", "nl-NL", 3, "onvoltooid verleden tijd", "liepen"]
@@ -43,7 +43,7 @@ for(const selectedTense of ["présent","infinitiv"]) test("Real table UI shows p
     {bookId:"fr",kind:"verb-infinitive",verbId:"finir",foreign:"finir",german:"beenden"},
     {bookId:"fr",kind:"verb-form",verbId:"finir",tense:"présent",person:"je",foreign:"je finis",german:"ich beende"}
   ];
-  const window = {VOCMorphology:{ready:Promise.resolve(),conjugate:(w,l)=>engine.conjugate(w,l),state:{status:"ready"}}};
+  const window = {VOCVerbDatabase:globalThis.VOCVerbDatabase,VOCMorphology:{ready:Promise.resolve(),conjugate:(w,l)=>engine.conjugate(w,l),state:{status:"ready"}}};
   const verbDatabase=globalThis.VOCVerbDatabase.create({getItem:()=>null,setItem:()=>{}},(w,l)=>engine.conjugate(w,l));
   await verbDatabase.prepare({id:"fr",lang:"fr-FR"},entries,[],["présent"]);
   const run = new Function("verbDatabase","window","document","get","trainingItems","currentIndex","allVocab","specials","activeBook","LANGS","TENSES","normalizeTense","frenchSurface",fragment);

@@ -9,6 +9,7 @@ test('Disabled conjugation mode asks one infinitive per selected verb in either 
  const start=new Function('state','elements',`
  let trainingItems=[],startTraining=()=>{};
  const get=id=>elements[id],isVerbBook=()=>true,updateVerbReadiness=()=>{},normalizeTense=x=>x,activeBook=()=>({lang:'fr-FR'});
+ const chosenTenses=()=>[elements.tenseSelect.value];
  const selectedVerbRange=()=>[{id:'a',foreign:'avoir',german:'haben',verbId:'avoir'},{id:'b',foreign:'être',german:'sein',verbId:'être'}];
  const verbDatabase={get(){throw Error('Infinitive mode must not require prepared conjugations');}};
  const enterTraining=()=>{state.cards=trainingItems;};
@@ -23,5 +24,5 @@ test('Infinitives are the first catalog option and the redundant checkbox is rem
  const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
  assert.doesNotMatch(html,/id="practiceConjugations"/);
  assert.match(source,/catalog.unshift\(\["infinitiv","Infinitive \(Grundformen\)"\]\)/);
- assert.match(source,/tense!=="impératif"&&tense!=="infinitiv"/);
+ assert.match(source,/\["impératif","infinitiv","principal parts"\]\.includes\(tense\)/);
 });

@@ -90,7 +90,7 @@ test("Verb table reads only prepared data, with no conjugation on opening",()=>{
   const source=fragment("  window.toggleVerbTable=","  function validMerge");
   assert.match(source,/verbDatabase\.get\(item.bookId\)/);
   assert.doesNotMatch(source,/\.conjugate\(|VOCMorphology/);
-  assert.match(source,/prepared\.cards\[tense\]/);
+  assert.match(source,/prepared\.cards\[tableTense\]/);
 });
 
 test("Repeat scan reports existing unique verbs without zero conflict warnings",()=>{

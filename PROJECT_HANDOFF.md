@@ -1,3 +1,10 @@
+## 2026-11-27 – VOC 0.5.24-2: einheitliche kleine Dropdown-Dreiecke
+
+- Nutzer beanstandet das abweichende größere SVG-Dreieck der Abfragerichtung. Start-/Stopp-Vokabel, Zeitform und Abfragerichtung verwenden jetzt dieselbe kleine Glyphe ▾ aus einer einzigen CSS-Regel mit identischer Schriftfamilie, Größe .95rem, normalem Gewicht, Farbe und rechts 10 px Abstand; vertikal zentriert. Abfragerichtung bleibt natives Select mit unveränderten Optionen/ID/Richtungssperre; Wrapper dient ausschließlich der Darstellung. Keine Änderungen an weiteren Menüs, Trainingslogik oder Daten.
+- Isolierte Chromium-Prüfung mit reproduzierten Originalstilen und neuen gemeinsamen Regeln bei 1280 px Desktop und 390 px Touch erfolgreich: identische berechnete Symbolstile, vertikale Zentrierung, beide Richtungen wählbar, Desktop-Tastatur und Sperrzustand geprüft. JS-Syntax erfolgreich; vollständiger App-Browser-Test um Vergleich aller vier Symbole ergänzt, noch nicht ausgeführt. App-/Assetversion 0.5.24-2. Nur Produktionsrepository; keine Datenmigration/Testumgebung/Standalone. Pages-Veröffentlichung und Nutzerabnahme offen.
+
+---
+
 ## 2026-11-27 – VOC 0.5.24-1: zweizeilige Verbaufgabe und Dropdown-Dreieck
 
 - Kleine reversible Nutzerkorrektur: englisches Zeitformmenü „Stammformen (Gegenwart, Vergangenheit, Partizip)“, Aufgabenüberschrift bewusst „Stammformen (Grundform, Vergangenheit, Partizip):“. Bei allen Verbenbüchern, Einzelauswahl, Mehrfachauswahl und Infinitiv jeweils Zeitform ohne deutsche Klammerübersetzung (Infinitiv/Stammformen wie vereinbart) in eigener Zeile, normalgewichtig; Vokabel darunter in bisheriger Schrift. Natürlicher Umbruch, Eingabe/Mikrofon folgen im Dokumentfluss. Vorhandener Präfix wird nur in der Darstellung entfernt; Task-Prompt, Audio, Antwortbewertung, Daten, Richtungssperren und Zeitform-Reset unverändert. Abfragerichtung erhält explizites gefülltes nach unten zeigendes Dreieck (native Select-Funktion bleibt).

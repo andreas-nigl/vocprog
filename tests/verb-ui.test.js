@@ -137,5 +137,7 @@ test("Verb instruction and vocabulary use separate lines without altering the ta
   const regular=node();render({kind:"words",prompt:"ordinary"},regular);assert.deepEqual(regular.children,[]);
   assert.match(code,/Stammformen \(Gegenwart, Vergangenheit, Partizip\)/);
   assert.match(css,/\.verb-prompt-heading\{display:block;font-weight:400\}/);
-  assert.match(css,/#direction\{appearance:none[^}]+M0 0h12L6 8z/);
+  assert.match(css,/#direction\{display:block;appearance:none/);
+  assert.match(css,/\.vocab-choice-trigger::after,\.tense-picker \.tense-choice-toggle::after,\.direction-select-wrap::after\{content:"▾"[^}]*right:10px[^}]*font-size:\.95rem[^}]*font-weight:400[^}]*pointer-events:none/);
+  assert.match(html,/<div class="direction-select-wrap"><select id="direction">/);
 });

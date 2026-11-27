@@ -958,7 +958,7 @@
     "nl-NL":[["onvoltooid tegenwoordige tijd","Onvoltooid tegenwoordige tijd (Gegenwart)"],["onvoltooid verleden tijd","Onvoltooid verleden tijd (Vergangenheit)"],["voltooid tegenwoordige tijd","Voltooid tegenwoordige tijd (Perfekt)"],["voltooid verleden tijd","Voltooid verleden tijd (Plusquamperfekt)"],["onvoltooid toekomende tijd","Onvoltooid toekomende tijd (Zukunft)"]],
   };
   for(const catalog of Object.values(TENSES))catalog.unshift(["infinitiv","Infinitive (Grundformen)"]);
-  TENSES["en-US"].splice(1,0,["principal parts","Stammformen (Grundform, Vergangenheit, Partizip)"]);
+  TENSES["en-US"].splice(1,0,["principal parts","Stammformen (Gegenwart, Vergangenheit, Partizip)"]);
   let tensePicker=null,tenseBookId=null;
   const chosenTenses=()=>tensePicker?.values()||[normalizeTense(get("tenseSelect")?.value)];
   const baseVerbKinds=new Set(["verb-infinitive","verb-participle","verb-imperative","verb-principal","verb-ing","verb-gerund"]);
@@ -1225,12 +1225,26 @@
     updateVerbReadiness();
   };
   function escapeText(value){return String(value||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+  // Present the task instruction separately; keep the original task, grading and audio contract.
+  function renderVerbPrompt(item,element){
+    if(item?.kind!=="verbs"||!item.verbTense)return;
+    const tense=normalizeTense(item.verbTense),lang=activeBook()?.lang;
+    const title=tense==="infinitiv"?"Infinitiv":tense==="principal parts"?"Stammformen (Grundform, Vergangenheit, Partizip)":
+      (TENSES[lang]||[]).find(([value])=>value===tense)?.[1].replace(/\s*\([^)]*\)$/,"")||tense;
+    const prefix=title+": ";
+    const prompt=String(item.prompt||"");
+    const body=prompt.startsWith(prefix)?prompt.slice(prefix.length):prompt;
+    const heading=document.createElement("span");heading.className="verb-prompt-heading";heading.textContent=title+":";
+    const text=document.createElement("span");text.className="verb-prompt-body";text.textContent=body+(item.translationTask?" · "+item.translationTask:"");
+    element.replaceChildren(heading,document.createTextNode("\n"),text);
+  }
   const oldCard=showCard;
   showCard=function(){
     oldCard();
     const item=trainingItems[currentIndex];
     if(item?.translationTask)get("promptText").textContent=item.prompt+" · "+item.translationTask;
     const isVerb=item?.kind==="verbs";
+    if(isVerb)renderVerbPrompt(item,get("promptText"));
     get("verbTableToggle").hidden=!isVerb;
     get("newSentencesBtn").hidden=item?.kind!=="special";
     const panel=get("verbTablePanel");panel.hidden=true;

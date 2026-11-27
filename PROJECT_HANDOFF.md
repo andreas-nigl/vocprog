@@ -1,3 +1,10 @@
+## 2026-11-27 – VOC 0.5.24-1: zweizeilige Verbaufgabe und Dropdown-Dreieck
+
+- Kleine reversible Nutzerkorrektur: englisches Zeitformmenü „Stammformen (Gegenwart, Vergangenheit, Partizip)“, Aufgabenüberschrift bewusst „Stammformen (Grundform, Vergangenheit, Partizip):“. Bei allen Verbenbüchern, Einzelauswahl, Mehrfachauswahl und Infinitiv jeweils Zeitform ohne deutsche Klammerübersetzung (Infinitiv/Stammformen wie vereinbart) in eigener Zeile, normalgewichtig; Vokabel darunter in bisheriger Schrift. Natürlicher Umbruch, Eingabe/Mikrofon folgen im Dokumentfluss. Vorhandener Präfix wird nur in der Darstellung entfernt; Task-Prompt, Audio, Antwortbewertung, Daten, Richtungssperren und Zeitform-Reset unverändert. Abfragerichtung erhält explizites gefülltes nach unten zeigendes Dreieck (native Select-Funktion bleibt).
+- JS-Syntax und isolierte Prüfung des tatsächlichen Renderers mit acht EN-/FR-Varianten inkl. beider Infinitivrichtungen und normalen Vokabelkarten bestanden. Lokale isolierte Chromium-Layoutprüfung mit reproduzierten App-Stilen, 1280 px Desktop und 390 px Touch-Viewport: je vier Promptvarianten, normalgewichtige Überschrift, Zeilenumbruch, nachfolgende Eingabe und funktionierender Richtungs-Select mit gefülltem Dreieck erfolgreich. Vollständiger Desktop-/Touch-App-Browser-Regressionstest um neue Assertions erweitert, Gesamtprüfung hier noch nicht verifiziert. App-/Assetversion 0.5.24-1. Nur Produktionsrepository; keine Supabase-Schreibvorgänge, keine Testumgebung, kein neues Standalone. Pages-Veröffentlichung und Nutzerabnahme noch zu prüfen.
+
+---
+
 ## 2026-11-27 – VOC 0.5.24: vollständige englische Buchwendungen
 
 - Nutzer gibt nach rein lesender Gesamtanalyse die Wiederherstellung frei. Befund: 170 aktive englische Einträge, davon 16 Verbinfinitive; contact sb., arrest sb. und refuse (to do sth.) im Verbenbuch verkürzt, Quellvokabeln vollständig. (to)-Normalisierung seit 0.5.22 gelangte in die Infinitivanzeige; separate Titelquelle verkürzte Present Perfect Simple in Aufgaben.

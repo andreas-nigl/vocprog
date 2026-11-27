@@ -112,3 +112,30 @@ test("Sync cannot expose learning setup during an active exercise",()=>{
   assert.match(code,/target.length===0\|\|!get\("trainerCard"\).classList.contains\("hidden"\)/);
   assert.match(css,/body:has\(#trainerCard:not\(\.hidden\)\) #rangeCard\{display:none!important\}/);
 });
+
+test("Verb instruction and vocabulary use separate lines without altering the task",()=>{
+  const start=code.indexOf("  function renderVerbPrompt("),end=code.indexOf("  const oldCard=showCard;",start);
+  assert.ok(start>=0&&end>start);
+  const catalogs={"en-US":[["simple present","Simple Present (Gegenwart)"],["present perfect","Present Perfect Simple (vollendete Gegenwart)"]],"fr-FR":[["présent","Présent (Gegenwart)"],["impératif","Impératif (Befehlsform)"]]};
+  let language="en-US";
+  const node=()=>({className:"",textContent:"",children:[],replaceChildren(...children){this.children=children;}});
+  const document={createElement:node,createTextNode:text=>({textContent:text})};
+  const render=new Function("TENSES","normalizeTense","activeBook","document",code.slice(start,end)+"return renderVerbPrompt;")(catalogs,x=>x,()=>({lang:language}),document);
+  for(const [lang,tense,prompt,heading,body] of [
+    ["en-US","simple present","Simple Present: gehen (ich)","Simple Present:","gehen (ich)"],
+    ["en-US","present perfect","Present Perfect Simple: gehen (ich)","Present Perfect Simple:","gehen (ich)"],
+    ["en-US","infinitiv","(to) take","Infinitiv:","(to) take"],
+    ["en-US","infinitiv","nehmen","Infinitiv:","nehmen"],
+    ["en-US","principal parts","nehmen","Stammformen (Grundform, Vergangenheit, Partizip):","nehmen"],
+    ["fr-FR","présent","Présent: gehen (ich)","Présent:","gehen (ich)"],
+    ["fr-FR","présent","je vais","Présent:","je vais"],
+    ["fr-FR","impératif","geh!","Impératif:","geh!"]
+  ]){
+    language=lang;const item=Object.freeze({kind:"verbs",verbTense:tense,prompt,target:"original"}),el=node();
+    render(item,el);assert.equal(el.children[0].textContent,heading);assert.equal(el.children[2].textContent,body);assert.equal(item.prompt,prompt);
+  }
+  const regular=node();render({kind:"words",prompt:"ordinary"},regular);assert.deepEqual(regular.children,[]);
+  assert.match(code,/Stammformen \(Gegenwart, Vergangenheit, Partizip\)/);
+  assert.match(css,/\.verb-prompt-heading\{display:block;font-weight:400\}/);
+  assert.match(css,/#direction\{appearance:none[^}]+M0 0h12L6 8z/);
+});

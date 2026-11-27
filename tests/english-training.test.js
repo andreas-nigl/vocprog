@@ -11,7 +11,7 @@ test('Every selected verb is asked in every selected tense, with one independent
  const verb={german:'nehmen',principalParts:['take','took','taken'],principalVariants:['take, took, taken'],baseGerman:'nehmen',forms:{'simple past':Array(6).fill('took'),'present perfect':Array(6).fill('have taken')},cards:{'simple past':Array(6).fill({}),'present perfect':Array(6).fill({})}};
  const make=new Function('window','verbDatabase','chosenBook','activeBook','TENSES',fragment+';return makeSelectedVerbTasks;')({VOCEnglishVerbs:english},{get:()=>({verbs:{take:verb,'take off':verb}})},'b',()=>({lang:'en-US'}),{});
  const bases=[{id:'one',bookId:'b',foreign:'take',verbId:'take'},{id:'two',bookId:'b',foreign:'take off',verbId:'take off'}];
- const tasks=make(bases,['simple past','present perfect']);assert.equal(tasks.length,4);for(const id of ['one','two'])assert.deepEqual(tasks.filter(x=>x.sourceId===id).map(x=>x.verbTense),['simple past','present perfect']);assert.equal(make(bases,['simple past']).length,12);assert.equal(make(bases,['principal parts']).length,1);
+ const tasks=make(bases,['simple past','present perfect']);assert.equal(tasks.length,4);for(const id of ['one','two'])assert.deepEqual(tasks.filter(x=>x.sourceId===id).map(x=>x.verbTense),['simple past','present perfect']);assert.equal(make(bases,['simple past']).length,12);const principal=make(bases,['principal parts']);assert.equal(principal.length,1);assert.equal(principal[0].target,'take, took, taken');
 });
 test('Real English WASM and independent lexicon prepare all ten tenses; reload needs no generation',async()=>{
  const {book,entries,persisted,snapshot,storage}=await require('./helpers/english-fixture.cjs')();
@@ -70,3 +70,5 @@ test('Dictionary parentheses, optional prefixes and translation coverage are val
  const bump=await prepare('bump fists','sich per Faustgruß begrüßen','stoßen');assert.equal(bump.cards['simple present'][0].german,'ich begrüße jemanden per Faustgruß');assert.equal(bump.cards['simple present'][3].german,'wir begrüßen einander per Faustgruß');assert.ok(english.translationComplete(bump));
  const unknown=await prepare('react','reagieren; (unbekanntes Material)','reagieren');assert.equal(english.translationComplete(unknown),false);
 });
+
+test('Infinitive and principal parts use distinct shared display rules',()=>{assert.equal(english.displayInfinitive('take'),' (to) take'.trim());assert.equal(english.displayPrincipalParts(['take','took','taken']),'take, took, taken');assert.equal(english.displayPrincipalParts(['(to) take','took','taken'],' / '),'take / took / taken');assert.equal(english.principalMatches('take took taken',{principalParts:['take','took','taken']}),true);assert.equal(english.principalMatches('(to) take took taken',{principalParts:['take','took','taken']}),true);});

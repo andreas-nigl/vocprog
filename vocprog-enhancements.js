@@ -1155,7 +1155,7 @@
       const common={kind:"verbs",bookId:base.bookId,sourceId:base.id,page:base.page,ref:base.refVocab,verbId:base.verbId,verbLemma:base.foreign,pLang:"de-DE",tLang:activeBook().lang};
       if(tenses[0]==="principal parts"){
         const key=verb.principalParts[0];if(seen.has(key))continue;seen.add(key);
-        tasks.push({...common,prompt:verb.baseGerman,target:verb.principalParts.map((form,index)=>index===0?window.VOCEnglishVerbs.displayInfinitive(form):form).join(", "),verbTense:"principal parts",principalVerb:verb,record:{...base,kind:"verb-principal"}});continue;
+        tasks.push({...common,prompt:verb.baseGerman,target:window.VOCEnglishVerbs.displayPrincipalParts(verb.principalParts),verbTense:"principal parts",principalVerb:verb,record:{...base,kind:"verb-principal"}});continue;
       }
       for(const tense of tenses){
         if(verb.excludedTenses?.includes(tense))continue;
@@ -1229,8 +1229,8 @@
   function renderVerbPrompt(item,element){
     if(item?.kind!=="verbs"||!item.verbTense)return;
     const tense=normalizeTense(item.verbTense),lang=activeBook()?.lang;
-    const title=tense==="infinitiv"?"Infinitiv":tense==="principal parts"?"Stammformen (Grundform, Vergangenheit, Partizip)":
-      (TENSES[lang]||[]).find(([value])=>value===tense)?.[1].replace(/\s*\([^)]*\)$/,"")||tense;
+    const label=(TENSES[lang]||[]).find(([value])=>value===tense)?.[1]||tense;
+    const title=tense==="infinitiv"?"Infinitiv":tense==="principal parts"?label:label.replace(/\s*\([^)]*\)$/,"");
     const prefix=title+": ";
     const prompt=String(item.prompt||"");
     const body=prompt.startsWith(prefix)?prompt.slice(prefix.length):prompt;
@@ -1310,7 +1310,7 @@
         window.VOCVerbPresentation?.germanImperative(prepared.imperativeGerman||imperative?.german||missing)||prepared.imperativeGerman||imperative?.german||missing);
     }else if(activeBook()?.lang==="en-US"){
       row("Infinitiv : "+window.VOCEnglishVerbs.displayInfinitive(base?.foreign||item.verbLemma),base?.german||prepared.german||missing);
-      row("Stammformen : "+(prepared.principalParts?.map((form,index)=>index===0?window.VOCEnglishVerbs.displayInfinitive(form):form).join(" / ")||missing),prepared.principalGerman||entries.find(v=>v.kind==="verb-principal")?.german||missing);
+      row("Stammformen : "+(window.VOCEnglishVerbs.displayPrincipalParts(prepared.principalParts," / ")||missing),prepared.principalGerman||entries.find(v=>v.kind==="verb-principal")?.german||missing);
       row("Partizip : "+(prepared.participle||missing),prepared.participleGerman||part?.german||missing);
       row("-ing-Form : "+(prepared.presentParticiple||missing),prepared.presentParticipleGerman||entries.find(v=>v.kind==="verb-ing")?.german||missing);
     }else{

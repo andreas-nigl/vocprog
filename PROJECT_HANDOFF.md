@@ -1,3 +1,11 @@
+## 2026-11-27 – VOC 0.5.24-3: konsistente Stammformen
+
+- Nutzerkorrektur: „Stammformen (Gegenwart, Vergangenheit, Partizip)“ einheitlich in geöffnetem und geschlossenem Zeitform-Dropdown sowie Aufgabenüberschrift; Überschrift liest den vorhandenen Zeitformkatalog statt eines zweiten Textliterals. Gemeinsame displayPrincipalParts-Funktion für Aufgabenlösung und Tabellenzeile; erste Stammform ohne (to), eigenständige Infinitivzeile weiterhin mit (to). Eingabe mit optionalem führendem to bleibt wie zuvor akzeptiert. Keine Änderung an gespeicherten Formen, Richtungssperren oder Bewertung.
+- Verbindliche UI-Regel für Folgeänderungen: gleichartige Bezeichnungen, Anzeigen und Symbole an allen zusammengehörigen Stellen abgleichen und gemeinsame Definition/Formatierung verwenden. Bei beabsichtigter Abweichung Rückfrage; keine stillschweigende Divergenz.
+- Syntaxprüfung aller geänderten JS-Dateien, drei gezielte isolierte Tests mit tatsächlicher Aufgabenbildung, gemeinsamem Formatierer, Eingabekompatibilität und Renderpfad (acht EN-/FR-Varianten, normale Vokabel unverändert) erfolgreich. Browserregression um Dropdown, Überschrift, Musterlösung und beide Tabellenzeilen ergänzt; vollständiger App-Browserlauf hier nicht verifiziert. Version/Assets 0.5.24-3. Nur Produktion; keine Datenmigration oder Testumgebung. Pages-Veröffentlichung/Nutzerabnahme offen.
+
+---
+
 ## 2026-11-27 – VOC 0.5.24-2: einheitliche kleine Dropdown-Dreiecke
 
 - Nutzer beanstandet das abweichende größere SVG-Dreieck der Abfragerichtung. Start-/Stopp-Vokabel, Zeitform und Abfragerichtung verwenden jetzt dieselbe kleine Glyphe ▾ aus einer einzigen CSS-Regel mit identischer Schriftfamilie, Größe .95rem, normalem Gewicht, Farbe und rechts 10 px Abstand; vertikal zentriert. Abfragerichtung bleibt natives Select mit unveränderten Optionen/ID/Richtungssperre; Wrapper dient ausschließlich der Darstellung. Keine Änderungen an weiteren Menüs, Trainingslogik oder Daten.

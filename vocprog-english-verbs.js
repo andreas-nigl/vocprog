@@ -6,6 +6,8 @@
  function split(text){const clean=normalize(text),match=clean.match(/^([a-z]+)(.*)$/);return match?{base:match[1],tail:match[2]}:{base:'',tail:''};}
  // Preserve the printed phrase independently of the engine's base lemma.
  const displayInfinitive=text=>'(to) '+normalize(text);
+ // Principal parts are bare forms, unlike a standalone infinitive.
+ const displayPrincipalParts=(parts,separator=', ')=>Array.isArray(parts)&&parts.length===3?parts.map((form,index)=>index===0?normalize(form):form).join(separator):'';
  function sourcePhrase(text){
   const rules=root.VOCAnswerRules;
   const marked=rules?rules.annotations(String(text).replace(/\[[^\]]*\]/g,'')):{lexical:String(text).replace(/\[[^\]]*\]/g,''),notes:[]};
@@ -214,5 +216,5 @@
   return translateTable(verb,motor,lookup);
  }
  function principalMatches(given,verb){const clean=text=>normalize(text).replace(/[,/–—-]+/g,' ').replace(/\s+/g,' ').trim();return (verb.principalVariants||[verb.principalParts?.join(', ')]).filter(Boolean).some(value=>clean(value)===clean(given));}
- root.VOCEnglishVerbs=Object.freeze({VERSION,split,normalize,displayInfinitive,sourcePhrase,restoreEntry,morphology,enrich,translateTable,translationComplete,splitMeanings,personPrompt,principalMatches,titles:TITLES});
+ root.VOCEnglishVerbs=Object.freeze({VERSION,split,normalize,displayInfinitive,displayPrincipalParts,sourcePhrase,restoreEntry,morphology,enrich,translateTable,translationComplete,splitMeanings,personPrompt,principalMatches,titles:TITLES});
 })(typeof window==='undefined'?globalThis:window);

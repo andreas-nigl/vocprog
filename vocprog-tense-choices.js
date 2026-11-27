@@ -10,7 +10,7 @@
   let selected=[],draft=[],multiple=false,opened=false;
   const exclusive=value=>['infinitiv','principal parts'].includes(value);
   const label=value=>Array.from(select.options).find(option=>option.value===value)?.textContent||value;
-  const short=value=>label(value).replace(/\s*\([^)]*\)\s*$/,'');
+  const short=value=>value==='principal parts'?label(value):label(value).replace(/\s*\([^)]*\)\s*$/,'');
   function values(){return selected.length?[...selected]:[select.value];}
   function commit(){if(!draft.length)return;selected=[...draft];select.value=selected[0];select.dataset.tenses=JSON.stringify(selected);close();change(values());}
   function close(){opened=false;panel.hidden=true;toggle.setAttribute('aria-expanded','false');toggle.textContent=values().map(short).join(', ');}

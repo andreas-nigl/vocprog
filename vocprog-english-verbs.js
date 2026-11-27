@@ -1,7 +1,7 @@
 /* English construction rules; lexical evidence comes from the independent reference. */
 (function(root){
  'use strict';
- const VERSION=2;
+ const VERSION=3;
  const normalize=text=>String(text||'').replace(/^\s*(?:\(to\)|to)\s+/i,'').trim().toLowerCase();
  function split(text){const clean=normalize(text),match=clean.match(/^([a-z]+)(.*)$/);return match?{base:match[1],tail:match[2]}:{base:'',tail:''};}
  const TITLES={'simple present':'Simple Present','present progressive':'Present Progressive','simple past':'Simple Past','past progressive':'Past Progressive','present perfect':'Present Perfect','present perfect progressive':'Present Perfect Progressive','past perfect':'Past Perfect','will future':'Will-Future','going to future':'Going-to-Future','conditional':'Conditional'};
@@ -25,7 +25,41 @@
  const GERMAN_TENSES={'simple present':['präsens',''],'present progressive':['präsens','gerade'],'simple past':['präteritum',''],'past progressive':['präteritum','gerade'],'present perfect':['perfekt',''],'present perfect progressive':['präsens','seit einiger Zeit'],'past perfect':['plusquamperfekt',''],'will future':['futur i',''],'going to future':['futur i',''],'conditional':['würde-form','']};
  const refKeys={'präsens':'present','präteritum':'preterite','perfekt':'perfect','plusquamperfekt':'pluperfect'};
  const validForm=s=>typeof s==='string'&&!!s.trim()&&!/[⁰¹²³⁴⁵⁶⁷⁸⁹]/.test(s);
- const splitMeanings=value=>[...new Set(String(value||'').split(/[,;]|\s+\/\s+|\s+oder\s+/).map(s=>s.trim()).filter(Boolean))];
+ // Dictionary notation is interpreted without changing original vocabulary.
+ const PREPOSITION=/^(?:auf|an|bei|mit|von|zu|über|für|gegen|nach|vor|aus|in|um|unter|durch|ohne)$/i;
+ function expandMeaning(value){
+  let variants=[value.trim()];
+  for(let pass=0;pass<5;pass++){
+   let expanded=false;
+   variants=variants.flatMap(s=>{
+    const m=s.match(/\(([^()]*)\)/);if(!m)return [s];
+    const before=s.slice(0,m.index),after=s.slice(m.index+m[0].length),inner=m[1].trim();
+    if(!inner||/[()]/.test(inner))return [s];
+    const attached=/\p{L}$/u.test(before)||/^\p{L}/u.test(after);
+    if(attached&&!/^\p{L}+$/u.test(inner))return [s];
+    if(!attached&&PREPOSITION.test(inner)){expanded=true;return [(before+after).trim()];}
+    if(!attached&&before.trim()&&!after.trim())return [s];
+    expanded=true;return [(before+after).replace(/\s+/g,' ').trim(),(before+inner+after).replace(/\s+/g,' ').trim()];
+   });
+   if(variants.length>32)return [value.trim()];
+   if(!expanded)break;
+  }
+  return variants;
+ }
+ const splitMeanings=value=>[...new Set(String(value||'').split(/[,;]|\s+\/\s+|\s+oder\s+/).flatMap(expandMeaning).filter(Boolean))];
+ const grammarSource={name:'Duden: Perfektbildung mit haben oder sein',url:'https://www.duden.de/sprachwissen/sprachratgeber/Perfektbildung-mit-haben-oder-sein'};
+ const reciprocitySource={name:'IDS grammis: Reziprok-Pronomen',url:'https://grammis.ids-mannheim.de/terminologie/502'};
+ const auxiliaryEvidence=Object.fromEntries('verhaften begrüßen aufnehmen melden ausgraben graben untersuchen existieren inspirieren halten senken verschlechtern reagieren weigern ablehnen entfernen offenlegen zeigen benötigen'.split(' ').map(lemma=>[lemma,{aux:'haben',source:grammarSource}]));
+ Object.assign(auxiliaryEvidence,{
+  verblassen:{aux:'sein',source:{name:'Duden: verblassen',url:'https://www.duden.de/rechtschreibung/verblassen'}},
+  springen:{aux:'sein',source:grammarSource},
+  dauern:{aux:'haben',source:{name:'Duden: dauern',url:'https://www.duden.de/rechtschreibung/dauern_leidtun'}},
+  andauern:{aux:'haben',source:{name:'Duden: andauern',url:'https://www.duden.de/konjugation/andauern'}}
+ });
+ const senseEvidence={'aus dem Boden schießen':{aux:'sein',source:{name:'Duden: schießen (Bewegung)',url:'https://www.duden.de/rechtschreibung/schieszen'}}};
+ const supplement={
+  begrüßen:{forms:{present:['begrüße','begrüßt','begrüßt','begrüßen','begrüßt','begrüßen'].map(s=>[s]),preterite:['begrüßte','begrüßtest','begrüßte','begrüßten','begrüßtet','begrüßten'].map(s=>[s])},participle:['begrüßt'],auxiliaries:['haben'],sources:[{name:'Duden: begrüßen',url:'https://www.duden.de/konjugation/begrueszen'}]}
+ };
  function phrase(value){
   const words=value.replace(/\b(?:jn|jdn)\./gi,'jemanden').replace(/\bjm\./gi,'jemandem').replace(/\betw\./gi,'etwas').trim().split(/\s+/);
   const lemma=words.pop();
@@ -36,11 +70,13 @@
  async function germanParadigm(value,morphology,lookup){
   const parsed=phrase(value);if(!parsed)return null;
   const {lemma,complement,reflexive}=parsed;
+  const reciprocal=reflexive&&lemma==='begrüßen'&&complement==='per Faustgruß';
   let motor=null;try{motor=morphology(lemma,'de-DE');}catch{}
-  const ref=await lookup('de-DE',lemma);
+  const ref=(await lookup('de-DE',lemma))||supplement[lemma];
+  const evidence=senseEvidence[parsed.original]||auxiliaryEvidence[lemma];
   if(!ref&&!motor)return null;
   const forms={},fallback=[];
-  const getRow=(entry,key)=>{const row=entry?.forms?.[key];return Array.isArray(row)&&row.length===6&&row.every(slot=>Array.isArray(slot)&&slot.some(validForm))?row.map(slot=>slot.find(validForm)):null;};
+  const getRow=(entry,key)=>{const row=entry?.forms?.[key];return Array.isArray(row)&&row.length===6&&row.every(slot=>Array.isArray(slot)&&slot.some(validForm))?row.map((slot,index)=>{const values=slot.filter(validForm);return key==='present'&&index===0?(values.find(s=>/e(?:\s|$)/.test(s))||values[0]):values[0];}):null;};
   const motorRow=key=>{const row=motor?.forms?.[key];return Array.isArray(row)&&row.length===6&&row.every(validForm)?row:null;};
   for(const key of ['präsens','präteritum']){
    const row=getRow(ref,refKeys[key])||motorRow(key);if(row)forms[key]=row;
@@ -51,13 +87,13 @@
   const inferred=motor?.auxiliary||motorRow('perfekt')?.[0]?.match(/^(habe|bin)\b/)?.[1];
   const motorAux=inferred==='habe'?'haben':inferred==='bin'?'sein':inferred;
   const allowed=(ref?.auxiliaries||[ref?.auxiliary]).filter(Boolean);
-  const auxiliary=reflexive?'haben':allowed.includes(motorAux)?motorAux:allowed[0]||(['haben','sein'].includes(motorAux)?motorAux:null);
+  const auxiliary=reflexive?'haben':senseEvidence[parsed.original]?.aux||(allowed.includes(motorAux)?motorAux:allowed[0])||evidence?.aux||(['haben','sein'].includes(motorAux)?motorAux:null);
   const aux=auxiliary?await lookup('de-DE',auxiliary):null;
   for(const [key,auxKey] of [['perfekt','present'],['plusquamperfekt','preterite']]){
-   let row=reflexive?null:getRow(ref,refKeys[key]);
+   let row=reflexive||senseEvidence[parsed.original]?null:getRow(ref,refKeys[key]);
    if(!row&&part){const auxRow=getRow(aux,auxKey);if(auxRow)row=auxRow.map(s=>s+' '+part);}
    if(!row){row=motorRow(key);if(row)fallback.push(key);}
-   if(!allowed.length&&row&&!fallback.includes(key))fallback.push(key);
+   if(!allowed.length&&!evidence&&!reflexive&&row&&!fallback.includes(key))fallback.push(key);
    if(row)forms[key]=row;
   }
   const werden=await lookup('de-DE','werden');
@@ -66,13 +102,14 @@
    if(row)forms[key]=row.map(s=>s+' '+lemma);
    else if(motorRow(key)){forms[key]=motorRow(key);fallback.push(key);}
   }
-  const nonfinite=word=>[reflexive?'sich':'',complement,word].filter(Boolean).join(' ');
-  return {...parsed,forms,part,ing:lemma==='sein'?'seiend':lemma==='tun'?'tuend':lemma+'d',nonfinite,fallback,reference:!!ref};
+  const nonfinite=word=>[reciprocal?'einander':reflexive?'sich':'',complement,word].filter(Boolean).join(' ');
+  return {...parsed,reciprocal,forms,part,ing:lemma==='sein'?'seiend':lemma==='tun'?'tuend':lemma+'d',nonfinite,fallback,reference:!!ref,sources:[...(ref?.sources||[]),...(aux?.sources||[]),...(werden?.sources||[]),...(evidence?[evidence.source]:[]),...(reciprocal?[reciprocitySource]:[])]};
  }
  function germanSentence(m,tense,index,adverb='',includePerson=true){
   const raw=m.forms[tense]?.[index];if(!raw)return '';
   const [finite,...rest]=raw.split(/\s+/);
-  return [includePerson?GERMAN_PEOPLE[index]:'',finite,m.reflexive?(includePerson?REFLEXIVE[index]:'sich'):'',adverb,m.complement,...rest].filter(Boolean).join(' ');
+  const object=m.reciprocal?(includePerson&&index<3?'jemanden':'einander'):m.reflexive?(includePerson?REFLEXIVE[index]:'sich'):'';
+  return [includePerson?GERMAN_PEOPLE[index]:'',finite,object,adverb,m.complement,...rest].filter(Boolean).join(' ');
  }
  async function translateTable(verb,morphology,lookup){
   const cache=new Map();let unavailable=false;
@@ -85,28 +122,43 @@
   };
   const baseMeaning=split(verb.infinitive).tail?(verb.baseGerman||''):verb.german;
   const full=await prepare(verb.german),base=await prepare(baseMeaning);
+  const expected=splitMeanings(verb.german).length,expectedBase=splitMeanings(baseMeaning).length;
   const unique=values=>[...new Set(values.filter(Boolean))].join(' / ');
-  verb.principalGerman=unique(base.map(m=>m.forms['präteritum']?.[0]&&m.part?[m.original,germanSentence(m,'präteritum',0,'',false),m.nonfinite(m.part)].join(', '):''));
-  verb.participleGerman=unique(full.map(m=>m.part?m.nonfinite(m.part):''));
-  verb.presentParticipleGerman=unique(full.map(m=>m.nonfinite(m.ing)));
+  const principal=base.map(m=>m.forms['präteritum']?.[0]&&m.part?[m.original,germanSentence(m,'präteritum',0,'',false),m.nonfinite(m.part)].join(', '):'').filter(Boolean);
+  const participle=full.map(m=>m.part?m.nonfinite(m.part):'').filter(Boolean);
+  const ing=full.map(m=>m.nonfinite(m.ing)).filter(Boolean);
+  verb.principalGerman=unique(principal);
+  verb.participleGerman=unique(participle);
+  verb.presentParticipleGerman=unique(ing);
   const missing=[];
-  for(const [tense,cards] of Object.entries(verb.cards)){
-   const [key,adverb]=GERMAN_TENSES[tense]||[];
+  for(const tense of Object.keys(TITLES)){
+   const cards=verb.cards[tense]||[];
+   const [key,adverb]=GERMAN_TENSES[tense];
+   if(cards.length!==6)missing.push(tense+':row');
    for(let index=0;index<cards.length;index++){
     const answers=full.map(m=>germanSentence(m,key,index,adverb)).filter(Boolean);
     const card=cards[index];card.german=unique(answers);card.acceptedGerman=[...new Set(answers)];
-    card.germanVerification=answers.length?{status:full.every(m=>m.reference&&!m.fallback.includes(key))?'reference-matched':'local-morphology',mapping:'school-equivalent',tense:key}:{status:'pending',reason:'Keine deutsche Lernentsprechung verfügbar'};
-    if(answers.length!==splitMeanings(verb.german).length)missing.push(tense+':'+index);
+    card.germanVerification=answers.length?{status:full.every(m=>m.reference&&!m.fallback.includes(key))?'reference-matched':'local-morphology',mapping:'school-equivalent',tense:key,coveredMeanings:answers.length}:{status:'pending',reason:'Keine deutsche Lernentsprechung verfügbar',coveredMeanings:0};
+    if(answers.length!==expected||!expected)missing.push(tense+':'+index);
    }
   }
-  verb.englishTranslationMissing=[...missing,...(!verb.principalGerman?['principal']:[]),...(!verb.participleGerman?['participle']:[]),...(!verb.presentParticipleGerman?['ing']:[]),...(full.length!==splitMeanings(verb.german).length?['meaning']:[]),...(base.length!==splitMeanings(baseMeaning).length?['baseMeaning']:[])];
+  verb.englishTranslationCoverage={expected,expectedBase,principal:principal.length,participle:participle.length,ing:ing.length};
+  verb.englishTranslationMissing=[...missing,...(!expectedBase||principal.length!==expectedBase?['principal']:[]),...(!expected||participle.length!==expected?['participle']:[]),...(!expected||ing.length!==expected?['ing']:[]),...(full.length!==expected?['meaning']:[]),...(base.length!==expectedBase?['baseMeaning']:[])];
   if(unavailable&&verb.englishTranslationMissing.length)throw Error('Deutsche Referenzdaten vorübergehend nicht vollständig verfügbar');
+  verb.verificationSources=[...new Map([...(verb.verificationSources||[]),...full.flatMap(m=>m.sources),...base.flatMap(m=>m.sources)].filter(s=>s?.url).map(s=>[s.url,s])).values()];
   verb.translationPolicy='Deutsche schulische Lernentsprechungen; Verlaufsformen mit gerade bzw. seit einiger Zeit; Kontext kann andere Übersetzungen erfordern.';
   verb.englishPreparedVersion=VERSION;
+  verb.englishTranslationComplete=translationComplete(verb);
   return verb;
  }
+ function translationComplete(verb){
+  if(!verb||verb.englishPreparedVersion!==VERSION||!Array.isArray(verb.englishTranslationMissing)||verb.englishTranslationMissing.length)return false;
+  const c=verb.englishTranslationCoverage,expected=splitMeanings(verb.german).length,expectedBase=splitMeanings(split(verb.infinitive).tail?(verb.baseGerman||''):verb.german).length;
+  if(!expected||!expectedBase||!c||c.expected!==expected||c.expectedBase!==expectedBase||c.principal!==expectedBase||c.participle!==expected||c.ing!==expected||![verb.german,verb.principalGerman,verb.participleGerman,verb.presentParticipleGerman].every(validForm))return false;
+  return Object.keys(TITLES).every(tense=>Array.isArray(verb.cards?.[tense])&&verb.cards[tense].length===6&&verb.cards[tense].every(card=>validForm(card.german)&&['reference-matched','local-morphology'].includes(card.germanVerification?.status)&&card.germanVerification.coveredMeanings===expected&&Array.isArray(card.acceptedGerman)&&card.acceptedGerman.length>0&&card.acceptedGerman.every(validForm)&&card.german===card.acceptedGerman.join(' / ')));
+ }
  async function enrich(verb,motor,lookup){
-  if(verb.englishPreparedVersion===1)return translateTable(verb,motor,lookup);
+  if(verb.englishPreparedVersion>=1)return translateTable(verb,motor,lookup);
   const {base,tail}=split(verb.infinitive),ref=await lookup('en-US',base),be=await lookup('en-US','be'),have=await lookup('en-US','have');
   const sources=[...(ref?.sources||[]),grammar,perfect];
   const past=ref?.forms?.['simple past']?.[0],part=ref?.participle,ing=ref?.presentParticiple;
@@ -137,5 +189,5 @@
   return translateTable(verb,motor,lookup);
  }
  function principalMatches(given,verb){const clean=text=>String(text).toLowerCase().replace(/[,/–—-]+/g,' ').replace(/\s+/g,' ').trim();return (verb.principalVariants||[verb.principalParts?.join(', ')]).filter(Boolean).some(value=>clean(value)===clean(given));}
- root.VOCEnglishVerbs=Object.freeze({VERSION,split,normalize,morphology,enrich,translateTable,personPrompt,principalMatches,titles:TITLES});
+ root.VOCEnglishVerbs=Object.freeze({VERSION,split,normalize,morphology,enrich,translateTable,translationComplete,splitMeanings,personPrompt,principalMatches,titles:TITLES});
 })(typeof window==='undefined'?globalThis:window);

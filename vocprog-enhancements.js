@@ -1090,6 +1090,10 @@
       const usable=primary==="infinitiv"||primary==="principal parts"||selected.some(base=>choices.some(tense=>!snapshot?.verbs[base.verbId]?.excludedTenses?.includes(tense)));
       button.disabled=!usable||preparingVerbData||analyzingVerbInput||!!preparationError||!selected.length||!!missing.length||get("pageRangeInput")?.getAttribute?.("aria-invalid")==="true";
       status.textContent=!usable?"Für diese Auswahl sind keine geeigneten Verlaufsformen vorhanden.":preparingVerbData?"Konjugationen werden vorbereitet …":preparationError?"Vorbereitung fehlgeschlagen: "+preparationError:missing.length?"Formen noch nicht vollständig vorbereitet: "+missing.map(v=>v.foreign).join(", "):selected.length+" Verben · Formen gespeichert und vorbereitet.";
+      if(activeBook()?.lang==="en-US"&&!preparingVerbData&&!preparationError&&!missing.length){
+        const incomplete=selected.filter(base=>!window.VOCEnglishVerbs.translationComplete(snapshot?.verbs[base.verbId]));
+        if(incomplete.length)status.textContent+=" Deutsche Tabellenübersetzungen noch unvollständig: "+incomplete.map(v=>v.foreign).join(", ")+".";
+      }
       get("rangeCard").classList.toggle("hidden",analyzingVerbInput||!filteredVocabList.length||!get("trainerCard").classList.contains("hidden"));
       return;
     }

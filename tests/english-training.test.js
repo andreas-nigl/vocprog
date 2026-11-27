@@ -51,6 +51,22 @@ test('Version 1 English records upgrade German display without re-generating ver
  const db=VOCVerbDatabase.create(storage,onlyGerman,null,verb=>english.enrich(verb,onlyGerman,(lang,word)=>{assert.equal(lang,'de-DE');return lookup(lang,word);}));
  const result=await db.prepare(book,entries,[],Object.keys(english.titles));
  assert.equal(writes,1);assert.equal(result.verbs.take.cards.conditional[0].german,'ich würde nehmen');
- for(const record of Object.values(JSON.parse(data))){assert.equal(record.verb.englishPreparedVersion,2);assert.deepEqual(record.verb.forms,original[record.key].verb.forms);}
+ for(const record of Object.values(JSON.parse(data))){assert.equal(record.verb.englishPreparedVersion,english.VERSION);assert.deepEqual(record.verb.forms,original[record.key].verb.forms);}
  await db.prepare(book,entries,[],Object.keys(english.titles));assert.equal(writes,1);
+});
+
+test('Dictionary parentheses, optional prefixes and translation coverage are validated',async()=>{
+ const {motor,lookup}=await require('./helpers/english-fixture.cjs')();
+ const blank=(infinitive,german,baseGerman)=>({infinitive,german,baseGerman,cards:Object.fromEntries(Object.keys(english.titles).map(t=>[t,Array.from({length:6},()=>({}))]))});
+ const prepare=async(...args)=>english.translateTable(blank(...args),(w,l)=>motor.conjugate(w,l),lookup);
+ assert.deepEqual(english.splitMeanings('(an)dauern; halten'),['dauern','andauern','halten']);
+ assert.deepEqual(english.splitMeanings('reagieren (auf)'),['reagieren']);
+ const react=await prepare('react (to)','reagieren (auf)','reagieren');
+ assert.equal(react.participleGerman,'reagiert');assert.equal(react.presentParticipleGerman,'reagierend');assert.equal(react.cards.conditional[0].german,'ich würde reagieren');assert.ok(english.translationComplete(react));
+ react.cards.conditional[0].german='';assert.equal(english.translationComplete(react),false);
+ const last=await prepare('last','(an)dauern; halten','(an)dauern; halten');assert.ok(english.translationComplete(last));assert.equal(last.cards['present perfect'][0].german,'ich habe gedauert / ich habe angedauert / ich habe gehalten');
+ const fade=await prepare('fade','verblassen','verblassen');assert.equal(fade.cards['present perfect'][0].german,'ich bin verblasst');
+ const spring=await prepare('spring up','aus dem Boden schießen','springen');assert.equal(spring.cards['past perfect'][0].german,'ich war aus dem Boden geschossen');
+ const bump=await prepare('bump fists','sich per Faustgruß begrüßen','stoßen');assert.equal(bump.cards['simple present'][0].german,'ich begrüße jemanden per Faustgruß');assert.equal(bump.cards['simple present'][3].german,'wir begrüßen einander per Faustgruß');assert.ok(english.translationComplete(bump));
+ const unknown=await prepare('react','reagieren; (unbekanntes Material)','reagieren');assert.equal(english.translationComplete(unknown),false);
 });

@@ -53,3 +53,9 @@ test('Restored source phrases produce complete English forms and German compleme
  assert.match(snapshot.verbs['refuse (to do sth.)'].cards['present perfect'][0].german,/etwas zu tun/);
  assert.match(english.personPrompt(snapshot.verbs['contact sb.'],'present perfect',0).prompt,/^Present Perfect Simple:/);
 });
+
+test('Dictionary formality notes remain optional, including original note order',()=>{
+ const record={foreign:"clothing ['kləʊðɪŋ] (fml; nicht zählbar)",german:'die Kleidung',lang:'en-US'};
+ for(const answer of [record.foreign,'clothing','clothing fml','clothing nicht zählbar'])assert.equal(rules.matchWord({record,tLang:'en-US'},answer),true,answer);
+ for(const answer of ['fml','nicht zählbar','clothing wrong'])assert.equal(rules.matchWord({record,tLang:'en-US'},answer),false,answer);
+});

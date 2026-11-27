@@ -99,7 +99,7 @@ function variants(text,language){
 }
 function annotations(text){
  const source=String(text||""),notes=[],alternatives=[];let lexical="";
- const tag=/^(?:AE|BE|AmE|BrE|UK|US|infml|formal|ugs\.?|fig\.?|pl\.?|sing\.?)$/i;
+ const tag=/^(?:AE|BE|AmE|BrE|UK|US|infml|fml|formal|ugs\.?|fig\.?|pl\.?|sing\.?)$/i;
  for(let i=0;i<source.length;){
   const open=source[i];
   if(open!=="("&&open!=="["){lexical+=source[i++];continue;}
@@ -108,7 +108,7 @@ function annotations(text){
   if(depth)throw Error("Unvollständige Klammerung");
   const inside=source.slice(i+1,end),regional=inside.match(/^(AE|BE|AmE|BrE|UK|US)\s*:\s*(.+)$/i);
   const labels=inside.replace(/\[[^\]]*\]/g,"").split(/[;,]/).map(clean).filter(Boolean);
-  const metadata=labels.length&&tag.test(labels[0])&&labels.every(label=>tag.test(label)||/^(?:mit|ohne|auch|nur|bes\.?|vor allem)\s/i.test(label));
+  const metadata=labels.length&&tag.test(labels[0])&&labels.every(label=>tag.test(label)||/^(?:mit|ohne|auch|nur|bes\.?|vor allem)\s/i.test(label)||/^nicht zählbar$/i.test(label));
   if(open==="["||regional||metadata){
    if(metadata&&labels.length>1&&!inside.includes("["))notes.push(...labels);else notes.push(inside);
    if(regional)alternatives.push(regional[2]);lexical+=" ";
@@ -207,10 +207,11 @@ function prepare(record,{lookup}={}){
  const openExamples=/\/(?:\s*)(?:\.{3}|…)/.test(record.foreign||"")||/\/(?:\s*)(?:\.{3}|…)/.test(record.german||"");
  const englishInfinitive=record.kind==="verb-infinitive"&&/^en-/.test(record.lang||"");
  const notation=/\//.test(record.foreign||"")||/\//.test(record.german||"");
- const marked=/\((?:AE|BE|AmE|BrE|UK|US|infml|formal|ugs\.?|fig\.?|pl\.?|sing\.?)(?:[\s;:]|\))/.test((record.foreign||"")+" "+(record.german||""));
+ const marked=/\((?:AE|BE|AmE|BrE|UK|US|infml|fml|formal|ugs\.?|fig\.?|pl\.?|sing\.?)(?:[\s;:]|\))/.test((record.foreign||"")+" "+(record.german||""));
  const complements=/^en-/.test(record.lang||'')&&/\S.*\((?:to|of|on|in|at|for|from|with|about|against|into|over|under|by|without)\b/i.test(annotations(record.foreign).lexical);
  const germanText=complements?requiredGerman(record.german):record.german;
- const features={...(complements?{requiredComplements:1}:{}),...(notation?{notation:2}:{}),...(marked?{annotations:2}:{}),...(pair?{pairedGender:1}:{}),...(openExamples?{openExamples:1}:{}),...(englishInfinitive?{englishInfinitiveTo:1}:{})};
+ const usageLabels=/\(fml(?:[;,\s]|\))/i.test(record.foreign||'');
+ const features={...(usageLabels?{usageLabels:1}:{}),...(complements?{requiredComplements:1}:{}),...(notation?{notation:2}:{}),...(marked?{annotations:2}:{}),...(pair?{pairedGender:1}:{}),...(openExamples?{openExamples:1}:{}),...(englishInfinitive?{englishInfinitiveTo:1}:{})};
  const current=record.answerRules;
  if(current?.version===VERSION&&current.contentKey===key&&Object.entries(features).every(([name,version])=>current.features?.[name]===version))return current;
  const scanned=record.answerParts;

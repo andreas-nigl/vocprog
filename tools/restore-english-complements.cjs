@@ -31,7 +31,7 @@ async function snapshot(){
   const current=raw[i],next=entries[i];
   if(next.lang!=='en-US')continue;
   const prepared=rules.prepare(next),fields=next.kind==='verb-infinitive'?next:current;
-  const updated={...fields,...(next.kind==='verb-infinitive'||prepared.features?.requiredComplements?{answerRules:prepared}:{})};
+  const updated={...fields,...(next.kind==='verb-infinitive'||(prepared.features?.requiredComplements||prepared.features?.usageLabels)?{answerRules:prepared}:{})};
   if(JSON.stringify(updated)===JSON.stringify(current))continue;
   updated.updatedAt=stamp;
   const old=before.find(r=>r.record_id==='vocab:'+current.id);assert.ok(old);

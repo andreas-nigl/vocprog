@@ -1,3 +1,10 @@
+## 2026-11-27 – VOC 0.5.24-4: ING-Form
+
+- Nutzerwunsch: Tabellenbezeichnung „ING-Form“ statt „-ing-Form“. Beide Tabellenpfade verwenden denselben lokalen Labelwert; sonst unverändert.
+- JS-Syntax und isolierter Test des tatsächlichen Tabellenrenderers erfolgreich: vier allgemeine Zeilen, „ING-Form : taking“ / „nehmend“. Browser-Regression um Labelprüfung ergänzt; vollständiger Browserlauf nicht ausgeführt. Version/Assets 0.5.24-4, nur Produktion, keine Datenmigration. Vorversion 0.5.24-3 Pages completed/success bestätigt; neue Veröffentlichung/Nutzerabnahme offen.
+
+---
+
 ## 2026-11-27 – VOC 0.5.24-3: konsistente Stammformen
 
 - Nutzerkorrektur: „Stammformen (Gegenwart, Vergangenheit, Partizip)“ einheitlich in geöffnetem und geschlossenem Zeitform-Dropdown sowie Aufgabenüberschrift; Überschrift liest den vorhandenen Zeitformkatalog statt eines zweiten Textliterals. Gemeinsame displayPrincipalParts-Funktion für Aufgabenlösung und Tabellenzeile; erste Stammform ohne (to), eigenständige Infinitivzeile weiterhin mit (to). Eingabe mit optionalem führendem to bleibt wie zuvor akzeptiert. Keine Änderung an gespeicherten Formen, Richtungssperren oder Bewertung.

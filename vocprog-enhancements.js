@@ -1271,7 +1271,7 @@
     const morphology=prepared;
     const reference={...prepared,pastParticiple:prepared.participle};
     const grammar=base?.regularity||paradigm?.regularity||reference?.regularity||"";
-    const missing="– (noch nicht erfasst)";
+    const missing="– (noch nicht erfasst)",ingLabel="ING-Form";
     const heading=document.createElement("h4");
     heading.textContent=(base?.foreign||item.verbLemma)+(base?.sourceNotes?.length?" ["+base.sourceNotes.join("; ")+"]":"")+(grammar?" ["+grammar+"]":"");
     const table=document.createElement("table");
@@ -1312,12 +1312,12 @@
       row("Infinitiv : "+window.VOCEnglishVerbs.displayInfinitive(base?.foreign||item.verbLemma),base?.german||prepared.german||missing);
       row("Stammformen : "+(window.VOCEnglishVerbs.displayPrincipalParts(prepared.principalParts," / ")||missing),prepared.principalGerman||entries.find(v=>v.kind==="verb-principal")?.german||missing);
       row("Partizip : "+(prepared.participle||missing),prepared.participleGerman||part?.german||missing);
-      row("-ing-Form : "+(prepared.presentParticiple||missing),prepared.presentParticipleGerman||entries.find(v=>v.kind==="verb-ing")?.german||missing);
+      row(ingLabel+" : "+(prepared.presentParticiple||missing),prepared.presentParticipleGerman||entries.find(v=>v.kind==="verb-ing")?.german||missing);
     }else{
       row("Infinitiv : "+(base?.foreign||item.verbLemma),base?.german||missing);
       for(const [kind,label] of [
         ["verb-principal","Stammformen"],["verb-participle","Partizip"],
-        ["verb-ing","-ing-Form"],["verb-gerund","Gerundio"],
+        ["verb-ing",ingLabel],["verb-gerund","Gerundio"],
         ["verb-imperative","Imperativ"]
       ]){
         const entry=entries.find(v=>v.kind===kind);

@@ -1276,7 +1276,8 @@
     heading.textContent=(base?.foreign||item.verbLemma)+(base?.sourceNotes?.length?" ["+base.sourceNotes.join("; ")+"]":"")+(grammar?" ["+grammar+"]":"");
     const table=document.createElement("table");
     const thead=document.createElement("thead"),headingRow=document.createElement("tr");
-    for(const label of [LANGS[activeBook()?.lang]||"Fremdsprache","Deutsch"]){
+    const tableLanguage=activeBook()?.lang;
+    for(const label of [tableLanguage==="en-US"?"English":LANGS[tableLanguage]||"Fremdsprache","Deutsch"]){
       const th=document.createElement("th");th.textContent=label;headingRow.append(th);
     }
     thead.append(headingRow);table.append(thead);

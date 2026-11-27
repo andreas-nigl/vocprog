@@ -1,3 +1,10 @@
+## 2026-11-27 – VOC 0.5.24-5: englische Tabellenspalte
+
+- Nutzerwunsch: linke Überschrift der englischen Verbtabelle „English“ statt „Englisch“, rechte „Deutsch“ unverändert. Andere Sprachbezeichnungen und übrige App unverändert. Vorherige ING-Form-Korrektur erhalten.
+- Isolierter tatsächlicher Tabellenrenderer für EN und FR geprüft: English/Deutsch bzw. Französisch/Deutsch; ING-Form weiterhin korrekt. JS-Syntax erfolgreich; vollständiger Browserlauf nicht durchgeführt. Version/Assets 0.5.24-5, keine Datenmigration/Testumgebung, Veröffentlichung/Nutzerabnahme offen.
+
+---
+
 ## 2026-11-27 – VOC 0.5.24-4: ING-Form
 
 - Nutzerwunsch: Tabellenbezeichnung „ING-Form“ statt „-ing-Form“. Beide Tabellenpfade verwenden denselben lokalen Labelwert; sonst unverändert.

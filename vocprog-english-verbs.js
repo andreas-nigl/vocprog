@@ -1,10 +1,32 @@
 /* English construction rules; lexical evidence comes from the independent reference. */
 (function(root){
  'use strict';
- const VERSION=3;
+ const VERSION=4;
  const normalize=text=>String(text||'').replace(/^\s*(?:\(to\)|to)\s+/i,'').trim().toLowerCase();
  function split(text){const clean=normalize(text),match=clean.match(/^([a-z]+)(.*)$/);return match?{base:match[1],tail:match[2]}:{base:'',tail:''};}
- const TITLES={'simple present':'Simple Present','present progressive':'Present Progressive','simple past':'Simple Past','past progressive':'Past Progressive','present perfect':'Present Perfect','present perfect progressive':'Present Perfect Progressive','past perfect':'Past Perfect','will future':'Will-Future','going to future':'Going-to-Future','conditional':'Conditional'};
+ // Preserve the printed phrase independently of the engine's base lemma.
+ const displayInfinitive=text=>'(to) '+normalize(text);
+ function sourcePhrase(text){
+  const rules=root.VOCAnswerRules;
+  const marked=rules?rules.annotations(String(text).replace(/\[[^\]]*\]/g,'')):{lexical:String(text).replace(/\[[^\]]*\]/g,''),notes:[]};
+  const first=rules?rules.delimit(marked.lexical)[0]:marked.lexical;
+  return {phrase:normalize(first),notes:marked.notes};
+ }
+ function restoreEntry(entry,book,all){
+  if(book.lang!=='en-US'||entry.kind!=='verb-infinitive')return entry;
+  const current=sourcePhrase(entry.infinitive||entry.foreign).phrase;
+  const candidates=all.filter(v=>v.bookId===book.sourceBookId&&String(v.page)===String(entry.page)&&
+   (!v.kind||v.kind==='words')&&/^\s*(?:\(to\)|to)\s+/i.test(v.foreign||''))
+   .filter(v=>{const full=sourcePhrase(v.foreign).phrase;return full===current||full.startsWith(current+' ')||full.startsWith(current+' (');});
+  // Ambiguous same-page homonyms must never be silently combined.
+  const unique=[...new Map(candidates.map(v=>[JSON.stringify([sourcePhrase(v.foreign).phrase,v.german]),v])).values()];
+  const source=unique.length===1?unique[0]:null;
+  const parsed=sourcePhrase(source?.foreign||entry.foreign);
+  return {...entry,foreign:displayInfinitive(parsed.phrase),infinitive:displayInfinitive(parsed.phrase),
+   verbId:parsed.phrase,german:source?.german||entry.german,
+   ...(source?{sourceVocabId:source.id}:{}),sourceNotes:parsed.notes.length?parsed.notes:entry.sourceNotes||[]};
+ }
+ const TITLES={'simple present':'Simple Present','present progressive':'Present Progressive','simple past':'Simple Past','past progressive':'Past Progressive','present perfect':'Present Perfect Simple','present perfect progressive':'Present Perfect Progressive','past perfect':'Past Perfect','will future':'Will-Future','going to future':'Going-to-Future','conditional':'Conditional'};
  const PEOPLE=[['I','ich'],['you','du'],['he','er'],['we','wir'],['you','ihr'],['they','sie, Pl.']];
  const grammar={name:'Cambridge: English verb forms and constructions',url:'https://dictionary.cambridge.org/grammar/british-grammar/verb-forms'};
  const perfect={name:'Cambridge: Present perfect continuous',url:'https://dictionary.cambridge.org/grammar/british-grammar/present-perfect-i-have-been'};
@@ -37,7 +59,7 @@
     if(!inner||/[()]/.test(inner))return [s];
     const attached=/\p{L}$/u.test(before)||/^\p{L}/u.test(after);
     if(attached&&!/^\p{L}+$/u.test(inner))return [s];
-    if(!attached&&PREPOSITION.test(inner)){expanded=true;return [(before+after).trim()];}
+    if(!attached&&PREPOSITION.test(inner))return [s];
     if(!attached&&before.trim()&&!after.trim())return [s];
     expanded=true;return [(before+after).replace(/\s+/g,' ').trim(),(before+inner+after).replace(/\s+/g,' ').trim()];
    });
@@ -46,7 +68,7 @@
   }
   return variants;
  }
- const splitMeanings=value=>[...new Set(String(value||'').split(/[,;]|\s+\/\s+|\s+oder\s+/).flatMap(expandMeaning).filter(Boolean))];
+ const splitMeanings=value=>[...new Set((root.VOCAnswerRules?root.VOCAnswerRules.delimit(value):String(value||'').split(/[,;]/)).flatMap(s=>s.split(/\s+\/\s+|\s+oder\s+/)).flatMap(expandMeaning).filter(Boolean))];
  const grammarSource={name:'Duden: Perfektbildung mit haben oder sein',url:'https://www.duden.de/sprachwissen/sprachratgeber/Perfektbildung-mit-haben-oder-sein'};
  const reciprocitySource={name:'IDS grammis: Reziprok-Pronomen',url:'https://grammis.ids-mannheim.de/terminologie/502'};
  const auxiliaryEvidence=Object.fromEntries('verhaften begrüßen aufnehmen melden ausgraben graben untersuchen existieren inspirieren halten senken verschlechtern reagieren weigern ablehnen entfernen offenlegen zeigen benötigen'.split(' ').map(lemma=>[lemma,{aux:'haben',source:grammarSource}]));
@@ -61,11 +83,14 @@
   begrüßen:{forms:{present:['begrüße','begrüßt','begrüßt','begrüßen','begrüßt','begrüßen'].map(s=>[s]),preterite:['begrüßte','begrüßtest','begrüßte','begrüßten','begrüßtet','begrüßten'].map(s=>[s])},participle:['begrüßt'],auxiliaries:['haben'],sources:[{name:'Duden: begrüßen',url:'https://www.duden.de/konjugation/begrueszen'}]}
  };
  function phrase(value){
+  const trailing=value.match(/\s+(\([^()]*\))$/);
+  const suffix=trailing?trailing[1]:'';
+  if(trailing)value=value.slice(0,trailing.index);
   const words=value.replace(/\b(?:jn|jdn)\./gi,'jemanden').replace(/\bjm\./gi,'jemandem').replace(/\betw\./gi,'etwas').trim().split(/\s+/);
   const lemma=words.pop();
   if(!lemma||! /^[a-zäöüß]+(?:en|n)$/i.test(lemma)||words.some(word=>/[()<>]/.test(word)))return null;
   const reflexive=words[0]==='sich';if(reflexive)words.shift();
-  return {lemma:lemma.toLowerCase(),complement:words.join(' '),reflexive,original:value};
+  return {lemma:lemma.toLowerCase(),complement:words.join(' '),reflexive,suffix,original:value};
  }
  async function germanParadigm(value,morphology,lookup){
   const parsed=phrase(value);if(!parsed)return null;
@@ -102,14 +127,14 @@
    if(row)forms[key]=row.map(s=>s+' '+lemma);
    else if(motorRow(key)){forms[key]=motorRow(key);fallback.push(key);}
   }
-  const nonfinite=word=>[reciprocal?'einander':reflexive?'sich':'',complement,word].filter(Boolean).join(' ');
+  const nonfinite=word=>[reciprocal?'einander':reflexive?'sich':'',complement,word,parsed.suffix].filter(Boolean).join(' ');
   return {...parsed,reciprocal,forms,part,ing:lemma==='sein'?'seiend':lemma==='tun'?'tuend':lemma+'d',nonfinite,fallback,reference:!!ref,sources:[...(ref?.sources||[]),...(aux?.sources||[]),...(werden?.sources||[]),...(evidence?[evidence.source]:[]),...(reciprocal?[reciprocitySource]:[])]};
  }
  function germanSentence(m,tense,index,adverb='',includePerson=true){
   const raw=m.forms[tense]?.[index];if(!raw)return '';
   const [finite,...rest]=raw.split(/\s+/);
   const object=m.reciprocal?(includePerson&&index<3?'jemanden':'einander'):m.reflexive?(includePerson?REFLEXIVE[index]:'sich'):'';
-  return [includePerson?GERMAN_PEOPLE[index]:'',finite,object,adverb,m.complement,...rest].filter(Boolean).join(' ');
+  return [includePerson?GERMAN_PEOPLE[index]:'',finite,object,adverb,m.complement,...rest,m.suffix].filter(Boolean).join(' ');
  }
  async function translateTable(verb,morphology,lookup){
   const cache=new Map();let unavailable=false;
@@ -182,12 +207,12 @@
    // German table values are prepared separately below; personPrompt remains the task contract.
   }
   if(past?.length&&part?.length){verb.principalParts=[base,past[0],part[0]];verb.principalVariants=[...new Set(past.flatMap(p=>part.map(pp=>[base,p,pp].join(', '))))];}
-  verb.baseGerman=ref?.baseGerman||(!tail?verb.german:'');
+  verb.baseGerman=ref?.baseGerman||verb.german;
   verb.englishPreparedVersion=VERSION;verb.verificationSources=sources;
   // Continuous morphology exists even for stative verbs; unsuitable isolated tasks are omitted.
   verb.excludedTenses=ref?.stative?['present progressive','past progressive','present perfect progressive']:[];
   return translateTable(verb,motor,lookup);
  }
- function principalMatches(given,verb){const clean=text=>String(text).toLowerCase().replace(/[,/–—-]+/g,' ').replace(/\s+/g,' ').trim();return (verb.principalVariants||[verb.principalParts?.join(', ')]).filter(Boolean).some(value=>clean(value)===clean(given));}
- root.VOCEnglishVerbs=Object.freeze({VERSION,split,normalize,morphology,enrich,translateTable,translationComplete,splitMeanings,personPrompt,principalMatches,titles:TITLES});
+ function principalMatches(given,verb){const clean=text=>normalize(text).replace(/[,/–—-]+/g,' ').replace(/\s+/g,' ').trim();return (verb.principalVariants||[verb.principalParts?.join(', ')]).filter(Boolean).some(value=>clean(value)===clean(given));}
+ root.VOCEnglishVerbs=Object.freeze({VERSION,split,normalize,displayInfinitive,sourcePhrase,restoreEntry,morphology,enrich,translateTable,translationComplete,splitMeanings,personPrompt,principalMatches,titles:TITLES});
 })(typeof window==='undefined'?globalThis:window);

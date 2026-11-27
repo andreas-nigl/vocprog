@@ -1,7 +1,7 @@
 "use strict";
 const fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'../..');
-require(root+'/vocprog-wasm-adapter.js');require(root+'/vocprog-english-verbs.js');require(root+'/vocprog-verb-database.js');
+require(root+'/vocprog-answer-rules.js');require(root+'/vocprog-wasm-adapter.js');require(root+'/vocprog-english-verbs.js');require(root+'/vocprog-verb-database.js');
 module.exports=async function(){
  const src=fs.readFileSync(root+'/vendor/ablaut/ablaut.js','utf8');
  const m=await import('data:text/javascript;base64,'+Buffer.from(src).toString('base64'));

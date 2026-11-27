@@ -51,9 +51,13 @@
     } catch(e) { console.warn("Temp image persistence unavailable",e); return null; }
   }
   function allVocab() {
-    return Object.keys(localStorage).filter(k=>k.startsWith("vocab_trainer_data_")).flatMap(k=>{
+    const entries=Object.keys(localStorage).filter(k=>k.startsWith("vocab_trainer_data_")).flatMap(k=>{
       const lang=k.slice("vocab_trainer_data_".length);
       return (read(k,[]) || []).map(v=>({...v, lang:v.lang||lang}));
+    });
+    return entries.map(entry=>{
+      const book=books.find(b=>b.id===entry.bookId);
+      return book&&window.VOCEnglishVerbs?window.VOCEnglishVerbs.restoreEntry(entry,book,entries):entry;
     });
   }
   function ensureMigration() {
@@ -1045,7 +1049,7 @@
       if(!indexByPage.has(page))indexByPage.set(page,new Map());
       const indices=indexByPage.get(page);
       indices.set(lemma,indices.size+1);
-      return [{...v,foreign:lemma,verbId:lemma,refVocab:"S"+page+" V"+indices.get(lemma)}];
+      return [{...v,foreign:book.lang==="en-US"?window.VOCEnglishVerbs.displayInfinitive(lemma):lemma,verbId:lemma,refVocab:"S"+page+" V"+indices.get(lemma)}];
     });
   }
   function selectedVerbRange(){
@@ -1151,7 +1155,7 @@
       const common={kind:"verbs",bookId:base.bookId,sourceId:base.id,page:base.page,ref:base.refVocab,verbId:base.verbId,verbLemma:base.foreign,pLang:"de-DE",tLang:activeBook().lang};
       if(tenses[0]==="principal parts"){
         const key=verb.principalParts[0];if(seen.has(key))continue;seen.add(key);
-        tasks.push({...common,prompt:verb.baseGerman,target:verb.principalParts.join(", "),verbTense:"principal parts",principalVerb:verb,record:{...base,kind:"verb-principal"}});continue;
+        tasks.push({...common,prompt:verb.baseGerman,target:verb.principalParts.map((form,index)=>index===0?window.VOCEnglishVerbs.displayInfinitive(form):form).join(", "),verbTense:"principal parts",principalVerb:verb,record:{...base,kind:"verb-principal"}});continue;
       }
       for(const tense of tenses){
         if(verb.excludedTenses?.includes(tense))continue;
@@ -1255,7 +1259,7 @@
     const grammar=base?.regularity||paradigm?.regularity||reference?.regularity||"";
     const missing="– (noch nicht erfasst)";
     const heading=document.createElement("h4");
-    heading.textContent=(base?.foreign||item.verbLemma)+(grammar?" ["+grammar+"]":"");
+    heading.textContent=(base?.foreign||item.verbLemma)+(base?.sourceNotes?.length?" ["+base.sourceNotes.join("; ")+"]":"")+(grammar?" ["+grammar+"]":"");
     const table=document.createElement("table");
     const thead=document.createElement("thead"),headingRow=document.createElement("tr");
     for(const label of [LANGS[activeBook()?.lang]||"Fremdsprache","Deutsch"]){
@@ -1291,8 +1295,8 @@
       row("Impératif : "+(imperativeCards.length===3?imperativeCards.map(card=>card.foreign).join(" / "):imp||missing),
         window.VOCVerbPresentation?.germanImperative(prepared.imperativeGerman||imperative?.german||missing)||prepared.imperativeGerman||imperative?.german||missing);
     }else if(activeBook()?.lang==="en-US"){
-      row("Infinitiv : "+(base?.foreign||item.verbLemma),base?.german||prepared.german||missing);
-      row("Stammformen : "+(prepared.principalParts?.join(" / ")||missing),prepared.principalGerman||entries.find(v=>v.kind==="verb-principal")?.german||missing);
+      row("Infinitiv : "+window.VOCEnglishVerbs.displayInfinitive(base?.foreign||item.verbLemma),base?.german||prepared.german||missing);
+      row("Stammformen : "+(prepared.principalParts?.map((form,index)=>index===0?window.VOCEnglishVerbs.displayInfinitive(form):form).join(" / ")||missing),prepared.principalGerman||entries.find(v=>v.kind==="verb-principal")?.german||missing);
       row("Partizip : "+(prepared.participle||missing),prepared.participleGerman||part?.german||missing);
       row("-ing-Form : "+(prepared.presentParticiple||missing),prepared.presentParticipleGerman||entries.find(v=>v.kind==="verb-ing")?.german||missing);
     }else{

@@ -60,9 +60,9 @@ test('Dictionary parentheses, optional prefixes and translation coverage are val
  const blank=(infinitive,german,baseGerman)=>({infinitive,german,baseGerman,cards:Object.fromEntries(Object.keys(english.titles).map(t=>[t,Array.from({length:6},()=>({}))]))});
  const prepare=async(...args)=>english.translateTable(blank(...args),(w,l)=>motor.conjugate(w,l),lookup);
  assert.deepEqual(english.splitMeanings('(an)dauern; halten'),['dauern','andauern','halten']);
- assert.deepEqual(english.splitMeanings('reagieren (auf)'),['reagieren']);
+ assert.deepEqual(english.splitMeanings('reagieren (auf)'),['reagieren (auf)']);
  const react=await prepare('react (to)','reagieren (auf)','reagieren');
- assert.equal(react.participleGerman,'reagiert');assert.equal(react.presentParticipleGerman,'reagierend');assert.equal(react.cards.conditional[0].german,'ich würde reagieren');assert.ok(english.translationComplete(react));
+ assert.equal(react.participleGerman,'reagiert (auf)');assert.equal(react.presentParticipleGerman,'reagierend (auf)');assert.equal(react.cards.conditional[0].german,'ich würde reagieren (auf)');assert.ok(english.translationComplete(react));
  react.cards.conditional[0].german='';assert.equal(english.translationComplete(react),false);
  const last=await prepare('last','(an)dauern; halten','(an)dauern; halten');assert.ok(english.translationComplete(last));assert.equal(last.cards['present perfect'][0].german,'ich habe gedauert / ich habe angedauert / ich habe gehalten');
  const fade=await prepare('fade','verblassen','verblassen');assert.equal(fade.cards['present perfect'][0].german,'ich bin verblasst');

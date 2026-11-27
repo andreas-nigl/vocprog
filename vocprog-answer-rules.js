@@ -2,8 +2,11 @@
 (function(root){
 "use strict";
 const VERSION=1,MAX_VARIANTS=128;
+const COMPLEMENT=/^(?:to|of|on|in|at|for|from|with|about|against|into|onto|over|under|by|through|without|after|before|towards?)\b/i;
 const clean=value=>String(value||"").normalize("NFKC").replace(/[’‘]/g,"'").replace(/\s+/g," ").trim();
 const contentKey=record=>JSON.stringify([record.lang||"",record.kind||"words",record.foreign||"",record.german||"",record.answerParts||null],(_key,value)=>value&&typeof value==="object"&&!Array.isArray(value)?Object.fromEntries(Object.keys(value).sort().map(key=>[key,value[key]])):value);
+const requiredGerman=text=>String(text||'').replace(/\(([^()]*)\)/g,(full,inside,offset,source)=>
+ /\p{L}/u.test(source[offset-1]||'')||/\p{L}/u.test(source[offset+full.length]||'')?full:inside.replace(/^,\s*/,''));
 const stripTags=value=>String(value||"").replace(/<[^>]*>/g,"");
 function layout(value){
  return clean(stripTags(value)).toLocaleLowerCase().replace(/\s*([,;:.!?()[\]])\s*/g,"$1");
@@ -35,7 +38,8 @@ function parens(value,language,optional=true){
    const right=!suffix&&!prefix&&/\p{L}$/u.test(mid)&&/^\p{L}/u.test(after)?" ":"";
    return before+left+mid+right+after;
  });
- if(optional)joined.unshift(before+after);
+ // A leading (to) is optional; a preposition after lexical text is required.
+ if(optional&&!(language.startsWith("en")&&before.trim()&&open==="("&&COMPLEMENT.test(inside.trim())))joined.unshift(before+after);
  const result=[...new Set(joined.flatMap(part=>parens(part,language,optional)))];
  if(result.length>MAX_VARIANTS)throw Error("Zu viele Varianten");
  return result;
@@ -204,16 +208,18 @@ function prepare(record,{lookup}={}){
  const englishInfinitive=record.kind==="verb-infinitive"&&/^en-/.test(record.lang||"");
  const notation=/\//.test(record.foreign||"")||/\//.test(record.german||"");
  const marked=/\((?:AE|BE|AmE|BrE|UK|US|infml|formal|ugs\.?|fig\.?|pl\.?|sing\.?)(?:[\s;:]|\))/.test((record.foreign||"")+" "+(record.german||""));
- const features={...(notation?{notation:2}:{}),...(marked?{annotations:2}:{}),...(pair?{pairedGender:1}:{}),...(openExamples?{openExamples:1}:{}),...(englishInfinitive?{englishInfinitiveTo:1}:{})};
+ const complements=/^en-/.test(record.lang||'')&&/\S.*\((?:to|of|on|in|at|for|from|with|about|against|into|over|under|by|without)\b/i.test(annotations(record.foreign).lexical);
+ const germanText=complements?requiredGerman(record.german):record.german;
+ const features={...(complements?{requiredComplements:1}:{}),...(notation?{notation:2}:{}),...(marked?{annotations:2}:{}),...(pair?{pairedGender:1}:{}),...(openExamples?{openExamples:1}:{}),...(englishInfinitive?{englishInfinitiveTo:1}:{})};
  const current=record.answerRules;
  if(current?.version===VERSION&&current.contentKey===key&&Object.entries(features).every(([name,version])=>current.features?.[name]===version))return current;
  const scanned=record.answerParts;
- const foreign=validateScanSide(scanned?.foreign,record.foreign,record.lang||"");
- const german=validateScanSide(scanned?.german,record.german,"de-DE");
+ const foreign=complements?null:validateScanSide(scanned?.foreign,record.foreign,record.lang||"");
+ const german=complements?null:validateScanSide(scanned?.german,record.german,"de-DE");
  const infinitiveText=englishInfinitive&&!/^\s*\(?to\)?\s/i.test(record.foreign)?"(to) "+record.foreign:record.foreign;
  return {version:VERSION,contentKey:key,source:foreign&&german?"scan":"local",...(Object.keys(features).length?{features}:{}),
    foreign:pair||foreign||compileSide(infinitiveText,record.lang||"",lookup,current?.contentKey===key?current.foreign:null),
-   german:(pair&&pairedGerman)||german||compileSide(record.german,"de-DE",undefined,current?.contentKey===key?current.german:null)};
+   german:(pair&&pairedGerman)||german||compileSide(germanText,"de-DE",undefined,current?.contentKey===key?current.german:null)};
 }
 function patterns(group){
  let suffixes=[[]];
@@ -306,6 +312,6 @@ function matchGrouped(input,expected,language){
  const given=String(input||"").split(/\s*\/\s*/);
  return given.length===required.length&&required.every((part,index)=>matchExplicit(given[index],[part],language));
 }
-const api={VERSION,contentKey,layout,normalizeWord,variants,prepare,matchSide,matchWord,answerHint,matchExplicit,matchGrouped};
+const api={VERSION,annotations,delimit,contentKey,layout,normalizeWord,variants,prepare,matchSide,matchWord,answerHint,matchExplicit,matchGrouped};
 root.VOCAnswerRules=api;if(typeof module!=="undefined")module.exports=api;
 })(typeof globalThis!=="undefined"?globalThis:this);

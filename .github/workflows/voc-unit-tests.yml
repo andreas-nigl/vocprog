@@ -18,4 +18,20 @@ jobs:
       - name: Run dependency-free JavaScript tests
         run: |
           node --version
-          node --test tests/*.test.js
+          node --test tests/*.test.js tests/*.test.cjs
+
+  browser-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout pinned
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Install browser test dependency
+        run: npm install --no-save playwright@1.62.1
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Verify English workflows and required complements
+        run: |
+          node tests/english-training.browser.cjs
+          node tests/english-complements.browser.cjs
+          node tests/answer-regressions.browser.cjs

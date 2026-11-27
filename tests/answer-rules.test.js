@@ -7,7 +7,7 @@ test("Optional brackets retain complete lexical units and reject wrong extras",(
  for(const [text,good,bad] of [
  ["(to) refuse",["refuse","to refuse"],["to refuze","torefuse","to"]],
  ["over and over (again)",["over and over","over and over again"],["over and over aggain","overandover"]],
- ["reaction(to)",["reaction","reaction to"],["reactionto"]],
+ ["reaction(to)",["reaction to"],["reactionto"]],
  ["(self-)confidence",["confidence","self-confidence"],["selfconfidence"]]
  ]){
   for(const input of good)assert.equal(api.matchSide(input,side(text),"en-US"),true,input);

@@ -28,3 +28,45 @@ test('Derived record IDs respect the 160-character database limit and retain exi
  const id=VOCVerbDatabase.recordId(key);assert.ok(('special:'+id).length<=160);assert.equal(VOCVerbDatabase.recordId(key),id);assert.notEqual(VOCVerbDatabase.recordId(key+'!'),id);assert.equal(VOCVerbDatabase.recordId('en-US|go|gehen'),'prepared-verb:en-US%7Cgo%7Cgehen');
  const ids=new Set(Array.from({length:2000},(_,i)=>VOCVerbDatabase.recordId(key.repeat(3)+i)));assert.equal(ids.size,2000);
 });
+
+test('English table translations are German school equivalents, not exercise prompts',async()=>{
+ const {snapshot}=await require('./helpers/english-fixture.cjs')();
+ const take=snapshot.verbs.take;
+ assert.equal(take.cards.conditional[0].german,'ich würde nehmen');
+ assert.equal(take.cards['simple past'][0].german,'ich nahm');
+ assert.equal(take.principalGerman,'nehmen, nahm, genommen');
+ assert.equal(take.participleGerman,'genommen');
+ assert.equal(take.presentParticipleGerman,'nehmend');
+ assert.equal(take.cards['present progressive'][0].german,'ich nehme gerade');
+ assert.equal(snapshot.verbs['take off'].cards['simple past'][0].german,'ich hob ab');
+});
+
+test('Version 1 English records upgrade German display without re-generating verified foreign forms',async()=>{
+ const {book,entries,persisted,motor,lookup}=await require('./helpers/english-fixture.cjs')();
+ const original=JSON.parse(JSON.stringify(persisted));
+ for(const record of Object.values(original)){record.verb.englishPreparedVersion=1;for(const cards of Object.values(record.verb.cards))for(const card of cards){card.german='old task prompt';card.germanVerification={status:'grammar-prompt'};}}
+ let data=JSON.stringify(original),writes=0;
+ const storage={getItem:()=>data,setItem:(_,text)=>{data=text;writes++;}};
+ const onlyGerman=(word,lang)=>{assert.equal(lang,'de-DE');return motor.conjugate(word,lang);};
+ const db=VOCVerbDatabase.create(storage,onlyGerman,null,verb=>english.enrich(verb,onlyGerman,(lang,word)=>{assert.equal(lang,'de-DE');return lookup(lang,word);}));
+ const result=await db.prepare(book,entries,[],Object.keys(english.titles));
+ assert.equal(writes,1);assert.equal(result.verbs.take.cards.conditional[0].german,'ich würde nehmen');
+ for(const record of Object.values(JSON.parse(data))){assert.equal(record.verb.englishPreparedVersion,english.VERSION);assert.deepEqual(record.verb.forms,original[record.key].verb.forms);}
+ await db.prepare(book,entries,[],Object.keys(english.titles));assert.equal(writes,1);
+});
+
+test('Dictionary parentheses, optional prefixes and translation coverage are validated',async()=>{
+ const {motor,lookup}=await require('./helpers/english-fixture.cjs')();
+ const blank=(infinitive,german,baseGerman)=>({infinitive,german,baseGerman,cards:Object.fromEntries(Object.keys(english.titles).map(t=>[t,Array.from({length:6},()=>({}))]))});
+ const prepare=async(...args)=>english.translateTable(blank(...args),(w,l)=>motor.conjugate(w,l),lookup);
+ assert.deepEqual(english.splitMeanings('(an)dauern; halten'),['dauern','andauern','halten']);
+ assert.deepEqual(english.splitMeanings('reagieren (auf)'),['reagieren (auf)']);
+ const react=await prepare('react (to)','reagieren (auf)','reagieren');
+ assert.equal(react.participleGerman,'reagiert (auf)');assert.equal(react.presentParticipleGerman,'reagierend (auf)');assert.equal(react.cards.conditional[0].german,'ich würde reagieren (auf)');assert.ok(english.translationComplete(react));
+ react.cards.conditional[0].german='';assert.equal(english.translationComplete(react),false);
+ const last=await prepare('last','(an)dauern; halten','(an)dauern; halten');assert.ok(english.translationComplete(last));assert.equal(last.cards['present perfect'][0].german,'ich habe gedauert / ich habe angedauert / ich habe gehalten');
+ const fade=await prepare('fade','verblassen','verblassen');assert.equal(fade.cards['present perfect'][0].german,'ich bin verblasst');
+ const spring=await prepare('spring up','aus dem Boden schießen','springen');assert.equal(spring.cards['past perfect'][0].german,'ich war aus dem Boden geschossen');
+ const bump=await prepare('bump fists','sich per Faustgruß begrüßen','stoßen');assert.equal(bump.cards['simple present'][0].german,'ich begrüße jemanden per Faustgruß');assert.equal(bump.cards['simple present'][3].german,'wir begrüßen einander per Faustgruß');assert.ok(english.translationComplete(bump));
+ const unknown=await prepare('react','reagieren; (unbekanntes Material)','reagieren');assert.equal(english.translationComplete(unknown),false);
+});

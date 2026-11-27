@@ -131,6 +131,7 @@
   function create(storage, morphology, reference, enrich) {
     let records = Object.create(null);
     const snapshots = new Map();
+    const translationAttempts=new Set();
     let queue = Promise.resolve();
     const normalKey = (language, lemma, german, context="") => [language, lemma, normal(german)].join("|")+(context?"|context="+context:"");
     const consistent=record=>record.language!=="fr-FR"||!["être","avoir"].includes(record.verb?.auxiliary)||
@@ -146,6 +147,7 @@
             !value.verb || typeof value.verb.cards !== "object" ||
             key !== normalKey(value.language, value.lemma, value.german,value.context)||!consistent(value)) continue;
         if (!records[key] || (!records[key].ready && value.ready)||
+            (value.language==="en-US"&&value.ready&&Number(value.verb.englishPreparedVersion||0)>Number(records[key].verb.englishPreparedVersion||0))||
             (value.ready&&Object.keys(value.verb.cards).length>Object.keys(records[key].verb.cards).length&&
               Date.parse(value.checkedAt)>=Date.parse(records[key].checkedAt))) records[key] = value;
       }
@@ -169,13 +171,18 @@
           const extend=record&&book.lang==="fr-FR"&&tenses.includes("futur proche")&&
             ((!record.verb.cards["futur proche"]&&!record.verb.extensionAttempts?.includes("futur proche"))||
               record.verb.cards["futur proche"]?.some(card=>/[⁰¹²³⁴⁵⁶⁷⁸⁹]/.test(card.german)));
-          const repairEnglish=book.lang==="en-US"&&root.VOCEnglishVerbs&&record?.verb.englishPreparedVersion!==root.VOCEnglishVerbs.VERSION;
+          const repairEnglish=book.lang==="en-US"&&root.VOCEnglishVerbs&&(!record||record.verb.englishPreparedVersion!==root.VOCEnglishVerbs.VERSION||(!root.VOCEnglishVerbs.translationComplete(record.verb)&&!translationAttempts.has(key)));
+          if(repairEnglish)translationAttempts.add(key);
           if (!record||extend||repairEnglish) {
-            const result = build(book, source, paradigms, extend?["futur proche"]:tenses, morphology, reference);
-            let verb = result.verbs[lemma];
+            const translationOnly=repairEnglish&&record?.ready&&record.verb.englishPreparedVersion>=1&&tenses.every(tense=>record.verb.cards[tense]?.length===6);
+            const result = translationOnly?null:build(book, source, paradigms, extend?["futur proche"]:tenses, morphology, reference);
+            let verb = translationOnly?JSON.parse(JSON.stringify(record.verb)):result.verbs[lemma];
             if (enrich){
               try{verb = await enrich(verb, book.lang, morphology);}
-              catch(error){if(!extend)throw error;verb.referenceError=String(error.message||error);}
+              catch(error){
+                if(translationOnly){verbs[lemma]=record.verb;continue;}
+                if(!extend)throw error;verb.referenceError=String(error.message||error);
+              }
             }
             if(extend){
               const previous=record.verb;
@@ -185,9 +192,9 @@
                 ...(verb.referenceError?{referenceError:verb.referenceError}:{})};
             }
             verb.missing = tenses.filter(tense => (!Array.isArray(verb.cards[tense]) || verb.cards[tense].length !== 6) ||
-              (enrich && verb.cards[tense].some(card => !card.german ||
-                card.foreignVerification?.status !== "reference-matched" ||
-                (book.lang!=="en-US"&&card.germanVerification?.status !== "reference-matched"))));
+              (enrich && verb.cards[tense].some(card => card.foreignVerification?.status !== "reference-matched" ||
+                (book.lang!=="en-US"&&(!card.german||card.germanVerification?.status !== "reference-matched")))));
+            if(translationOnly&&JSON.stringify(verb)===JSON.stringify(record.verb)){verbs[lemma]=record.verb;continue;}
             record = {version: VERSION, key, ...(context?{context}:{}), bookId: book.id, language: book.lang, lemma, german,
               verb, ready: verb.missing.length === 0, checkedAt: new Date().toISOString()};
             // A failed fetch is not a completed check. Reopening can retry it;
@@ -210,6 +217,7 @@
         return pending;
       },
       retryPending(bookId) {
+        translationAttempts.clear();
         const next = Object.fromEntries(Object.entries(records).filter(([, value]) =>
           value.bookId !== bookId || value.ready));
         storage.setItem(KEY, JSON.stringify(next));

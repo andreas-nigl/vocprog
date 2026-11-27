@@ -955,7 +955,7 @@
   };
   for(const catalog of Object.values(TENSES))catalog.unshift(["infinitiv","Infinitive (Grundformen)"]);
   TENSES["en-US"].splice(1,0,["principal parts","Stammformen (Grundform, Vergangenheit, Partizip)"]);
-  let tensePicker=null;
+  let tensePicker=null,tenseBookId=null;
   const chosenTenses=()=>tensePicker?.values()||[normalizeTense(get("tenseSelect")?.value)];
   const baseVerbKinds=new Set(["verb-infinitive","verb-participle","verb-imperative","verb-principal","verb-ing","verb-gerund"]);
   function activeBook(){return books.find(b=>b.id===chosenBook);}
@@ -965,23 +965,19 @@
     const verb=isVerbBook(),tenseWrap=get("tenseModeWrap"),modeWrap=get("studyModeWrap");
     if(tenseWrap)tenseWrap.hidden=!verb;
     if(modeWrap)modeWrap.hidden=verb;
+    const changed=tenseBookId!==chosenBook;
+    tenseBookId=chosenBook;
     const select=get("tenseSelect");if(!select||!verb)return;
     const lang=activeBook().lang,catalog=TENSES[lang]||[];
-    const old=localStorage.getItem(STORE+"_tense_"+lang)||select.value||"";
+    const saved=changed?["infinitiv"]:(tensePicker?.values()||["infinitiv"]);
     select.replaceChildren(...catalog.map(([value,label])=>new Option(label,value)));
-    select.value=catalog.some(([value])=>value===old)?old:(catalog[0]?.[0]||"");
-    localStorage.setItem(STORE+"_tense_"+lang,select.value);
-    if(!tensePicker)tensePicker=window.VOCTenseChoices.create(select,values=>{localStorage.setItem(STORE+"_tenses_"+activeBook().lang,JSON.stringify(values));window.refreshVerbSelection();});
-    let saved;try{saved=JSON.parse(localStorage.getItem(STORE+"_tenses_"+lang)||"null");}catch{}
-    tensePicker.refresh(Array.isArray(saved)?saved:[select.value]);
+    select.value=catalog.some(([value])=>value===saved[0])?saved[0]:(catalog[0]?.[0]||"");
+    if(!tensePicker)tensePicker=window.VOCTenseChoices.create(select,()=>window.refreshVerbSelection());
+    tensePicker.refresh(saved);
   }
   window.refreshVerbSelection=function(){
     const first=filteredVocabList[Number(get("startVocab").value)]?.id;
     const last=filteredVocabList[Number(get("endVocab").value)]?.id;
-    if(isVerbBook()){
-      const current=get("tenseSelect")?.value,lang=activeBook()?.lang;
-      if(current&&lang)localStorage.setItem(STORE+"_tense_"+lang,current);
-    }
     refreshVerbSelection();
     if(isVerbBook()){
       filterVocabByPages();
@@ -1290,6 +1286,11 @@
       const imperativeCards=window.VOCVerbPresentation?.imperativeCards(prepared)||[];
       row("Impératif : "+(imperativeCards.length===3?imperativeCards.map(card=>card.foreign).join(" / "):imp||missing),
         window.VOCVerbPresentation?.germanImperative(prepared.imperativeGerman||imperative?.german||missing)||prepared.imperativeGerman||imperative?.german||missing);
+    }else if(activeBook()?.lang==="en-US"){
+      row("Infinitiv : "+(base?.foreign||item.verbLemma),base?.german||prepared.german||missing);
+      row("Stammformen : "+(prepared.principalParts?.join(" / ")||missing),prepared.principalGerman||entries.find(v=>v.kind==="verb-principal")?.german||missing);
+      row("Partizip : "+(prepared.participle||missing),prepared.participleGerman||part?.german||missing);
+      row("-ing-Form : "+(prepared.presentParticiple||missing),prepared.presentParticipleGerman||entries.find(v=>v.kind==="verb-ing")?.german||missing);
     }else{
       row("Infinitiv : "+(base?.foreign||item.verbLemma),base?.german||missing);
       for(const [kind,label] of [
@@ -1315,19 +1316,17 @@
     const catalog=TENSES[activeBook()?.lang]||[];
     const title=catalog.find(([name])=>name===tense)?.[1]||tense;
     const match=title.match(/^(.+?)\s*\(([^)]+)\)$/);
-    const tableTenses=activeBook()?.lang==="en-US"?Object.keys(prepared.cards):[tense];
-    for(const tableTense of tableTenses){
-      const tableTitle=catalog.find(([name])=>name===tableTense)?.[1]||tableTense;
-      if(activeBook()?.lang==="en-US")row(tableTitle.replace(/\s*\([^)]*\)$/,''),"Zeitform",true);
-      else row(match?.[1]||title,match?.[2]||"Zeitform",true);
-      const cards=tableTense==="impératif"?(window.VOCVerbPresentation?.imperativeCards(prepared)||[]):prepared.cards[tableTense]||[];
-      for(const card of cards)row(card.foreign,card.german||"Konjugationsaufgabe: "+card.grammaticalPrompt);
+    const english=activeBook()?.lang==="en-US";
+    if(!english||!["infinitiv","principal parts"].includes(requestedTense)){
+      row(match?.[1]||title,match?.[2]||"Zeitform",true);
+      const cards=tense==="impératif"?(window.VOCVerbPresentation?.imperativeCards(prepared)||[]):prepared.cards[tense]||[];
+      for(const card of cards)row(card.foreign,english?(card.germanVerification?.status==="grammar-prompt"?missing:card.german||missing):card.german||"Konjugationsaufgabe: "+card.grammaticalPrompt);
       if(!cards.length)row("Keine vorbereiteten Formen",missing);
     }
     table.append(tbody);
     const note=document.createElement("p");
     note.className="verb-reference-note";
-    note.textContent="Formen mit separaten Referenzdaten abgeglichen. Deutsche Bedeutung aus dem Buch; schulische Zeitformzuordnung. Subjonctif ist kontextabhängig.";
+    note.textContent=activeBook()?.lang==="en-US"?"Deutsche Lernentsprechungen aus der Buchbedeutung; Verlaufsformen werden umschrieben. Die Übersetzung hängt vom Kontext ab.":"Formen mit separaten Referenzdaten abgeglichen. Deutsche Bedeutung aus dem Buch; schulische Zeitformzuordnung. Subjonctif ist kontextabhängig.";
     const evidence=document.createElement("div");
     evidence.className="verb-reference-sources";
     const sources=new Map((prepared.verificationSources||[]).map(source=>[source.url,source]));
